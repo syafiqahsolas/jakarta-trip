@@ -851,4 +851,159 @@ function renderPackingList() {
   if (importantItems.length === 0) importantContainer.innerHTML = '<p class="text-[11px] text-stone-400 italic">No essential luggage items marked.</p>';
   if (standardItems.length === 0) standardContainer.innerHTML = '<p class="text-[11px] text-stone-400 italic">No general packing items.</p>';
 
-  trip.packingList.forEach((item, idx)
+  trip.packingList.forEach((item, idx) => {
+    const html = `
+      <div class="flex items-center justify-between p-3 rounded-2xl bg-white border border-stone-200/60 text-xs">
+        <div class="flex items-center space-x-2.5">
+          <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePackingItem(${idx})" class="w-4 h-4 text-emerald-800 rounded">
+          <span class="${item.done ? 'line-through text-stone-400' : 'text-stone-800 font-medium'}">${item.text}</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="openChecklistItemModal('packing', ${idx})" class="text-stone-400 hover:text-stone-600 p-1 text-xs"><i class="fa-solid fa-pen"></i></button>
+          <button onclick="toggleMustBringPacking(${idx})" class="text-sm"><i class="fa-solid fa-triangle-exclamation ${item.mustBring ? 'text-amber-500' : 'text-stone-300'}"></i></button>
+          <button onclick="deletePackingItem(${idx})" style="color: var(--lily-pink);" class="p-1"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>`;
+    if (item.mustBring) importantContainer.innerHTML += html;
+    else standardContainer.innerHTML += html;
+  });
+}
+
+function togglePackingItem(idx) { const trip = getActiveTrip(); trip.packingList[idx].done = !trip.packingList[idx].done; saveAppData(); renderPackingList(); }
+function toggleMustBringPacking(idx) { const trip = getActiveTrip(); trip.packingList[idx].mustBring = !trip.packingList[idx].mustBring; saveAppData(); renderPackingList(); }
+function deletePackingItem(idx) { const trip = getActiveTrip(); trip.packingList.splice(idx, 1); saveAppData(); renderPackingList(); }
+
+/* Expenses with Donut Progress & Category Grid Boxes */
+function renderExpensesList() {
+  const trip = getActiveTrip();
+  const searchInput = document.getElementById('expenseSearchInput');
+  const catFilter = document.getElementById('expenseCategoryFilter');
+  
+  const searchVal = searchInput ? searchInput.value.toLowerCase().trim() : '';
+  const catVal = catFilter ? catFilter.value : 'ALL';
+
+  const totalSpent = trip.expenses.reduce((sum, item) => sum + item.amount, 0);
+  const targetBudget = trip.budgetValue || 2000;
+  const percentage = Math.min(100, Math.round((totalSpent / targetBudget) * 100));
+
+  const spentEl = document.getElementById('expenses-total-spent');
+  if (spentEl) spentEl.innerText = `RM ${totalSpent.toFixed(2)}`;
+  
+  // Donut Ring update
+  const donutRing = document.getElementById('expense-donut-ring');
+  if (donutRing) {
+    donutRing.setAttribute('stroke-dasharray', `${percentage}, 100`);
+  }
+
+  // Category Total Breakdown Boxes
+  const catTotals = {};
+  trip.expenses.forEach(e => {
+    catTotals[e.category] = (catTotals[e.category] || 0) + e.amount;
+  });
+
+  const catBreakdownContainer = document.getElementById('expenses-category-breakdown');
+  if (catBreakdownContainer) {
+    catBreakdownContainer.innerHTML = '';
+    if (Object.keys(catTotals).length === 0) {
+      catBreakdownContainer.innerHTML = `<p class="text-[10px] text-stone-400 col-span-3 text-center">No expenses logged yet.</p>`;
+    } else {
+      Object.entries(catTotals).forEach(([cat, sum]) => {
+        catBreakdownContainer.innerHTML += `
+          <div class="bg-stone-50 p-2 rounded-2xl border border-stone-200/60 text-center">
+            <span class="text-stone-400 block text-[9px] truncate font-medium">${cat}</span>
+            <strong style="color: var(--pond-green);" class="font-bold text-xs">RM ${sum.toFixed(0)}</strong>
+          </div>`;
+      });
+    }
+  }
+
+  // Render Expense List Items
+  const container = document.getElementById('expenses-items-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const filteredExpenses = trip.expenses.filter(e => {
+    const matchSearch = e.name.toLowerCase().includes(searchVal);
+    const matchCat = (catVal === 'ALL') || (e.category === catVal);
+    return matchSearch && matchCat;
+  });
+
+  if (filteredExpenses.length === 0) {
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-4">No matching expenses found.</p>`;
+    return;
+  }
+
+  filteredExpenses.forEach((item, originalIdx) => {
+    const card = document.createElement('div');
+    card.className = "lily-card p-3.5 flex justify-between items-center text-xs";
+    card.innerHTML = `
+      <div>
+        <h4 class="font-bold text-stone-800">${item.name}</h4>
+        <span class="text-[10px] text-stone-400">${item.category}</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <strong style="color: var(--pond-green);" class="text-sm font-bold">RM ${item.amount.toFixed(2)}</strong>
+        <button onclick="openExpenseModal(${originalIdx})" class="text-stone-400 hover:text-stone-600 p-1"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="deleteExpenseItem(${originalIdx})" style="color: var(--lily-pink);" class="p-1"><i class="fa-solid fa-trash"></i></button>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function openExpenseModal(idx = -1) {
+  const titleEl = document.getElementById('modal-expense-title');
+  if (titleEl) titleEl.innerText = idx >= 0 ? 'Edit Expense' : 'Add Expense';
+  
+  const idxInput = document.getElementById('expense-form-idx');
+  if (idxInput) idxInput.value = idx;
+  
+  if (idx >= 0) {
+    const trip = getActiveTrip();
+    const item = trip.expenses[idx];
+    if (item) {
+      document.getElementById('expense-form-name').value = item.name;
+      document.getElementById('expense-form-category').value = item.category;
+      document.getElementById('expense-form-amount').value = item.amount;
+    }
+  } else {
+    document.getElementById('expense-form-name').value = '';
+    document.getElementById('expense-form-category').value = 'Flights';
+    document.getElementById('expense-form-amount').value = '';
+  }
+  document.getElementById('modal-expense').classList.remove('hidden');
+}
+
+function saveExpenseForm() {
+  const idxInput = document.getElementById('expense-form-idx');
+  const idx = idxInput ? parseInt(idxInput.value) : -1;
+  const name = document.getElementById('expense-form-name').value.trim();
+  const category = document.getElementById('expense-form-category').value;
+  const amount = parseFloat(document.getElementById('expense-form-amount').value);
+  
+  if (!name || isNaN(amount)) return alert("Please enter valid expense details!");
+  
+  const trip = getActiveTrip();
+  if (idx >= 0) {
+    trip.expenses[idx] = { name, category, amount };
+  } else {
+    trip.expenses.push({ name, category, amount });
+  }
+  
+  saveAppData();
+  closeModal('modal-expense');
+  renderExpensesList();
+}
+
+function deleteExpenseItem(idx) {
+  const trip = getActiveTrip();
+  if (confirm("Delete this expense?")) {
+    trip.expenses.splice(idx, 1);
+    saveAppData();
+    renderExpensesList();
+  }
+}
+
+/* Initialize App on Load */
+window.addEventListener('DOMContentLoaded', () => {
+  openHomePage('upcoming');
+});
