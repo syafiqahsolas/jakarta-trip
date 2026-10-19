@@ -676,7 +676,7 @@ function deleteMasterSpot(spotId) {
 }
 
 /* ==========================================================================
-   PAGE 5: CHECKLISTS & DONUT EXPENSES ENGINE
+   PAGE 5: CHECKLISTS & EXPENSES ENGINE
    ========================================================================== */
 function switchChecklistSubTab(subName) {
   ['prep', 'packing', 'expenses'].forEach(s => {
@@ -698,29 +698,52 @@ function switchChecklistSubTab(subName) {
   if (subName === 'expenses') renderExpensesList();
 }
 
-function openChecklistItemModal(type) {
+function openChecklistItemModal(type, idx = -1) {
   document.getElementById('checklist-type-target').value = type;
-  document.getElementById('modal-checklist-title').innerText = type === 'prep' ? 'Add Prep Task' : 'Add Packing Item';
-  document.getElementById('checklist-item-text').value = '';
-  document.getElementById('checklist-item-mustbring').checked = false;
+  const idxInput = document.getElementById('checklist-item-idx');
+  if (idxInput) idxInput.value = idx;
+  
+  const trip = getActiveTrip();
+  const list = type === 'prep' ? trip.prepChecklist : trip.packingList;
+  
+  if (idx >= 0 && list[idx]) {
+    document.getElementById('modal-checklist-title').innerText = type === 'prep' ? 'Edit Prep Task' : 'Edit Packing Item';
+    document.getElementById('checklist-item-text').value = list[idx].text;
+    document.getElementById('checklist-item-mustbring').checked = list[idx].mustBring;
+  } else {
+    document.getElementById('modal-checklist-title').innerText = type === 'prep' ? 'Add Prep Task' : 'Add Packing Item';
+    document.getElementById('checklist-item-text').value = '';
+    document.getElementById('checklist-item-mustbring').checked = false;
+  }
+  
   document.getElementById('modal-checklist-item').classList.remove('hidden');
 }
 
 function saveChecklistItemForm() {
   const type = document.getElementById('checklist-type-target').value;
+  const idxInput = document.getElementById('checklist-item-idx');
+  const idx = idxInput ? parseInt(idxInput.value) : -1;
   const text = document.getElementById('checklist-item-text').value.trim();
   if (!text) return alert("Please enter description!");
   
   const mustBring = document.getElementById('checklist-item-mustbring').checked;
   const trip = getActiveTrip();
-  if (type === 'prep') { trip.prepChecklist.push({ text, done: false, mustBring }); renderPrepList(); }
-  else { trip.packingList.push({ text, done: false, mustBring }); renderPackingList(); }
+  const list = type === 'prep' ? trip.prepChecklist : trip.packingList;
+
+  if (idx >= 0 && list[idx]) {
+    list[idx].text = text;
+    list[idx].mustBring = mustBring;
+  } else {
+    list.push({ text, done: false, mustBring });
+  }
   
   saveAppData();
   closeModal('modal-checklist-item');
+  if (type === 'prep') renderPrepList();
+  else renderPackingList();
 }
 
-/* Categorized Prep List */
+/* Categorized Prep List with Edit Controls */
 function renderPrepList() {
   const trip = getActiveTrip();
   const importantContainer = document.getElementById('prep-items-important');
@@ -742,6 +765,7 @@ function renderPrepList() {
           <span class="${item.done ? 'line-through text-stone-400' : 'text-stone-800 font-medium'}">${item.text}</span>
         </div>
         <div class="flex items-center space-x-2">
+          <button onclick="openChecklistItemModal('prep', ${idx})" class="text-stone-400 hover:text-stone-600 p-1 text-xs"><i class="fa-solid fa-pen"></i></button>
           <button onclick="toggleMustBringPrep(${idx})" class="text-sm"><i class="fa-solid fa-triangle-exclamation ${item.mustBring ? 'text-amber-500' : 'text-stone-300'}"></i></button>
           <button onclick="deletePrepItem(${idx})" style="color: var(--lily-pink);" class="p-1"><i class="fa-solid fa-trash"></i></button>
         </div>
@@ -755,7 +779,7 @@ function togglePrepItem(idx) { const trip = getActiveTrip(); trip.prepChecklist[
 function toggleMustBringPrep(idx) { const trip = getActiveTrip(); trip.prepChecklist[idx].mustBring = !trip.prepChecklist[idx].mustBring; saveAppData(); renderPrepList(); }
 function deletePrepItem(idx) { const trip = getActiveTrip(); trip.prepChecklist.splice(idx, 1); saveAppData(); renderPrepList(); }
 
-/* Categorized Packing List */
+/* Categorized Packing List with Edit Controls */
 function renderPackingList() {
   const trip = getActiveTrip();
   const importantContainer = document.getElementById('packing-items-important');
@@ -777,6 +801,7 @@ function renderPackingList() {
           <span class="${item.done ? 'line-through text-stone-400' : 'text-stone-800 font-medium'}">${item.text}</span>
         </div>
         <div class="flex items-center space-x-2">
+          <button onclick="openChecklistItemModal('packing', ${idx})" class="text-stone-400 hover:text-stone-600 p-1 text-xs"><i class="fa-solid fa-pen"></i></button>
           <button onclick="toggleMustBringPacking(${idx})" class="text-sm"><i class="fa-solid fa-triangle-exclamation ${item.mustBring ? 'text-amber-500' : 'text-stone-300'}"></i></button>
           <button onclick="deletePackingItem(${idx})" style="color: var(--lily-pink);" class="p-1"><i class="fa-solid fa-trash"></i></button>
         </div>
@@ -790,25 +815,53 @@ function togglePackingItem(idx) { const trip = getActiveTrip(); trip.packingList
 function toggleMustBringPacking(idx) { const trip = getActiveTrip(); trip.packingList[idx].mustBring = !trip.packingList[idx].mustBring; saveAppData(); renderPackingList(); }
 function deletePackingItem(idx) { const trip = getActiveTrip(); trip.packingList.splice(idx, 1); saveAppData(); renderPackingList(); }
 
-/* Expenses with Donut Chart Progress */
+/* Expenses with Donut Progress & Category Grid Boxes */
 function renderExpensesList() {
   const trip = getActiveTrip();
-  const searchVal = document.getElementById('expenseSearchInput').value.toLowerCase().trim();
-  const catVal = document.getElementById('expenseCategoryFilter').value;
+  const searchInput = document.getElementById('expenseSearchInput');
+  const catFilter = document.getElementById('expenseCategoryFilter');
+  
+  const searchVal = searchInput ? searchInput.value.toLowerCase().trim() : '';
+  const catVal = catFilter ? catFilter.value : 'ALL';
 
   const totalSpent = trip.expenses.reduce((sum, item) => sum + item.amount, 0);
   const targetBudget = trip.budgetValue || 2000;
   const percentage = Math.min(100, Math.round((totalSpent / targetBudget) * 100));
 
-  document.getElementById('expenses-total-spent').innerText = `RM ${totalSpent.toFixed(2)}`;
+  const spentEl = document.getElementById('expenses-total-spent');
+  if (spentEl) spentEl.innerText = `RM ${totalSpent.toFixed(2)}`;
   
-  // Update SVG Donut Progress Ring
+  // Donut Ring update
   const donutRing = document.getElementById('expense-donut-ring');
   if (donutRing) {
     donutRing.setAttribute('stroke-dasharray', `${percentage}, 100`);
   }
 
+  // Category Total Breakdown Boxes
+  const catTotals = {};
+  trip.expenses.forEach(e => {
+    catTotals[e.category] = (catTotals[e.category] || 0) + e.amount;
+  });
+
+  const catBreakdownContainer = document.getElementById('expenses-category-breakdown');
+  if (catBreakdownContainer) {
+    catBreakdownContainer.innerHTML = '';
+    if (Object.keys(catTotals).length === 0) {
+      catBreakdownContainer.innerHTML = `<p class="text-[10px] text-stone-400 col-span-3 text-center">No expenses logged yet.</p>`;
+    } else {
+      Object.entries(catTotals).forEach(([cat, sum]) => {
+        catBreakdownContainer.innerHTML += `
+          <div class="bg-stone-50 p-2 rounded-2xl border border-stone-200/60 text-center">
+            <span class="text-stone-400 block text-[9px] truncate font-medium">${cat}</span>
+            <strong style="color: var(--pond-green);" class="font-bold text-xs">RM ${sum.toFixed(0)}</strong>
+          </div>`;
+      });
+    }
+  }
+
+  // Render Expense List Items
   const container = document.getElementById('expenses-items-list');
+  if (!container) return;
   container.innerHTML = '';
 
   const filteredExpenses = trip.expenses.filter(e => {
@@ -840,8 +893,11 @@ function renderExpensesList() {
 }
 
 function openExpenseModal(idx = -1) {
-  document.getElementById('expense-form-idx').value = idx;
-  document.getElementById('modal-expense-title').innerText = idx >= 0 ? 'Edit Expense' : 'Add Expense';
+  const titleEl = document.getElementById('modal-expense-title');
+  if (titleEl) titleEl.innerText = idx >= 0 ? 'Edit Expense' : 'Add Expense';
+  
+  const idxInput = document.getElementById('expense-form-idx');
+  if (idxInput) idxInput.value = idx;
   
   if (idx >= 0) {
     const trip = getActiveTrip();
@@ -860,7 +916,8 @@ function openExpenseModal(idx = -1) {
 }
 
 function saveExpenseForm() {
-  const idx = parseInt(document.getElementById('expense-form-idx').value);
+  const idxInput = document.getElementById('expense-form-idx');
+  const idx = idxInput ? parseInt(idxInput.value) : -1;
   const name = document.getElementById('expense-form-name').value.trim();
   const category = document.getElementById('expense-form-category').value;
   const amount = parseFloat(document.getElementById('expense-form-amount').value);
