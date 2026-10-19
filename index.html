@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Jakarta & Bandung Travel Plan 2026</title>
-  <!-- Tailwind CSS & FontAwesome for Mobile Styling -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
@@ -22,9 +21,7 @@
         <h1 class="font-bold text-lg leading-tight">🇮🇩 Jakarta & Bandung 2026</h1>
         <p class="text-xs text-indigo-200">21 Nov – 26 Nov 2026 • 6 Days Trip</p>
       </div>
-      <button onclick="syncLiveSheetData()" id="syncBtn" class="bg-indigo-500 hover:bg-indigo-400 text-xs px-2.5 py-1.5 rounded-lg border border-indigo-300 font-medium flex items-center gap-1 shadow-xs transition-all">
-        <i class="fa-solid fa-arrows-rotate text-xs" id="syncIcon"></i> <span id="syncText">Sync Sheet</span>
-      </button>
+      <span class="bg-indigo-500 text-xs px-2.5 py-1 rounded-full border border-indigo-300 font-medium">RM2,000 / pax</span>
     </div>
   </header>
 
@@ -93,8 +90,8 @@
 
       <!-- QUICK HUB BUTTONS -->
       <div class="flex flex-wrap gap-1.5">
-        <button onclick="quickSearch('Blok M')" class="text-xs bg-slate-200 hover:bg-indigo-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">📍 Blok M</button>
-        <button onclick="quickSearch('Bundaran HI')" class="text-xs bg-slate-200 hover:bg-indigo-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">📍 Bundaran HI</button>
+        <button onclick="quickSearch('Blok M BCA')" class="text-xs bg-slate-200 hover:bg-indigo-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">📍 Blok M</button>
+        <button onclick="quickSearch('Bundaran HI Bank Jakarta')" class="text-xs bg-slate-200 hover:bg-indigo-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">📍 Bundaran HI</button>
         <button onclick="quickSearch('Thamrin')" class="text-xs bg-slate-200 hover:bg-indigo-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">📍 Thamrin</button>
         <button onclick="quickSearch('Jakarta Kota')" class="text-xs bg-slate-200 hover:bg-indigo-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">📍 Kota Tua</button>
       </div>
@@ -127,7 +124,7 @@
       </div>
     </section>
 
-    <!-- TAB 4: CHECKLIST & EXPENSES -->
+    <!-- TAB 4: CHECKLIST & BOOKING -->
     <section id="view-checklist" class="space-y-4 hidden">
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
         <h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-square-check text-indigo-600 me-2"></i>Trip Preparation Checklist</h3>
@@ -149,23 +146,34 @@
 
   </main>
 
-  <!-- JAVASCRIPT LOGIC & LIVE GOOGLE SHEET SYNC -->
+  <!-- JAVASCRIPT LOGIC & STABLE BUILT-IN DATABASE -->
   <script>
     // ------------------------------------------------------------------------
-    // 🔗 LINK TO YOUR PUBLISHED GOOGLE SHEET CSV (Jakarta Places Master Log)
+    // 📦 STABLE MASTER PLACES DATABASE (Add/Edit right here in GitHub!)
     // ------------------------------------------------------------------------
-    const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1U5TrnVzvnxWTv4mgLQPYa0MbfOzf4eaRXnuvdRCwaQg/edit?usp=sharing';
-
-    // Default Fallback Places
-    const fallbackPlaces = [
+    const masterPlaces = [
       { name: "Grand Indonesia", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "7 mins", map: "https://maps.google.com/?q=Grand+Indonesia" },
       { name: "Thamrin City", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "18 mins", map: "https://maps.google.com/?q=Thamrin+City" },
+      { name: "Plaza Indonesia", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "6 mins", map: "https://maps.google.com/?q=Plaza+Indonesia" },
+      { name: "Sarinah", category: "Shop", station: "Bundaran HI Bank Jakarta", walkStation: "14 mins", map: "https://maps.google.com/?q=Sarinah+Jakarta" },
+      { name: "Djournal Coffee", category: "Coffee", station: "Bundaran HI Bank Jakarta", walkStation: "9 mins", map: "https://maps.google.com/?q=Djournal+Coffee+Grand+Indonesia" },
+      { name: "Fore Coffee", category: "Coffee", station: "Bundaran HI Bank Jakarta", walkStation: "14 mins", map: "https://maps.google.com/?q=Fore+Coffee" },
       { name: "Tuku", category: "Coffee", station: "Blok M BCA", walkStation: "5 mins", map: "https://maps.google.com/?q=Tuku+Blok+M" },
       { name: "Futago", category: "Food", station: "Blok M BCA", walkStation: "2 mins", map: "https://maps.google.com/?q=Futago+Blok+M" },
       { name: "Fuku", category: "Dessert", station: "Blok M BCA", walkStation: "5 mins", map: "https://maps.google.com/?q=Fuku+Blok+M" },
       { name: "Drunk Baker", category: "Dessert", station: "Blok M BCA", walkStation: "5 mins", map: "https://maps.google.com/?q=Drunk+Baker+Blok+M" },
       { name: "Row 9", category: "Attraction", station: "Blok M BCA", walkStation: "5 mins", map: "https://maps.google.com/?q=Row+9+Blok+M" },
-      { name: "Chillax", category: "Attraction", station: "Setiabudi Astra", walkStation: "1 min", map: "https://maps.google.com/?q=Chillax+Sudirman" }
+      { name: "Block M Square", category: "Shopping Mall", station: "Blok M BCA", walkStation: "4 mins", map: "https://maps.google.com/?q=Blok+M+Square" },
+      { name: "Crepe O Butter", category: "Dessert", station: "Blok M BCA", walkStation: "9 mins", map: "https://maps.google.com/?q=Crepe+O+Butter+Blok+M" },
+      { name: "Pasar Santa", category: "Local Market", station: "ASEAN Headquarters", walkStation: "31 mins", map: "https://maps.google.com/?q=Pasar+Santa" },
+      { name: "Chillax", category: "Attraction", station: "Setiabudi Astra", walkStation: "1 min", map: "https://maps.google.com/?q=Chillax+Sudirman" },
+      { name: "bopet mini", category: "Food", station: "Bendungan Hilir", walkStation: "18 mins", map: "https://maps.google.com/?q=bopet+mini" },
+      { name: "RM Surya", category: "Food", station: "Bendungan Hilir", walkStation: "19 mins", map: "https://maps.google.com/?q=RM+Surya+Benhil" },
+      { name: "Jakarta Old Town", category: "Attraction", station: "Jakarta Kota", walkStation: "5 mins", map: "https://maps.google.com/?q=Kota+Tua+Jakarta" },
+      { name: "Cove Batavia PIK", category: "Shopping Mall", station: "No station nearby", walkStation: "-", map: "https://maps.google.com/?q=Cove+Batavia+PIK" },
+      { name: "Stone Garden Citatah", category: "Attraction", station: "Bandung Area", walkStation: "-", map: "https://maps.google.com/?q=Stone+Garden+Citatah" },
+      { name: "Warung Kopi Imah Babaturan", category: "Food", station: "Bandung Area", walkStation: "-", map: "https://maps.google.com/?q=Imah+Babaturan+Bandung" },
+      { name: "Taman Hutan Raya Ir. H. Djuanda", category: "Attraction", station: "Bandung Area", walkStation: "-", map: "https://maps.google.com/?q=Tahura+Djuanda+Bandung" }
     ];
 
     // Default 6-Day Itinerary Data
@@ -193,7 +201,7 @@
       },
       3: {
         tag: "Jakarta ➔ Bandung",
-          title: "Scenic Train Ride & Heritage",
+        title: "Scenic Train Ride & Heritage",
         items: [
           { time: "07:00 AM", title: "Check Out Hotel", notes: "Head to Gambir Railway Station", type: "transport" },
           { time: "08:30 AM", title: "Parahyangan Panoramic Train", notes: "Scenic train ride to Bandung Station", type: "transport" },
@@ -246,64 +254,9 @@
       { text: "Download Gojek / Grab Apps", done: false }
     ];
 
-    // Local Storage State
-    let masterPlaces = JSON.parse(localStorage.getItem('my_places')) || fallbackPlaces;
     let itineraryData = JSON.parse(localStorage.getItem('my_itinerary')) || defaultItinerary;
     let checklistData = JSON.parse(localStorage.getItem('my_checklist')) || defaultChecklist;
     let currentDay = 1;
-
-    // ------------------------------------------------------------------------
-    // ⚡ LIVE GOOGLE SHEET CSV SYNC FUNCTION
-    // ------------------------------------------------------------------------
-    async function syncLiveSheetData() {
-      const syncIcon = document.getElementById('syncIcon');
-      const syncText = document.getElementById('syncText');
-      syncIcon.classList.add('fa-spin');
-      syncText.innerText = 'Syncing...';
-
-      try {
-        const res = await fetch(GOOGLE_SHEET_CSV_URL + '&t=' + new Date().getTime());
-        const csvText = await res.text();
-        
-        // Parse CSV Rows
-        const lines = csvText.split('\n');
-        const parsedPlaces = [];
-
-        for (let i = 1; i < lines.length; i++) {
-          const row = lines[i].split(',');
-          if (row.length >= 5 && row[0].trim() !== '') {
-            const name = row[0].replace(/"/g, '').trim();
-            const category = row[1] ? row[1].replace(/"/g, '').trim() : 'Spot';
-            const station = row[4] ? row[4].replace(/"/g, '').trim() : 'No station nearby';
-            const walk = row[5] ? row[5].replace(/"/g, '').trim() : '-';
-            const lat = row[2] ? row[2].replace(/"/g, '').trim() : '';
-            const lng = row[3] ? row[3].replace(/"/g, '').trim() : '';
-            const mapUrl = (lat && lng) 
-              ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
-              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
-
-            parsedPlaces.push({ name, category, station, walkStation: walk, map: mapUrl });
-          }
-        }
-
-        if (parsedPlaces.length > 0) {
-          masterPlaces = parsedPlaces;
-          localStorage.setItem('my_places', JSON.stringify(masterPlaces));
-          renderMasterPlaces();
-          syncText.innerText = 'Updated!';
-        } else {
-          syncText.innerText = 'Sync Sheet';
-        }
-      } catch (err) {
-        console.warn('Could not sync with Google Sheet CSV, using offline cache.', err);
-        syncText.innerText = 'Offline';
-      } finally {
-        setTimeout(() => {
-          syncIcon.classList.remove('fa-spin');
-          syncText.innerText = 'Sync Sheet';
-        }, 2000);
-      }
-    }
 
     // Tab Navigation
     function switchTab(tabName) {
@@ -412,7 +365,7 @@
             </div>
             <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-semibold">${clusterSpots.length} Spots Nearby</span>
           </div>
-          <div class divide-y divide-slate-100">
+          <div class="divide-y divide-slate-100">
       `;
 
       clusterSpots.forEach(spot => {
@@ -496,7 +449,6 @@
       renderItinerary();
       renderMasterPlaces();
       renderChecklist();
-      syncLiveSheetData(); // Auto sync with Google Sheet on load
     });
   </script>
 </body>
