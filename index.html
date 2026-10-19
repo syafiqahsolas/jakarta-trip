@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Jakarta & Bandung Travel Plan 2026</title>
+  <title>Jakarta & Bandung Travel Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
@@ -12,21 +12,21 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-20">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-24">
 
   <!-- TOP APP HEADER -->
   <header class="bg-indigo-600 text-white p-4 sticky top-0 z-50 shadow-md">
     <div class="max-w-md mx-auto flex justify-between items-center">
       <div>
-        <h1 class="font-bold text-lg leading-tight">🇮🇩 Jakarta & Bandung 2026</h1>
-        <p class="text-xs text-indigo-200">21 Nov – 26 Nov 2026 • 6 Days Trip</p>
+        <h1 class="font-bold text-base leading-tight">🇮🇩 Jakarta & Bandung 2026</h1>
+        <p class="text-[11px] text-indigo-200">21 Nov – 26 Nov 2026 • Mobile Travel Hub</p>
       </div>
       <span class="bg-indigo-500 text-xs px-2.5 py-1 rounded-full border border-indigo-300 font-medium">RM2,000 / pax</span>
     </div>
   </header>
 
   <!-- NAVIGATION TABS -->
-  <nav class="bg-white border-b border-slate-200 sticky top-[60px] z-40 shadow-sm">
+  <nav class="bg-white border-b border-slate-200 sticky top-[57px] z-40 shadow-xs">
     <div class="max-w-md mx-auto flex text-center text-xs font-semibold">
       <button onclick="switchTab('itinerary')" id="tab-itinerary" class="flex-1 py-3 border-b-2 border-indigo-600 text-indigo-600">
         <i class="fa-solid me-1 fa-calendar-day text-sm"></i><br>Itinerary
@@ -49,7 +49,7 @@
     <!-- TAB 1: ITINERARY -->
     <section id="view-itinerary" class="space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="font-bold text-slate-700 text-base">Tentative Daily Schedule</h2>
+        <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wider">Tentative Daily Schedule</h2>
         <span class="text-xs text-slate-500"><i class="fa-solid fa-cloud-sun me-1"></i>Weather Adaptive</span>
       </div>
 
@@ -63,20 +63,20 @@
         <button onclick="selectDay(6)" id="daybtn-6" class="px-3 py-2 rounded-lg bg-white text-slate-600 border font-medium text-xs whitespace-nowrap">Day 6 (26/11)</button>
       </div>
 
-      <!-- DAY SUMMARY CARD -->
-      <div id="day-summary-card" class="bg-indigo-50 border border-indigo-100 rounded-xl p-3.5 flex justify-between items-center">
+      <!-- DAY HEADER CARD -->
+      <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3.5 flex justify-between items-center shadow-xs">
         <div>
-          <span id="day-tag" class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded">JAKARTA CENTRAL</span>
+          <span id="day-tag" class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded">CENTRAL / WEST JAKARTA</span>
           <h3 id="day-title" class="font-bold text-slate-800 text-sm mt-1">Arrival & Historical Exploration</h3>
         </div>
-        <button onclick="addCustomActivity()" class="bg-white border border-indigo-200 text-indigo-600 text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-xs hover:bg-indigo-50">
+        <button onclick="addCustomActivity()" class="bg-white border border-indigo-200 text-indigo-600 text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-xs">
           <i class="fa-solid fa-plus me-1"></i>Add
         </button>
       </div>
 
       <!-- TIMELINE LIST -->
       <div id="timeline-list" class="space-y-3 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-200">
-        <!-- Dynamic JS rendering -->
+        <!-- JS Rendered -->
       </div>
     </section>
 
@@ -85,15 +85,14 @@
       <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-3">
         <label class="font-bold text-slate-700 text-sm block"><i class="fa-solid fa-magnifying-glass me-2 text-indigo-600"></i>Waddle Cluster Search</label>
         <input type="text" id="clusterQuery" oninput="searchCluster()" placeholder="Type spot or station (e.g., Tuku, Thamrin, Blok M)..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        <p class="text-xs text-slate-500">Find spots sharing the same MRT station to waddle between them!</p>
       </div>
 
       <!-- QUICK HUB BUTTONS -->
       <div class="flex flex-wrap gap-1.5">
-        <button onclick="quickSearch('Blok M BCA')" class="text-xs bg-slate-200 hover:bg-indigo-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">📍 Blok M</button>
-        <button onclick="quickSearch('Bundaran HI Bank Jakarta')" class="text-xs bg-slate-200 hover:bg-indigo-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">📍 Bundaran HI</button>
-        <button onclick="quickSearch('Thamrin')" class="text-xs bg-slate-200 hover:bg-indigo-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">📍 Thamrin</button>
-        <button onclick="quickSearch('Jakarta Kota')" class="text-xs bg-slate-200 hover:bg-indigo-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">📍 Kota Tua</button>
+        <button onclick="quickSearch('Blok M BCA')" class="text-xs bg-white border border-slate-200 hover:bg-indigo-50 text-slate-700 px-3 py-1.5 rounded-full font-medium shadow-xs">📍 Blok M</button>
+        <button onclick="quickSearch('Bundaran HI Bank Jakarta')" class="text-xs bg-white border border-slate-200 hover:bg-indigo-50 text-slate-700 px-3 py-1.5 rounded-full font-medium shadow-xs">📍 Bundaran HI</button>
+        <button onclick="quickSearch('Thamrin')" class="text-xs bg-white border border-slate-200 hover:bg-indigo-50 text-slate-700 px-3 py-1.5 rounded-full font-medium shadow-xs">📍 Thamrin</button>
+        <button onclick="quickSearch('Jakarta Kota')" class="text-xs bg-white border border-slate-200 hover:bg-indigo-50 text-slate-700 px-3 py-1.5 rounded-full font-medium shadow-xs">📍 Kota Tua</button>
       </div>
 
       <!-- RESULTS DISPLAY -->
@@ -108,8 +107,8 @@
     <!-- TAB 3: MASTER PLACES DATABASE -->
     <section id="view-places" class="space-y-4 hidden">
       <div class="flex space-x-2">
-        <input type="text" id="placeFilterInput" oninput="renderMasterPlaces()" placeholder="Search master list..." class="flex-1 bg-white border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        <select id="categorySelect" onchange="renderMasterPlaces()" class="bg-white border border-slate-300 rounded-lg p-2 text-sm">
+        <input type="text" id="placeFilterInput" oninput="renderMasterPlaces()" placeholder="Search master list..." class="flex-1 bg-white border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <select id="categorySelect" onchange="renderMasterPlaces()" class="bg-white border border-slate-300 rounded-lg p-2.5 text-sm">
           <option value="ALL">All Types</option>
           <option value="Food">Food</option>
           <option value="Coffee">Coffee</option>
@@ -120,7 +119,7 @@
       </div>
 
       <div id="masterPlacesList" class="space-y-2">
-        <!-- Dynamic JS rendering -->
+        <!-- JS Rendered -->
       </div>
     </section>
 
@@ -129,28 +128,26 @@
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
         <h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-square-check text-indigo-600 me-2"></i>Trip Preparation Checklist</h3>
         <div id="checklist-items" class="space-y-2">
-          <!-- Dynamic JS checklist -->
+          <!-- JS Rendered -->
         </div>
       </div>
 
       <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-2">
         <h4 class="font-bold text-indigo-900 text-xs uppercase tracking-wider">Quick Booking Links</h4>
         <div class="grid grid-cols-2 gap-2 text-xs">
-          <a href="https://ticket.kcic.co.id" target="_blank" class="bg-white p-2 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🚅 Whoosh Train</a>
-          <a href="https://www.tiket.com" target="_blank" class="bg-white p-2 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🚆 Panoramic Train</a>
-          <a href="https://www.bandung-driver.net" target="_blank" class="bg-white p-2 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🚗 Supir Bandung</a>
-          <a href="https://www.google.com/maps" target="_blank" class="bg-white p-2 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🗺️ Google Maps</a>
+          <a href="https://ticket.kcic.co.id" target="_blank" class="bg-white p-2.5 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🚅 Whoosh Train</a>
+          <a href="https://www.tiket.com" target="_blank" class="bg-white p-2.5 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🚆 Panoramic Train</a>
+          <a href="https://www.bandung-driver.net" target="_blank" class="bg-white p-2.5 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🚗 Supir Bandung</a>
+          <a href="https://www.google.com/maps" target="_blank" class="bg-white p-2.5 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🗺️ Google Maps</a>
         </div>
       </div>
     </section>
 
   </main>
 
-  <!-- JAVASCRIPT LOGIC & STABLE BUILT-IN DATABASE -->
+  <!-- JAVASCRIPT APP LOGIC -->
   <script>
-    // ------------------------------------------------------------------------
-    // 📦 STABLE MASTER PLACES DATABASE (Add/Edit right here in GitHub!)
-    // ------------------------------------------------------------------------
+    // Master Places Database
     const masterPlaces = [
       { name: "Grand Indonesia", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "7 mins", map: "https://maps.google.com/?q=Grand+Indonesia" },
       { name: "Thamrin City", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "18 mins", map: "https://maps.google.com/?q=Thamrin+City" },
@@ -176,70 +173,70 @@
       { name: "Taman Hutan Raya Ir. H. Djuanda", category: "Attraction", station: "Bandung Area", walkStation: "-", map: "https://maps.google.com/?q=Tahura+Djuanda+Bandung" }
     ];
 
-    // Default 6-Day Itinerary Data
+    // 6-Day Itinerary Data
     const defaultItinerary = {
       1: {
         tag: "Central / West Jakarta",
         title: "Arrival & Historical Exploration",
         items: [
-          { time: "08:00 AM", title: "Arrival at Airport (CGK)", notes: "Grab transport to Hotel Grand Sahid Jaya", type: "transport" },
-          { time: "12:00 PM", title: "Kota Tua (Old Town)", notes: "Explore historic buildings & Cafe Batavia", type: "activity" },
-          { time: "06:00 PM", title: "Cove Batavia PIK", notes: "Sunset walk & dinner by the sea", type: "activity" },
-          { time: "09:00 PM", title: "Return Back to Hotel", notes: "Rest up for Day 2 waddling", type: "hotel" }
+          { time: "08:00 AM", title: "Arrival at Airport (CGK)", notes: "Grab transport to Hotel Grand Sahid Jaya", done: false },
+          { time: "12:00 PM", title: "Kota Tua (Old Town)", notes: "Explore historic buildings & Cafe Batavia", done: false },
+          { time: "06:00 PM", title: "Cove Batavia PIK", notes: "Sunset walk & dinner by the sea", done: false },
+          { time: "09:00 PM", title: "Return Back to Hotel", notes: "Rest up for Day 2 waddling", done: false }
         ]
       },
       2: {
         tag: "South Jakarta Waddling",
         title: "Shopping & Culinary Hunt",
         items: [
-          { time: "08:00 AM", title: "Waddle Keluar", notes: "Start from Hotel Grand Sahid Jaya", type: "activity" },
-          { time: "09:00 AM", title: "Thamrin City", notes: "Batik shopping & local food", type: "activity" },
-          { time: "12:00 PM", title: "Pasar Santa", notes: "Thrift shops, coffee & street food", type: "activity" },
-          { time: "02:00 PM", title: "Blok M Little Tokyo Cluster", notes: "Waddle between Tuku, Futago, Drunk Baker & Row 9", type: "activity" },
-          { time: "06:00 PM", title: "Lotte Mall", notes: "Indoor dinner & chill", type: "activity" }
+          { time: "08:00 AM", title: "Waddle Keluar", notes: "Start from Hotel Grand Sahid Jaya", done: false },
+          { time: "09:00 AM", title: "Thamrin City", notes: "Batik shopping & local food", done: false },
+          { time: "12:00 PM", title: "Pasar Santa", notes: "Thrift shops, coffee & street food", done: false },
+          { time: "02:00 PM", title: "Blok M Little Tokyo Cluster", notes: "Waddle between Tuku, Futago, Drunk Baker & Row 9", done: false },
+          { time: "06:00 PM", title: "Lotte Mall", notes: "Indoor dinner & chill", done: false }
         ]
       },
       3: {
         tag: "Jakarta ➔ Bandung",
         title: "Scenic Train Ride & Heritage",
         items: [
-          { time: "07:00 AM", title: "Check Out Hotel", notes: "Head to Gambir Railway Station", type: "transport" },
-          { time: "08:30 AM", title: "Parahyangan Panoramic Train", notes: "Scenic train ride to Bandung Station", type: "transport" },
-          { time: "02:00 PM", title: "Check-in Homestay Bandung", notes: "Unpack and refresh", type: "hotel" },
-          { time: "04:00 PM", title: "Warung Nasi Ibu Imas", notes: "Authentic Sundanese food", type: "food" },
-          { time: "06:00 PM", title: "Braga Citywalk", notes: "Evening walk along historic street", type: "activity" }
+          { time: "07:00 AM", title: "Check Out Hotel", notes: "Head to Gambir Railway Station", done: false },
+          { time: "08:30 AM", title: "Parahyangan Panoramic Train", notes: "Scenic train ride to Bandung Station", done: false },
+          { time: "02:00 PM", title: "Check-in Homestay Bandung", notes: "Unpack and refresh", done: false },
+          { time: "04:00 PM", title: "Warung Nasi Ibu Imas", notes: "Authentic Sundanese food", done: false },
+          { time: "06:00 PM", title: "Braga Citywalk", notes: "Evening walk along historic street", done: false }
         ]
       },
       4: {
         tag: "Nature & West Bandung",
         title: "Geological Gems & Cafe Hopping",
         items: [
-          { time: "08:00 AM", title: "Stone Garden Citatah", notes: "Limestone hills & scenic view", type: "activity" },
-          { time: "10:00 AM", title: "Tebing Masigit / Gua Pawon", notes: "Prehistoric caves and cliffs", type: "activity" },
-          { time: "01:00 PM", title: "Warung Sego Nusantara", notes: "Lunch stop", type: "food" },
-          { time: "03:00 PM", title: "IKEA Kota Baru Parahyangan", notes: "Cool off & shop", type: "activity" },
-          { time: "06:00 PM", title: "Bumi Hejo", notes: "Outdoor dining complex", type: "activity" }
+          { time: "08:00 AM", title: "Stone Garden Citatah", notes: "Limestone hills & scenic view", done: false },
+          { time: "10:00 AM", title: "Tebing Masigit / Gua Pawon", notes: "Prehistoric caves and cliffs", done: false },
+          { time: "01:00 PM", title: "Warung Sego Nusantara", notes: "Lunch stop", done: false },
+          { time: "03:00 PM", title: "IKEA Kota Baru Parahyangan", notes: "Cool off & shop", done: false },
+          { time: "06:00 PM", title: "Bumi Hejo", notes: "Outdoor dining complex", done: false }
         ]
       },
       5: {
         tag: "North Bandung Nature",
         title: "Forest Walk & Aesthetic Cafes",
         items: [
-          { time: "09:00 AM", title: "Taman Hutan Raya Ir. H. Djuanda", notes: "Forest trail walk & fresh air", type: "activity" },
-          { time: "12:00 PM", title: "Warung Ketan Bakar Bu Isah", notes: "Traditional grilled sticky rice", type: "food" },
-          { time: "01:00 PM", title: "Hidden Farm Plantshop Cafe", notes: "Aesthetic garden cafe", type: "coffee" },
-          { time: "03:00 PM", title: "Kampung Pelangi / ArtSociates Gallery", notes: "Art exhibition & photo spots", type: "activity" }
+          { time: "09:00 AM", title: "Taman Hutan Raya Ir. H. Djuanda", notes: "Forest trail walk & fresh air", done: false },
+          { time: "12:00 PM", title: "Warung Ketan Bakar Bu Isah", notes: "Traditional grilled sticky rice", done: false },
+          { time: "01:00 PM", title: "Hidden Farm Plantshop Cafe", notes: "Aesthetic garden cafe", done: false },
+          { time: "03:00 PM", title: "Kampung Pelangi / ArtSociates Gallery", notes: "Art exhibition & photo spots", done: false }
         ]
       },
       6: {
         tag: "Bandung ➔ Jakarta ➔ Flight",
         title: "Whoosh Experience & Departure",
         items: [
-          { time: "08:00 AM", title: "Warung Kopi Imah Babaturan", notes: "Breakfast icon in Bandung", type: "food" },
-          { time: "11:00 AM", title: "Take Whoosh Bullet Train", notes: "Padalarang/Teballuar ➔ Halim Station (45 mins)", type: "transport" },
-          { time: "01:20 PM", title: "Grand Indonesia / Sarinah", notes: "Final souvenir & coffee run", type: "activity" },
-          { time: "04:00 PM", title: "Airport Train to CGK Airport", notes: "Sudirman Baru ➔ Soekarno-Hatta Airport", type: "transport" },
-          { time: "07:00 PM", title: "Flight Departure Home", notes: "Safe flight back to Malaysia!", type: "transport" }
+          { time: "08:00 AM", title: "Warung Kopi Imah Babaturan", notes: "Breakfast icon in Bandung", done: false },
+          { time: "11:00 AM", title: "Take Whoosh Bullet Train", notes: "Padalarang/Teballuar ➔ Halim Station (45 mins)", done: false },
+          { time: "01:20 PM", title: "Grand Indonesia / Sarinah", notes: "Final souvenir & coffee run", done: false },
+          { time: "04:00 PM", title: "Airport Train to CGK Airport", notes: "Sudirman Baru ➔ Soekarno-Hatta Airport", done: false },
+          { time: "07:00 PM", title: "Flight Departure Home", notes: "Safe flight back to Malaysia!", done: false }
         ]
       }
     };
@@ -258,7 +255,7 @@
     let checklistData = JSON.parse(localStorage.getItem('my_checklist')) || defaultChecklist;
     let currentDay = 1;
 
-    // Tab Navigation
+    // Tab Switching
     function switchTab(tabName) {
       document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
       document.getElementById(`view-${tabName}`).classList.remove('hidden');
@@ -272,7 +269,7 @@
       activeBtn.classList.remove('text-slate-500', 'border-transparent');
     }
 
-    // Itinerary Rendering
+    // Itinerary Logic
     function selectDay(dayNum) {
       currentDay = dayNum;
       for (let i = 1; i <= 6; i++) {
@@ -444,7 +441,7 @@
       renderChecklist();
     }
 
-    // Page Load Setup
+    // Initial Load
     window.addEventListener('DOMContentLoaded', () => {
       renderItinerary();
       renderMasterPlaces();
