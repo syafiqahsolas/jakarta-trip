@@ -30,12 +30,6 @@
           <p id="global-header-sub" style="color: var(--lily-pink);" class="text-[11px] font-medium">Cozy Travel Planner</p>
         </div>
       </div>
-
-      <!-- Illustration / Mascot Box Placeholder -->
-      <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-2xl border border-white/20 bg-white/10" title="Duck Mascot">
-        <!-- REPLACE THIS WITH YOUR DUCK MASCOT IMAGE LINK: <img src="duck_mascot.png" class="w-full h-full object-contain"> -->
-        <span class="text-xl">🦆</span>
-      </div>
     </div>
   </header>
 
@@ -258,10 +252,10 @@
           </div>
         </div>
 
-        <!-- EXPENSES WITH CIRCLE/DONUT PROGRESS & SEARCH/FILTER -->
+        <!-- EXPENSES WITH CIRCLE DONUT PROGRESS, CATEGORY SUMMARY & SEARCH BELOW -->
         <div id="checklist-sub-expenses" class="space-y-4 hidden">
-          <!-- CIRCLE DONUT BUDGET CHART -->
-          <div class="lily-card p-5 flex flex-col items-center justify-center space-y-2 text-center">
+          <!-- CIRCLE DONUT BUDGET CHART CARD -->
+          <div class="lily-card p-5 flex flex-col items-center justify-center space-y-4 text-center">
             <div class="relative w-32 h-32 flex items-center justify-center">
               <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                 <path class="text-stone-100" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
@@ -272,9 +266,18 @@
                 <strong id="expenses-total-spent" style="color: var(--pond-green);" class="text-sm font-bold">RM 0.00</strong>
               </div>
             </div>
+
+            <!-- CATEGORY SUMMARY BOXES BELOW DONUT -->
+            <div id="expenses-category-breakdown" class="w-full grid grid-cols-3 gap-2 text-[11px] pt-2 border-t border-stone-100"></div>
           </div>
 
-          <!-- EXPENSE SEARCH & CATEGORY FILTER -->
+          <!-- CATEGORIZED EXPENSES HEADER & ADD BUTTON -->
+          <div class="flex justify-between items-center pt-1">
+            <h3 style="color: var(--pond-green);" class="font-bold text-xs uppercase tracking-wider">Categorized Expenses</h3>
+            <button onclick="openExpenseModal()" style="background-color: var(--pond-green);" class="text-xs text-white px-3.5 py-2 rounded-2xl font-semibold shadow-xs"><i class="fa-solid fa-plus me-1 text-[10px]"></i>Add Expense</button>
+          </div>
+
+          <!-- SEARCH BAR & FILTER BELOW CATEGORIZED EXPENSES TITLE -->
           <div class="flex space-x-2">
             <input type="text" id="expenseSearchInput" oninput="renderExpensesList()" placeholder="Search expenses..." class="flex-1 bg-white border border-stone-200 text-stone-800 rounded-2xl p-2.5 text-xs focus:outline-none">
             <select id="expenseCategoryFilter" onchange="renderExpensesList()" class="bg-white border border-stone-200 text-stone-800 rounded-2xl p-2.5 text-xs">
@@ -288,10 +291,6 @@
             </select>
           </div>
 
-          <div class="flex justify-between items-center pt-1">
-            <h3 style="color: var(--pond-green);" class="font-bold text-xs uppercase tracking-wider">Categorized Expenses</h3>
-            <button onclick="openExpenseModal()" style="background-color: var(--pond-green);" class="text-xs text-white px-3 py-1.5 rounded-2xl font-semibold"><i class="fa-solid fa-plus me-1 text-[10px]"></i>Add Expense</button>
-          </div>
           <div id="expenses-items-list" class="space-y-3"></div>
         </div>
       </section>
