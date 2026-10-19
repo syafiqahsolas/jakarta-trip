@@ -17,7 +17,7 @@
 
   <!-- TOP HEADER (DASHBOARD & HOME) -->
   <header style="background-color: var(--pond-green);" class="text-white p-4 sticky top-0 z-40 shadow-sm">
-    <div class="max-w-md mx-auto flex justify-between items-center">
+    <div class="w-full px-4 flex justify-between items-center">
       <div class="flex items-center space-x-3">
         <button id="nav-home-btn" onclick="openHomePage('upcoming')" class="p-2.5 rounded-2xl text-white transition hover:bg-white/20">
           <i class="fa-solid fa-house text-sm"></i>
@@ -36,7 +36,7 @@
   <!-- ========================================== -->
   <!-- SECTION 1: HOMEPAGE MODULE                -->
   <!-- ========================================== -->
-  <section id="section-home" class="max-w-md mx-auto p-4 space-y-4">
+  <section id="section-home" class="w-full p-4 space-y-4">
     <!-- SUB-TAB 1: UPCOMING TRIPS (WITHIN 6 MONTHS) -->
     <div id="home-view-upcoming" class="space-y-4">
       <div class="flex items-center justify-between">
@@ -92,7 +92,7 @@
   <!-- ========================================== -->
   <!-- SECTION 2: TRIP DASHBOARD MODULE           -->
   <!-- ========================================== -->
-  <div id="section-trip-dashboard" class="hidden max-w-md mx-auto p-4">
+  <div id="section-trip-dashboard" class="hidden w-full p-4">
     <main>
       <!-- PAGE 1: SUMMARY -->
       <section id="page-summary" class="space-y-4">
@@ -297,7 +297,7 @@
     </main>
 
     <!-- FLOATING DASHBOARD BOTTOM NAV -->
-    <nav class="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto">
+    <nav class="fixed bottom-0 left-0 right-0 z-40 w-full">
       <div class="nav-floating-bar flex justify-around items-center px-3 py-2 text-center text-[10px] font-semibold text-stone-400">
         <button onclick="switchDashboardPage('summary')" id="nav-summary" class="flex flex-col items-center flex-1 py-1 transition-all">
           <div class="w-10 h-10 rounded-full flex items-center justify-center text-base"><i class="fa-solid fa-chart-pie"></i></div>
