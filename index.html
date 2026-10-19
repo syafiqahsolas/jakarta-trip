@@ -3,192 +3,186 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Multi-Trip Travel Dashboard Hub</title>
+  <title>Multi-Trip Travel Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { -webkit-tap-highlight-color: transparent; }
+    :root {
+      --dark-green: #0A3323;
+      --moss-green: #839958;
+      --beige: #F7F4D5;
+      --rosy-brown: #D3968C;
+      --midnight-green: #105666;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--beige);
+      color: #1E293B;
+      -webkit-tap-highlight-color: transparent;
+    }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .modal-backdrop { background-color: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); }
+    .modal-backdrop { background-color: rgba(10, 51, 35, 0.65); backdrop-filter: blur(6px); }
+
+    /* Bottom Navigation Bar Elevated Curve Style */
+    .nav-floating-bar {
+      background-color: #FFFFFF;
+      box-shadow: 0 -8px 25px rgba(10, 51, 35, 0.12);
+      border-radius: 28px 28px 0 0;
+    }
+    .nav-tab-active {
+      transform: translateY(-16px);
+      background-color: var(--dark-green);
+      color: #FFFFFF !important;
+      box-shadow: 0 8px 18px rgba(10, 51, 35, 0.3);
+      border: 4px solid var(--beige);
+    }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen pb-20">
+<body class="min-h-screen pb-28">
 
-  <!-- TOP GLOBAL HEADER -->
-  <header class="bg-indigo-950 border-b border-indigo-800 p-4 sticky top-0 z-40 shadow-md">
+  <!-- TOP HEADER -->
+  <header style="background-color: var(--dark-green);" class="text-white p-4 sticky top-0 z-40 shadow-sm">
     <div class="max-w-md mx-auto flex justify-between items-center">
-      <div class="flex items-center space-x-2">
-        <button id="nav-home-btn" onclick="openHomePage()" class="bg-indigo-800 hover:bg-indigo-700 p-2 rounded-lg text-white transition">
+      <div class="flex items-center space-x-3">
+        <button id="nav-home-btn" onclick="openHomePage()" style="background-color: var(--midnight-green);" class="p-2.5 rounded-2xl text-white transition hover:opacity-90">
           <i class="fa-solid fa-house text-sm"></i>
         </button>
         <div>
-          <h1 id="global-header-title" class="font-bold text-base leading-tight text-white">Multi-Trip Hub</h1>
-          <p id="global-header-sub" class="text-[11px] text-indigo-300">Select or Manage Your Trips</p>
+          <h1 id="global-header-title" class="font-bold text-base leading-tight">Multi-Trip Hub</h1>
+          <p id="global-header-sub" style="color: var(--beige);" class="text-[11px] opacity-90">Select or Manage Your Trips</p>
         </div>
       </div>
-      <button id="switch-trip-top-btn" onclick="openHomePage()" class="hidden bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 shadow-sm">
+      <button id="switch-trip-top-btn" onclick="openHomePage()" style="background-color: var(--moss-green);" class="hidden text-white text-xs px-3.5 py-2 rounded-xl font-semibold flex items-center gap-1.5 shadow-xs">
         <i class="fa-solid fa-arrow-left"></i>
         <span>Trips</span>
       </button>
     </div>
   </header>
 
-  <!-- ==================================================================== -->
-  <!-- SECTION 1: HOME PAGE (TRIP HUB)                                      -->
-  <!-- ==================================================================== -->
+  <!-- SECTION 1: HOME PAGE -->
   <section id="section-home" class="max-w-md mx-auto p-4 space-y-4">
     <div class="flex items-center justify-between">
-      <h2 class="font-bold text-slate-200 text-sm uppercase tracking-wider">Your Travel Destinations</h2>
-      <button onclick="openTripModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 shadow-sm">
-        <i class="fa-solid fa-plus"></i>
+      <h2 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider">Your Travel Destinations</h2>
+      <button onclick="openTripModal()" style="background-color: var(--dark-green);" class="text-white text-xs px-3.5 py-2 rounded-xl font-semibold flex items-center gap-1.5 shadow-xs">
+        <i class="fa-solid fa-plus text-xs"></i>
         <span>Add Trip</span>
       </button>
     </div>
-
-    <!-- TRIP CARDS CONTAINER -->
-    <div id="home-trips-list" class="space-y-3">
-      <!-- Dynamic JS rendered trip cards -->
-    </div>
+    <div id="home-trips-list" class="space-y-3.5"></div>
   </section>
 
-  <!-- ==================================================================== -->
-  <!-- SECTION 2: TRIP DASHBOARD                                           -->
-  <!-- ==================================================================== -->
-  <div id="section-trip-dashboard" class="hidden">
-    
-    <!-- DASHBOARD SUB-NAVIGATION BAR -->
-    <nav class="bg-slate-800 border-b border-slate-700 sticky top-[57px] z-30 shadow-xs">
-      <div class="max-w-md mx-auto flex text-center text-[10px] sm:text-xs font-semibold">
-        <button onclick="switchDashboardPage('summary')" id="nav-summary" class="flex-1 py-2.5 border-b-2 border-indigo-500 text-indigo-400">
-          <i class="fa-solid fa-chart-pie text-sm block mb-0.5"></i>Summary
-        </button>
-        <button onclick="switchDashboardPage('itinerary')" id="nav-itinerary" class="flex-1 py-2.5 text-slate-400 border-b-2 border-transparent">
-          <i class="fa-solid fa-calendar-day text-sm block mb-0.5"></i>Itinerary
-        </button>
-        <button onclick="switchDashboardPage('waddle')" id="nav-waddle" class="flex-1 py-2.5 text-slate-400 border-b-2 border-transparent">
-          <i class="fa-solid fa-person-walking text-sm block mb-0.5"></i>Waddle
-        </button>
-        <button onclick="switchDashboardPage('master')" id="nav-master" class="flex-1 py-2.5 text-slate-400 border-b-2 border-transparent">
-          <i class="fa-solid fa-map-location-dot text-sm block mb-0.5"></i>Master
-        </button>
-        <button onclick="switchDashboardPage('checklists')" id="nav-checklists" class="flex-1 py-2.5 text-slate-400 border-b-2 border-transparent">
-          <i class="fa-solid fa-list-check text-sm block mb-0.5"></i>Checklist
-        </button>
-      </div>
-    </nav>
+  <!-- SECTION 2: TRIP DASHBOARD -->
+  <div id="section-trip-dashboard" class="hidden max-w-md mx-auto p-4">
 
-    <!-- MAIN TRIP CONTENT AREA -->
-    <main class="max-w-md mx-auto p-4">
-
-      <!-- PAGE 1: DASHBOARD SUMMARY -->
+    <!-- DASHBOARD PAGES -->
+    <main>
+      <!-- PAGE 1: SUMMARY -->
       <section id="page-summary" class="space-y-4">
-        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3 shadow-sm">
+        <div class="bg-white p-5 rounded-3xl border border-emerald-900/10 space-y-3.5 shadow-xs">
           <div class="flex justify-between items-start">
             <div>
-              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">Trip Overview</span>
-              <h3 id="sum-card-title" class="font-bold text-lg text-white mt-1">Jakarta & Bandung</h3>
+              <span style="background-color: var(--beige); color: var(--dark-green);" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-emerald-800/10">Trip Overview</span>
+              <h3 id="sum-card-title" style="color: var(--dark-green);" class="font-bold text-xl mt-1.5">Jakarta & Bandung</h3>
             </div>
-            <button onclick="openTripModal(activeTripId)" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold bg-indigo-950 px-2.5 py-1 rounded border border-indigo-800">
-              <i class="fa-solid fa-pen me-1"></i>Edit
+            <button onclick="openTripModal(activeTripId)" style="color: var(--dark-green); background-color: var(--beige);" class="text-xs font-semibold px-3 py-1.5 rounded-xl border border-emerald-900/10">
+              <i class="fa-solid fa-pen me-1 text-[10px]"></i>Edit
             </button>
           </div>
-          <div class="grid grid-cols-2 gap-2 text-xs text-slate-300 pt-1">
-            <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
-              <span class="text-slate-500 text-[10px] block">Dates</span>
-              <strong id="sum-card-dates" class="text-white">Nov 21 – 26, 2026</strong>
+          <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              <span class="text-slate-400 text-[10px] block font-medium">Dates</span>
+              <strong id="sum-card-dates" class="text-slate-800 font-semibold">Nov 21 – 26, 2026</strong>
             </div>
-            <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
-              <span class="text-slate-500 text-[10px] block">Travelers</span>
-              <strong id="sum-card-people" class="text-white">2 Pax</strong>
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              <span class="text-slate-400 text-[10px] block font-medium">Travelers</span>
+              <strong id="sum-card-people" class="text-slate-800 font-semibold">2 Pax</strong>
             </div>
-            <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
-              <span class="text-slate-500 text-[10px] block">Target Budget</span>
-              <strong id="sum-card-budget" class="text-emerald-400">RM 2,000 / pax</strong>
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              <span class="text-slate-400 text-[10px] block font-medium">Target Budget</span>
+              <strong id="sum-card-budget" style="color: var(--midnight-green);" class="font-bold">RM 2,000 / pax</strong>
             </div>
-            <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
-              <span class="text-slate-500 text-[10px] block">Accommodation Base</span>
-              <strong id="sum-card-hotel" class="text-indigo-300">Hotel Grand Sahid Jaya</strong>
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              <span class="text-slate-400 text-[10px] block font-medium">Accommodation Base</span>
+              <strong id="sum-card-hotel" style="color: var(--dark-green);" class="font-semibold truncate block">Hotel Grand Sahid Jaya</strong>
             </div>
           </div>
         </div>
 
-        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 shadow-sm">
+        <div class="bg-white p-4 rounded-3xl border border-emerald-900/10 space-y-2.5 shadow-xs">
           <div class="flex justify-between items-center">
-            <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-clock-rotate-left me-1 text-indigo-400"></i>Tentative Highlights</h4>
-            <button onclick="switchDashboardPage('itinerary')" class="text-[11px] text-indigo-400 hover:underline">Full Plan ➔</button>
+            <h4 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider"><i class="fa-solid fa-clock-rotate-left me-1.5" style="color: var(--moss-green);"></i>Tentative Highlights</h4>
+            <button onclick="switchDashboardPage('itinerary')" style="color: var(--midnight-green);" class="text-[11px] font-semibold hover:underline">Full Plan ➔</button>
           </div>
-          <div id="summary-tentative-snapshot" class="space-y-1.5 text-xs"></div>
+          <div id="summary-tentative-snapshot" class="space-y-2 text-xs"></div>
         </div>
 
-        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 shadow-sm">
+        <div class="bg-white p-4 rounded-3xl border border-emerald-900/10 space-y-2.5 shadow-xs">
           <div class="flex justify-between items-center">
-            <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-star me-1 text-amber-400"></i>Starred / Highlight Spots</h4>
-            <button onclick="switchDashboardPage('master')" class="text-[11px] text-indigo-400 hover:underline">See All ➔</button>
+            <h4 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider"><i class="fa-solid fa-star me-1.5 text-amber-500"></i>Starred / Highlight Spots</h4>
+            <button onclick="switchDashboardPage('master')" style="color: var(--midnight-green);" class="text-[11px] font-semibold hover:underline">See All ➔</button>
           </div>
           <div id="summary-starred-spots" class="grid grid-cols-2 gap-2 text-xs"></div>
         </div>
 
-        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 shadow-sm">
+        <div class="bg-white p-4 rounded-3xl border border-emerald-900/10 space-y-2.5 shadow-xs">
           <div class="flex justify-between items-center">
-            <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation me-1 text-rose-400"></i>Must-Bring Important Items</h4>
-            <button onclick="switchDashboardPage('checklists')" class="text-[11px] text-indigo-400 hover:underline">Checklists ➔</button>
+            <h4 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation me-1.5" style="color: var(--rosy-brown);"></i>Must-Bring Important Items</h4>
+            <button onclick="switchDashboardPage('checklists')" style="color: var(--midnight-green);" class="text-[11px] font-semibold hover:underline">Checklists ➔</button>
           </div>
-          <div id="summary-must-bring-items" class="space-y-1 text-xs"></div>
+          <div id="summary-must-bring-items" class="space-y-1.5 text-xs"></div>
         </div>
       </section>
 
-      <!-- PAGE 2: FULL DETAILED ITINERARY -->
+      <!-- PAGE 2: ITINERARY -->
       <section id="page-itinerary" class="space-y-4 hidden">
         <div class="flex items-center justify-between">
-          <h2 class="font-bold text-slate-200 text-sm uppercase tracking-wider">Detailed Daily Itinerary</h2>
-          <button onclick="openItineraryModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow-xs">
-            <i class="fa-solid fa-plus me-1"></i>Add Activity
+          <h2 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider">Detailed Daily Itinerary</h2>
+          <button onclick="openItineraryModal()" style="background-color: var(--dark-green);" class="text-white text-xs px-3.5 py-2 rounded-xl font-semibold shadow-xs">
+            <i class="fa-solid fa-plus me-1 text-xs"></i>Add Activity
           </button>
         </div>
-
         <div id="itinerary-day-buttons" class="flex space-x-2 overflow-x-auto no-scrollbar pb-1"></div>
-
-        <div id="itinerary-timeline-container" class="space-y-3 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-700"></div>
+        <div id="itinerary-timeline-container" class="space-y-3 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-emerald-900/20"></div>
       </section>
 
-      <!-- PAGE 3: WADDLE SEARCH & HOTEL PROXIMITY -->
+      <!-- PAGE 3: WADDLE -->
       <section id="page-waddle" class="space-y-4 hidden">
-        <div class="bg-indigo-950 border border-indigo-800 p-4 rounded-xl shadow-sm space-y-2">
+        <div style="background-color: var(--dark-green);" class="text-white p-4 rounded-3xl shadow-sm space-y-2">
           <div class="flex justify-between items-start">
             <div>
-              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-900 px-2 py-0.5 rounded">Accommodation Hub</span>
+              <span style="background-color: var(--midnight-green);" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-white/10">Accommodation Hub</span>
               <h3 id="waddle-hotel-title" class="font-bold text-base text-white mt-1">Hotel Grand Sahid Jaya</h3>
             </div>
-            <button onclick="openHotelModal()" class="text-xs text-indigo-300 hover:text-white font-semibold bg-indigo-900 px-2.5 py-1 rounded">
-              <i class="fa-solid fa-pen"></i>
+            <button onclick="openHotelModal()" style="background-color: var(--midnight-green);" class="text-xs text-white font-semibold px-2.5 py-1.5 rounded-xl">
+              <i class="fa-solid fa-pen text-xs"></i>
             </button>
           </div>
-          <p id="waddle-hotel-station" class="text-xs text-indigo-200"><strong>Nearest Station:</strong> Setiabudi Astra (1 min walk)</p>
+          <p id="waddle-hotel-station" style="color: var(--beige);" class="text-xs"><strong>Nearest Station:</strong> Setiabudi Astra (1 min walk)</p>
         </div>
 
-        <div class="bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-700 space-y-3">
-          <label class="font-bold text-slate-200 text-sm block"><i class="fa-solid fa-magnifying-glass me-2 text-indigo-400"></i>Waddle & Category Search</label>
-          <input type="text" id="waddleSearchInput" oninput="executeWaddleSearch()" placeholder="Search by category, station, or place..." class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <div class="bg-white rounded-3xl p-4 shadow-xs border border-emerald-900/10 space-y-3">
+          <label style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider block"><i class="fa-solid fa-magnifying-glass me-2" style="color: var(--moss-green);"></i>Waddle & Category Search</label>
+          <input type="text" id="waddleSearchInput" oninput="executeWaddleSearch()" placeholder="Search by category, station, or place..." class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-700">
         </div>
 
         <div id="waddle-quick-hubs" class="flex flex-wrap gap-1.5"></div>
-
         <div id="waddleSearchResults" class="space-y-3"></div>
       </section>
 
-      <!-- PAGE 4: MASTERPLACE SEARCH & DISCOVERIES -->
+      <!-- PAGE 4: MASTER PLACES -->
       <section id="page-master" class="space-y-4 hidden">
         <div class="flex justify-between items-center">
-          <h2 class="font-bold text-slate-200 text-sm uppercase tracking-wider">Master Place Database</h2>
-          <button onclick="openMasterSpotModal()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow-xs">
-            <i class="fa-solid fa-plus me-1"></i>Add Spot
+          <h2 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider">Master Place Database</h2>
+          <button onclick="openMasterSpotModal()" style="background-color: var(--rosy-brown);" class="text-white text-xs px-3.5 py-2 rounded-xl font-semibold shadow-xs">
+            <i class="fa-solid fa-plus me-1 text-xs"></i>Add Spot
           </button>
         </div>
 
         <div class="flex space-x-2">
-          <input type="text" id="masterSearchInput" oninput="renderMasterPlacesList()" placeholder="Search place or station..." class="flex-1 bg-slate-800 border border-slate-700 text-white rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <select id="masterCategoryFilter" onchange="renderMasterPlacesList()" class="bg-slate-800 border border-slate-700 text-white rounded-lg p-2.5 text-sm">
+          <input type="text" id="masterSearchInput" oninput="renderMasterPlacesList()" placeholder="Search place or station..." class="flex-1 bg-white border border-emerald-900/10 text-slate-800 rounded-xl p-2.5 text-xs focus:outline-none">
+          <select id="masterCategoryFilter" onchange="renderMasterPlacesList()" class="bg-white border border-emerald-900/10 text-slate-800 rounded-xl p-2.5 text-xs">
             <option value="ALL">All Types</option>
             <option value="Food">Food</option>
             <option value="Coffee">Coffee</option>
@@ -201,162 +195,134 @@
         <div id="masterPlacesContainer" class="space-y-3"></div>
       </section>
 
-      <!-- PAGE 5: CHECKLIST HUB -->
+      <!-- PAGE 5: CHECKLISTS -->
       <section id="page-checklists" class="space-y-4 hidden">
-        <div class="flex border-b border-slate-700 text-xs font-semibold">
-          <button onclick="switchChecklistSubTab('prep')" id="checktab-prep" class="flex-1 py-2 border-b-2 border-indigo-500 text-indigo-400">
-            Prep Checklist
-          </button>
-          <button onclick="switchChecklistSubTab('packing')" id="checktab-packing" class="flex-1 py-2 text-slate-400 border-b-2 border-transparent">
-            Packing List
-          </button>
-          <button onclick="switchChecklistSubTab('expenses')" id="checktab-expenses" class="flex-1 py-2 text-slate-400 border-b-2 border-transparent">
-            Categorized Expenses
-          </button>
+        <div class="flex border-b border-emerald-900/10 text-xs font-semibold">
+          <button onclick="switchChecklistSubTab('prep')" id="checktab-prep" style="color: var(--dark-green);" class="flex-1 py-2 border-b-2 border-emerald-800">Prep Checklist</button>
+          <button onclick="switchChecklistSubTab('packing')" id="checktab-packing" class="flex-1 py-2 text-slate-400 border-b-2 border-transparent">Packing List</button>
+          <button onclick="switchChecklistSubTab('expenses')" id="checktab-expenses" class="flex-1 py-2 text-slate-400 border-b-2 border-transparent">Categorized Expenses</button>
         </div>
 
-        <!-- SUB TAB 1: PREP CHECKLIST -->
         <div id="checklist-sub-prep" class="space-y-3">
           <div class="flex justify-between items-center">
-            <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Travel Preparation Tasks</h3>
-            <button onclick="openChecklistItemModal('prep')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded font-semibold">
-              <i class="fa-solid fa-plus me-1"></i>Add Task
-            </button>
+            <h3 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider">Travel Preparation Tasks</h3>
+            <button onclick="openChecklistItemModal('prep')" style="background-color: var(--dark-green);" class="text-xs text-white px-3 py-1.5 rounded-xl font-semibold"><i class="fa-solid fa-plus me-1 text-[10px]"></i>Add Task</button>
           </div>
           <div id="prep-items-list" class="space-y-2"></div>
         </div>
 
-        <!-- SUB TAB 2: PACKING LIST -->
         <div id="checklist-sub-packing" class="space-y-3 hidden">
           <div class="flex justify-between items-center">
-            <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Luggage Packing List</h3>
-            <button onclick="openChecklistItemModal('packing')" class="text-xs bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1 rounded font-semibold">
-              <i class="fa-solid fa-plus me-1"></i>Add Packing Item
-            </button>
+            <h3 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider">Luggage Packing List</h3>
+            <button onclick="openChecklistItemModal('packing')" style="background-color: var(--moss-green);" class="text-xs text-white px-3 py-1.5 rounded-xl font-semibold"><i class="fa-solid fa-plus me-1 text-[10px]"></i>Add Packing Item</button>
           </div>
           <div id="packing-items-list" class="space-y-2"></div>
         </div>
 
-        <!-- SUB TAB 3: CATEGORIZED EXPENSES -->
         <div id="checklist-sub-expenses" class="space-y-3 hidden">
-          <div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2">
+          <div class="bg-white p-4 rounded-3xl border border-emerald-900/10 space-y-2.5 shadow-xs">
             <div class="flex justify-between items-center">
-              <span class="text-xs text-slate-400">Total Spent</span>
-              <strong id="expenses-total-spent" class="text-emerald-400 text-sm">RM 0.00</strong>
+              <span class="text-xs text-slate-400 font-medium">Total Spent</span>
+              <strong id="expenses-total-spent" style="color: var(--dark-green);" class="text-base font-bold">RM 0.00</strong>
             </div>
-            <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-700">
-              <div id="expenses-progress-bar" class="bg-emerald-500 h-full w-0 transition-all"></div>
+            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+              <div id="expenses-progress-bar" style="background-color: var(--moss-green);" class="h-full w-0 transition-all"></div>
             </div>
           </div>
 
-          <!-- CATEGORY TOTALS SUMMARY BAR -->
-          <div id="expenses-category-breakdown" class="grid grid-cols-3 gap-1.5 text-[11px]"></div>
+          <div id="expenses-category-breakdown" class="grid grid-cols-3 gap-2 text-[11px]"></div>
 
           <div class="flex justify-between items-center pt-2">
-            <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Categorized Expenses</h3>
-            <button onclick="openExpenseModal()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded font-semibold">
-              <i class="fa-solid fa-plus me-1"></i>Add Expense
-            </button>
+            <h3 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider">Categorized Expenses</h3>
+            <button onclick="openExpenseModal()" style="background-color: var(--dark-green);" class="text-xs text-white px-3 py-1.5 rounded-xl font-semibold"><i class="fa-solid fa-plus me-1 text-[10px]"></i>Add Expense</button>
           </div>
           <div id="expenses-items-list" class="space-y-3"></div>
         </div>
-
       </section>
-
     </main>
+
+    <!-- FLOATING CURVED BOTTOM NAVIGATION BAR -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto">
+      <div class="nav-floating-bar flex justify-around items-center px-3 py-2 text-center text-[10px] font-semibold text-slate-400">
+        <button onclick="switchDashboardPage('summary')" id="nav-summary" class="flex flex-col items-center flex-1 py-1 transition-all">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-base"><i class="fa-solid fa-chart-pie"></i></div>
+          <span class="mt-0.5">Summary</span>
+        </button>
+        <button onclick="switchDashboardPage('itinerary')" id="nav-itinerary" class="flex flex-col items-center flex-1 py-1 transition-all">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-base"><i class="fa-solid fa-calendar-day"></i></div>
+          <span class="mt-0.5">Itinerary</span>
+        </button>
+        <button onclick="switchDashboardPage('waddle')" id="nav-waddle" class="flex flex-col items-center flex-1 py-1 transition-all">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-base"><i class="fa-solid fa-person-walking"></i></div>
+          <span class="mt-0.5">Waddle</span>
+        </button>
+        <button onclick="switchDashboardPage('master')" id="nav-master" class="flex flex-col items-center flex-1 py-1 transition-all">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-base"><i class="fa-solid fa-map-location-dot"></i></div>
+          <span class="mt-0.5">Master</span>
+        </button>
+        <button onclick="switchDashboardPage('checklists')" id="nav-checklists" class="flex flex-col items-center flex-1 py-1 transition-all">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-base"><i class="fa-solid fa-list-check"></i></div>
+          <span class="mt-0.5">Checklist</span>
+        </button>
+      </div>
+    </nav>
 
   </div>
 
-  <!-- ==================================================================== -->
-  <!-- CUSTOM SLEEK MODAL BOXES (REPLACES BROWSER PROMPTS)                  -->
-  <!-- ==================================================================== -->
-
-  <!-- MODAL 1: TRIP FORM MODAL -->
+  <!-- MODALS -->
   <div id="modal-trip" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-        <h3 id="modal-trip-title" class="font-bold text-white text-base">Add New Trip</h3>
-        <button onclick="closeModal('modal-trip')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+        <h3 id="modal-trip-title" style="color: var(--dark-green);" class="font-bold text-base">Add New Trip</h3>
+        <button onclick="closeModal('modal-trip')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <input type="hidden" id="trip-form-id" />
       <div class="space-y-3 text-xs">
-        <div>
-          <label class="block text-slate-400 mb-1">Trip Destination Name</label>
-          <input type="text" id="trip-form-title" placeholder="e.g. 🇮🇩 Jakarta & Bandung" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Trip Dates</label>
-          <input type="text" id="trip-form-dates" placeholder="e.g. Nov 21 – 26, 2026" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Travelers Count</label>
-          <input type="text" id="trip-form-people" placeholder="e.g. 2 Pax" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Target Budget</label>
-          <input type="text" id="trip-form-budget" placeholder="e.g. RM 2,000 / pax" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Accommodation Hotel</label>
-          <input type="text" id="trip-form-hotel" placeholder="e.g. Hotel Grand Sahid Jaya" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Trip Destination Name</label><input type="text" id="trip-form-title" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Trip Dates</label><input type="text" id="trip-form-dates" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Travelers</label><input type="text" id="trip-form-people" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Target Budget</label><input type="text" id="trip-form-budget" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Hotel</label><input type="text" id="trip-form-hotel" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
       </div>
       <div class="flex justify-end space-x-2 pt-2">
-        <button onclick="closeModal('modal-trip')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
-        <button onclick="saveTripForm()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Save Trip</button>
+        <button onclick="closeModal('modal-trip')" class="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium">Cancel</button>
+        <button onclick="saveTripForm()" style="background-color: var(--dark-green);" class="px-4 py-2 text-white rounded-xl text-xs font-semibold">Save Trip</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 2: ITINERARY ITEM MODAL -->
   <div id="modal-itinerary" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-        <h3 id="modal-itin-title" class="font-bold text-white text-base">Itinerary Activity</h3>
-        <button onclick="closeModal('modal-itinerary')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+        <h3 style="color: var(--dark-green);" class="font-bold text-base">Itinerary Activity</h3>
+        <button onclick="closeModal('modal-itinerary')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <input type="hidden" id="itin-form-idx" value="-1" />
       <div class="space-y-3 text-xs">
-        <div>
-          <label class="block text-slate-400 mb-1">Activity Title</label>
-          <input type="text" id="itin-form-title" placeholder="e.g. Kota Tua Exploration" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Estimated Time</label>
-          <input type="text" id="itin-form-time" placeholder="e.g. 12:00 PM" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Location / Station</label>
-          <input type="text" id="itin-form-location" placeholder="e.g. Jakarta Kota" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Activity Notes / Highlights</label>
-          <textarea id="itin-form-notes" placeholder="e.g. Explore historic cafe & museums" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 h-20"></textarea>
-        </div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Activity Title</label><input type="text" id="itin-form-title" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Time</label><input type="text" id="itin-form-time" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Location</label><input type="text" id="itin-form-location" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Notes</label><textarea id="itin-form-notes" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 h-20"></textarea></div>
       </div>
       <div class="flex justify-end space-x-2 pt-2">
-        <button onclick="closeModal('modal-itinerary')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
-        <button onclick="saveItineraryForm()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Save Activity</button>
+        <button onclick="closeModal('modal-itinerary')" class="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium">Cancel</button>
+        <button onclick="saveItineraryForm()" style="background-color: var(--dark-green);" class="px-4 py-2 text-white rounded-xl text-xs font-semibold">Save Activity</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 3: MASTER SPOT FORM MODAL -->
   <div id="modal-master-spot" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-        <h3 id="modal-spot-title" class="font-bold text-white text-base">Add / Edit Master Spot</h3>
-        <button onclick="closeModal('modal-master-spot')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+        <h3 id="modal-spot-title" style="color: var(--dark-green);" class="font-bold text-base">Master Spot</h3>
+        <button onclick="closeModal('modal-master-spot')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <input type="hidden" id="spot-form-id" />
       <div class="space-y-3 text-xs">
+        <div><label class="block text-slate-500 mb-1 font-medium">Spot Name</label><input type="text" id="spot-form-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
         <div>
-          <label class="block text-slate-400 mb-1">Spot Name</label>
-          <input type="text" id="spot-form-name" placeholder="e.g. Grand Indonesia" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Category</label>
-          <select id="spot-form-category" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+          <label class="block text-slate-500 mb-1 font-medium">Category</label>
+          <select id="spot-form-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800">
             <option value="Food">Food</option>
             <option value="Coffee">Coffee</option>
             <option value="Dessert">Dessert</option>
@@ -364,111 +330,104 @@
             <option value="Attraction">Attraction</option>
           </select>
         </div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Nearest Station</label><input type="text" id="spot-form-station" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Walk Time</label><input type="text" id="spot-form-walk" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
         <div>
-          <label class="block text-slate-400 mb-1">Nearest Station</label>
-          <input type="text" id="spot-form-station" placeholder="e.g. Bundaran HI Bank Jakarta" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Walk Time from Station</label>
-          <input type="text" id="spot-form-walk" placeholder="e.g. 7 mins" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Photo Image Link (URL)</label>
-          <input type="text" id="spot-form-photo" placeholder="https://..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+          <label class="block text-slate-500 mb-1 font-medium"><i class="fa-solid fa-camera me-1" style="color: var(--moss-green);"></i>Upload Photo from Phone</label>
+          <input type="file" id="spot-form-file" accept="image/*" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-slate-600 text-[11px] file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-800 file:text-white">
         </div>
       </div>
       <div class="flex justify-end space-x-2 pt-2">
-        <button onclick="closeModal('modal-master-spot')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
-        <button onclick="saveMasterSpotForm()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold">Save Spot</button>
+        <button onclick="closeModal('modal-master-spot')" class="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium">Cancel</button>
+        <button onclick="saveMasterSpotForm()" style="background-color: var(--rosy-brown);" class="px-4 py-2 text-white rounded-xl text-xs font-semibold">Save Spot</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 4: CATEGORIZED EXPENSE MODAL -->
   <div id="modal-expense" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-        <h3 class="font-bold text-white text-base">Add Categorized Expense</h3>
-        <button onclick="closeModal('modal-expense')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+        <h3 style="color: var(--dark-green);" class="font-bold text-base">Add Expense</h3>
+        <button onclick="closeModal('modal-expense')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="space-y-3 text-xs">
+        <div><label class="block text-slate-500 mb-1 font-medium">Description</label><input type="text" id="expense-form-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
         <div>
-          <label class="block text-slate-400 mb-1">Expense Description</label>
-          <input type="text" id="expense-form-name" placeholder="e.g. AirAsia Flight Ticket" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Expense Category</label>
-          <select id="expense-form-category" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+          <label class="block text-slate-500 mb-1 font-medium">Category</label>
+          <select id="expense-form-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800">
             <option value="Flights">✈️ Flights</option>
             <option value="Accommodation">🏨 Accommodation</option>
-            <option value="Transport">🚆 Transport / Train</option>
+            <option value="Transport">VPN Transport / Train</option>
             <option value="Food & Dining">🍜 Food & Dining</option>
             <option value="Shopping">🛍️ Shopping</option>
             <option value="Activities">🎟️ Activities / Tickets</option>
           </select>
         </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Amount (MYR)</label>
-          <input type="number" step="0.01" id="expense-form-amount" placeholder="e.g. 344.48" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Amount (MYR)</label><input type="number" step="0.01" id="expense-form-amount" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
       </div>
       <div class="flex justify-end space-x-2 pt-2">
-        <button onclick="closeModal('modal-expense')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
-        <button onclick="saveExpenseForm()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold">Save Expense</button>
+        <button onclick="closeModal('modal-expense')" class="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium">Cancel</button>
+        <button onclick="saveExpenseForm()" style="background-color: var(--dark-green);" class="px-4 py-2 text-white rounded-xl text-xs font-semibold">Save</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 5: CHECKLIST ITEM MODAL -->
   <div id="modal-checklist-item" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-        <h3 id="modal-checklist-title" class="font-bold text-white text-base">Add Item</h3>
-        <button onclick="closeModal('modal-checklist-item')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+        <h3 id="modal-checklist-title" style="color: var(--dark-green);" class="font-bold text-base">Add Item</h3>
+        <button onclick="closeModal('modal-checklist-item')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <input type="hidden" id="checklist-type-target" value="prep" />
       <div class="space-y-3 text-xs">
-        <div>
-          <label class="block text-slate-400 mb-1">Item Description</label>
-          <input type="text" id="checklist-item-text" placeholder="e.g. Check Passport Validity" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Description</label><input type="text" id="checklist-item-text" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
         <div class="flex items-center space-x-2 pt-1">
-          <input type="checkbox" id="checklist-item-mustbring" class="w-4 h-4 text-rose-500 rounded">
-          <label for="checklist-item-mustbring" class="text-slate-300">Mark as Must-Bring / Priority</label>
+          <input type="checkbox" id="checklist-item-mustbring" class="w-4 h-4 rounded border-slate-300 text-emerald-800">
+          <label for="checklist-item-mustbring" class="text-slate-600">Mark as Must-Bring / Priority</label>
         </div>
       </div>
       <div class="flex justify-end space-x-2 pt-2">
-        <button onclick="closeModal('modal-checklist-item')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
-        <button onclick="saveChecklistItemForm()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Save Item</button>
+        <button onclick="closeModal('modal-checklist-item')" class="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium">Cancel</button>
+        <button onclick="saveChecklistItemForm()" style="background-color: var(--dark-green);" class="px-4 py-2 text-white rounded-xl text-xs font-semibold">Save</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 6: HOTEL EDIT MODAL -->
   <div id="modal-hotel" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-        <h3 class="font-bold text-white text-base">Accommodation Hub</h3>
-        <button onclick="closeModal('modal-hotel')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+        <h3 style="color: var(--dark-green);" class="font-bold text-base">Hotel Hub</h3>
+        <button onclick="closeModal('modal-hotel')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="space-y-3 text-xs">
-        <div>
-          <label class="block text-slate-400 mb-1">Hotel / Stay Name</label>
-          <input type="text" id="hotel-form-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">Nearest Station & Walk Distance</label>
-          <input type="text" id="hotel-form-station" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
-        </div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Hotel Name</label><input type="text" id="hotel-form-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
+        <div><label class="block text-slate-500 mb-1 font-medium">Nearest Station & Walk</label><input type="text" id="hotel-form-station" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800"></div>
       </div>
       <div class="flex justify-end space-x-2 pt-2">
-        <button onclick="closeModal('modal-hotel')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
-        <button onclick="saveHotelForm()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Save Details</button>
+        <button onclick="closeModal('modal-hotel')" class="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium">Cancel</button>
+        <button onclick="saveHotelForm()" style="background-color: var(--dark-green);" class="px-4 py-2 text-white rounded-xl text-xs font-semibold">Save</button>
       </div>
     </div>
   </div>
 
-  <!-- JAVASCRIPT GLOBAL ENGINE -->
+  <div id="modal-review" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+        <h3 id="modal-review-title" style="color: var(--dark-green);" class="font-bold text-base">Spot Review & Notes</h3>
+        <button onclick="closeModal('modal-review')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <input type="hidden" id="review-spot-id" />
+      <div class="space-y-3 text-xs">
+        <div><label class="block text-slate-500 mb-1 font-medium">Review / Notes</label><textarea id="review-form-text" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 h-24"></textarea></div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal('modal-review')" class="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium">Cancel</button>
+        <button onclick="saveReviewForm()" style="background-color: var(--dark-green);" class="px-4 py-2 text-white rounded-xl text-xs font-semibold">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT ENGINE -->
   <script>
     const defaultData = {
       "jakarta_bandung_2026": {
@@ -481,33 +440,14 @@
         activeHotel: "Hotel Grand Sahid Jaya",
         nearestStation: "Setiabudi Astra (1 min walk)",
         itinerary: {
-          1: { tag: "Central / West Jakarta", title: "Arrival & Historical Exploration", items: [{ time: "08:00 AM", title: "Arrival at CGK Airport", location: "Soekarno-Hatta CGK", notes: "Grab transport to Hotel Grand Sahid Jaya", done: false }, { time: "12:00 PM", title: "Kota Tua (Old Town)", location: "Jakarta Kota", notes: "Explore historic buildings & Cafe Batavia", done: false }, { time: "06:00 PM", title: "Cove Batavia PIK", location: "PIK Area", notes: "Sunset walk & dinner by the sea", done: false }] },
-          2: { tag: "South Jakarta Waddling", title: "Shopping & Culinary Hunt", items: [{ time: "09:00 AM", title: "Thamrin City", location: "Bundaran HI", notes: "Batik shopping & local bites", done: false }, { time: "02:00 PM", title: "Blok M Little Tokyo", location: "Blok M BCA", notes: "Waddle between Tuku, Futago & Drunk Baker", done: false }] },
-          3: { tag: "Jakarta ➔ Bandung", title: "Scenic Train Ride", items: [{ time: "08:30 AM", title: "Parahyangan Panoramic Train", location: "Gambir Railway Station", notes: "Scenic train ride to Bandung Station", done: false }] }
+          1: { tag: "Central / West Jakarta", title: "Arrival & Exploration", items: [{ time: "08:00 AM", title: "Arrival at CGK Airport", location: "Soekarno-Hatta CGK", notes: "Grab transport to Hotel Grand Sahid Jaya", done: false }] }
         },
         places: [
-          { id: "p1", name: "Grand Indonesia", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "7 mins", map: "https://maps.google.com/?q=Grand+Indonesia", photo: "https://images.unsplash.com/photo-1567449303078-57ad995bd301?auto=format&fit=crop&w=400&q=80", starred: true, review: "Great high-end mall with amazing food options." },
-          { id: "p2", name: "Thamrin City", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "18 mins", map: "https://maps.google.com/?q=Thamrin+City", photo: "", starred: true, review: "The best place for affordable batik and traditional clothes." },
-          { id: "p3", name: "Tuku Coffee", category: "Coffee", station: "Blok M BCA", walkStation: "5 mins", map: "https://maps.google.com/?q=Tuku+Blok+M", photo: "", starred: true, review: "Famous Kopi Toko Tuku - try the Es Kopi Tetangga!" },
-          { id: "p4", name: "Futago Ya", category: "Food", station: "Blok M BCA", walkStation: "2 mins", map: "https://maps.google.com/?q=Futago+Blok+M", photo: "", starred: false, review: "Delicious Japanese udon in Little Tokyo." },
-          { id: "p5", name: "Chillax Sudirman", category: "Attraction", station: "Setiabudi Astra", walkStation: "1 min", map: "https://maps.google.com/?q=Chillax+Sudirman", photo: "", starred: true, review: "Open-air alfresco dining right next to Setiabudi station." }
+          { id: "p1", name: "Grand Indonesia", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "7 mins", map: "https://maps.google.com/?q=Grand+Indonesia", photo: "", starred: true, review: "Great mall." }
         ],
-        prepChecklist: [
-          { text: "Check Passport Validity (>6 months)", done: true, mustBring: true },
-          { text: "Book AirAsia / Flight Tickets", done: true, mustBring: true },
-          { text: "Buy eSIM / Pocket Wifi", done: true, mustBring: true },
-          { text: "Book Whoosh Bullet Train Ticket", done: false, mustBring: false }
-        ],
-        packingList: [
-          { text: "Universal Power Adapter", done: true, mustBring: true },
-          { text: "Breathable Cotton Wear", done: false, mustBring: false },
-          { text: "Comfortable Sneakers", done: true, mustBring: false }
-        ],
-        expenses: [
-          { name: "AirAsia Flight Ticket", category: "Flights", amount: 344.48 },
-          { name: "Hotel Accommodation", category: "Accommodation", amount: 142.86 },
-          { name: "Whoosh Train Ticket", category: "Transport", amount: 200.00 }
-        ]
+        prepChecklist: [{ text: "Check Passport Validity", done: true, mustBring: true }],
+        packingList: [{ text: "Universal Adapter", done: true, mustBring: true }],
+        expenses: [{ name: "Flight Ticket", category: "Flights", amount: 344.48 }]
       }
     };
 
@@ -521,9 +461,7 @@
     }
 
     function getActiveTrip() {
-      if (!appData[activeTripId]) {
-        activeTripId = Object.keys(appData)[0];
-      }
+      if (!appData[activeTripId]) activeTripId = Object.keys(appData)[0];
       return appData[activeTripId];
     }
 
@@ -531,7 +469,6 @@
       document.getElementById(modalId).classList.add('hidden');
     }
 
-    // SECTION NAVIGATION
     function openHomePage() {
       document.getElementById('section-home').classList.remove('hidden');
       document.getElementById('section-trip-dashboard').classList.add('hidden');
@@ -545,42 +482,32 @@
       activeTripId = tripId;
       saveAppData();
       const trip = getActiveTrip();
-
       document.getElementById('section-home').classList.add('hidden');
       document.getElementById('section-trip-dashboard').classList.remove('hidden');
       document.getElementById('switch-trip-top-btn').classList.remove('hidden');
       document.getElementById('global-header-title').innerText = trip.title;
       document.getElementById('global-header-sub').innerText = trip.dates;
-
       switchDashboardPage('summary');
     }
 
-    // HOME PAGE
     function renderHomePageTrips() {
       const container = document.getElementById('home-trips-list');
       container.innerHTML = '';
-
       Object.values(appData).forEach(trip => {
         const card = document.createElement('div');
-        card.className = "bg-slate-800 border border-slate-700 rounded-xl p-4 space-y-3 shadow-sm";
+        card.className = "bg-white border border-emerald-900/10 rounded-3xl p-4.5 space-y-3 shadow-xs";
         card.innerHTML = `
           <div class="flex justify-between items-start">
             <div>
-              <h3 class="font-bold text-base text-white">${trip.title}</h3>
-              <p class="text-xs text-slate-400"><i class="fa-solid fa-calendar me-1"></i>${trip.dates} • ${trip.people}</p>
+              <h3 style="color: var(--dark-green);" class="font-bold text-base">${trip.title}</h3>
+              <p class="text-xs text-slate-400 mt-0.5"><i class="fa-solid fa-calendar me-1"></i>${trip.dates} • ${trip.people}</p>
             </div>
-            <span class="text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded">${trip.budget}</span>
+            <span style="background-color: var(--beige); color: var(--dark-green);" class="text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-900/10">${trip.budget}</span>
           </div>
-          <div class="flex items-center space-x-2 pt-2 border-t border-slate-700/60 text-xs">
-            <button onclick="openTripDashboard('${trip.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-3 rounded-lg flex-1 text-center">
-              Open Dashboard ➔
-            </button>
-            <button onclick="openTripModal('${trip.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded-lg">
-              <i class="fa-solid fa-pen"></i>
-            </button>
-            <button onclick="deleteTrip('${trip.id}')" class="bg-rose-950 hover:bg-rose-900 text-rose-300 p-2 rounded-lg border border-rose-800">
-              <i class="fa-solid fa-trash"></i>
-            </button>
+          <div class="flex items-center space-x-2 pt-2 border-t border-slate-100 text-xs">
+            <button onclick="openTripDashboard('${trip.id}')" style="background-color: var(--dark-green);" class="text-white font-semibold py-2 px-3 rounded-xl flex-1 text-center shadow-xs">Open Dashboard ➔</button>
+            <button onclick="openTripModal('${trip.id}')" class="bg-slate-100 text-slate-600 p-2 rounded-xl"><i class="fa-solid fa-pen"></i></button>
+            <button onclick="deleteTrip('${trip.id}')" style="background-color: var(--rosy-brown);" class="text-white p-2 rounded-xl"><i class="fa-solid fa-trash"></i></button>
           </div>
         `;
         container.appendChild(card);
@@ -589,8 +516,7 @@
 
     function openTripModal(tripId = null) {
       document.getElementById('trip-form-id').value = tripId || '';
-      document.getElementById('modal-trip-title').innerText = tripId ? 'Edit Trip Details' : 'Add New Trip';
-
+      document.getElementById('modal-trip-title').innerText = tripId ? 'Edit Trip' : 'Add New Trip';
       if (tripId && appData[tripId]) {
         const t = appData[tripId];
         document.getElementById('trip-form-title').value = t.title;
@@ -605,7 +531,6 @@
         document.getElementById('trip-form-budget').value = 'RM 2,000 / pax';
         document.getElementById('trip-form-hotel').value = 'Central Hotel';
       }
-
       document.getElementById('modal-trip').classList.remove('hidden');
     }
 
@@ -613,7 +538,6 @@
       const id = document.getElementById('trip-form-id').value;
       const title = document.getElementById('trip-form-title').value.trim();
       if (!title) return alert("Please enter trip title!");
-
       const dates = document.getElementById('trip-form-dates').value.trim() || 'Upcoming';
       const people = document.getElementById('trip-form-people').value.trim() || '1 Pax';
       const budget = document.getElementById('trip-form-budget').value.trim() || 'RM 2,000 / pax';
@@ -628,29 +552,16 @@
       } else {
         const newId = "trip_" + Date.now();
         appData[newId] = {
-          id: newId,
-          title,
-          dates,
-          people,
-          budget,
-          budgetValue: 2000,
-          activeHotel: hotel,
-          nearestStation: "Main Station",
-          itinerary: { 1: { tag: "Day 1", title: "Arrival", items: [{ time: "12:00 PM", title: "Check-in Hotel", location: hotel, notes: "Unpack and relax", done: false }] } },
-          places: [],
-          prepChecklist: [{ text: "Check Passport", done: true, mustBring: true }],
-          packingList: [{ text: "Clothes & Shoes", done: false, mustBring: false }],
-          expenses: []
+          id: newId, title, dates, people, budget, budgetValue: 2000,
+          activeHotel: hotel, nearestStation: "Main Station",
+          itinerary: { 1: { tag: "Day 1", title: "Arrival", items: [{ time: "12:00 PM", title: "Check-in", location: hotel, notes: "Relax", done: false }] } },
+          places: [], prepChecklist: [], packingList: [], expenses: []
         };
       }
-
       saveAppData();
       closeModal('modal-trip');
-      if (!document.getElementById('section-home').classList.contains('hidden')) {
-        renderHomePageTrips();
-      } else {
-        renderSummaryPage();
-      }
+      if (!document.getElementById('section-home').classList.contains('hidden')) renderHomePageTrips();
+      else renderSummaryPage();
     }
 
     function deleteTrip(tripId) {
@@ -662,19 +573,22 @@
       }
     }
 
-    // DASHBOARD PAGES SWITCHING
     function switchDashboardPage(pageName) {
       ['summary', 'itinerary', 'waddle', 'master', 'checklists'].forEach(p => {
         document.getElementById(`page-${p}`).classList.add('hidden');
         const navBtn = document.getElementById(`nav-${p}`);
-        navBtn.classList.remove('border-indigo-500', 'text-indigo-400');
-        navBtn.classList.add('text-slate-400', 'border-transparent');
+        navBtn.classList.remove('text-slate-800');
+        navBtn.classList.add('text-slate-400');
+        const iconContainer = navBtn.querySelector('div');
+        iconContainer.classList.remove('nav-tab-active');
       });
 
       document.getElementById(`page-${pageName}`).classList.remove('hidden');
       const activeNav = document.getElementById(`nav-${pageName}`);
-      activeNav.classList.add('border-indigo-500', 'text-indigo-400');
-      activeNav.classList.remove('text-slate-400', 'border-transparent');
+      activeNav.classList.remove('text-slate-400');
+      activeNav.classList.add('text-slate-800');
+      const activeIconContainer = activeNav.querySelector('div');
+      activeIconContainer.classList.add('nav-tab-active');
 
       if (pageName === 'summary') renderSummaryPage();
       if (pageName === 'itinerary') renderItineraryPage();
@@ -683,7 +597,6 @@
       if (pageName === 'checklists') switchChecklistSubTab('prep');
     }
 
-    // PAGE 1: SUMMARY
     function renderSummaryPage() {
       const trip = getActiveTrip();
       document.getElementById('sum-card-title').innerText = trip.title;
@@ -692,63 +605,38 @@
       document.getElementById('sum-card-budget').innerText = trip.budget;
       document.getElementById('sum-card-hotel').innerText = trip.activeHotel;
 
-      const snapContainer = document.getElementById('summary-tentative-snapshot');
-      snapContainer.innerHTML = '';
+      const snap = document.getElementById('summary-tentative-snapshot');
+      snap.innerHTML = '';
       const day1 = trip.itinerary[1];
       if (day1 && day1.items.length > 0) {
-        day1.items.forEach(item => {
-          snapContainer.innerHTML += `
-            <div class="bg-slate-900/80 p-2 rounded border border-slate-700/60 flex justify-between">
-              <span><strong>${item.time}:</strong> ${item.title}</span>
-              <span class="text-slate-500">${item.location}</span>
-            </div>`;
+        day1.items.forEach(i => {
+          snap.innerHTML += `<div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 flex justify-between"><span><strong>${i.time}:</strong> ${i.title}</span><span class="text-slate-400">${i.location}</span></div>`;
         });
-      } else {
-        snapContainer.innerHTML = `<p class="text-slate-500">No tentative items yet.</p>`;
-      }
+      } else { snap.innerHTML = `<p class="text-slate-400">No items.</p>`; }
 
-      const starContainer = document.getElementById('summary-starred-spots');
-      starContainer.innerHTML = '';
+      const star = document.getElementById('summary-starred-spots');
+      star.innerHTML = '';
       const starred = trip.places.filter(p => p.starred);
       if (starred.length > 0) {
-        starred.forEach(spot => {
-          starContainer.innerHTML += `
-            <div class="bg-slate-900/80 p-2 rounded border border-slate-700/60 flex items-center justify-between">
-              <span class="font-bold text-white">${spot.name}</span>
-              <i class="fa-solid fa-star text-amber-400"></i>
-            </div>`;
-        });
-      } else {
-        starContainer.innerHTML = `<p class="text-slate-500 col-span-2">Star spots in Master list to highlight them here!</p>`;
-      }
+        starred.forEach(s => { star.innerHTML += `<div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 flex items-center justify-between"><span class="font-bold text-slate-800">${s.name}</span><i class="fa-solid fa-star text-amber-500"></i></div>`; });
+      } else { star.innerHTML = `<p class="text-slate-400 col-span-2">No starred spots yet.</p>`; }
 
-      const mustContainer = document.getElementById('summary-must-bring-items');
-      mustContainer.innerHTML = '';
+      const must = document.getElementById('summary-must-bring-items');
+      must.innerHTML = '';
       const mustItems = [...trip.prepChecklist, ...trip.packingList].filter(i => i.mustBring);
       if (mustItems.length > 0) {
-        mustItems.forEach(item => {
-          mustContainer.innerHTML += `
-            <div class="flex items-center space-x-2 text-slate-300">
-              <i class="fa-solid fa-check-circle text-emerald-400 text-xs"></i>
-              <span class="${item.done ? 'line-through text-slate-500' : ''}">${item.text}</span>
-            </div>`;
-        });
-      } else {
-        mustContainer.innerHTML = `<p class="text-slate-500">No must-bring items marked yet.</p>`;
-      }
+        mustItems.forEach(i => { must.innerHTML += `<div class="flex items-center space-x-2 text-slate-700"><i class="fa-solid fa-circle-check text-xs" style="color: var(--moss-green);"></i><span class="${i.done ? 'line-through text-slate-400' : ''}">${i.text}</span></div>`; });
+      } else { must.innerHTML = `<p class="text-slate-400">No must-bring items.</p>`; }
     }
 
-    // PAGE 2: ITINERARY
     function renderItineraryPage() {
       const trip = getActiveTrip();
       const btnContainer = document.getElementById('itinerary-day-buttons');
       btnContainer.innerHTML = '';
-
       Object.keys(trip.itinerary).forEach(d => {
         const btn = document.createElement('button');
-        btn.className = (parseInt(d) === activeItineraryDay)
-          ? "px-3.5 py-2 rounded-lg bg-indigo-600 text-white font-semibold text-xs whitespace-nowrap shadow-sm"
-          : "px-3.5 py-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-medium text-xs whitespace-nowrap";
+        btn.className = (parseInt(d) === activeItineraryDay) ? "px-4 py-2 rounded-2xl text-white font-semibold text-xs whitespace-nowrap shadow-xs" : "px-4 py-2 rounded-2xl bg-white text-slate-600 border border-emerald-900/10 font-medium text-xs whitespace-nowrap";
+        if (parseInt(d) === activeItineraryDay) btn.style.backgroundColor = 'var(--dark-green)';
         btn.innerText = `Day ${d}`;
         btn.onclick = () => { activeItineraryDay = parseInt(d); renderItineraryPage(); };
         btnContainer.appendChild(btn);
@@ -757,28 +645,26 @@
       const timelineContainer = document.getElementById('itinerary-timeline-container');
       timelineContainer.innerHTML = '';
       const dayData = trip.itinerary[activeItineraryDay] || { items: [] };
-
-      (dayData.items || []).forEach((item, idx) => {
+      dayData.items.forEach((item, idx) => {
         const card = document.createElement('div');
         card.className = "relative pl-7 group";
         card.innerHTML = `
-          <div class="absolute left-1.5 top-1.5 -translate-x-1/2 w-4 h-4 rounded-full bg-indigo-500 border-2 border-slate-900 shadow-xs"></div>
-          <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-xs flex justify-between items-start">
+          <div style="background-color: var(--moss-green);" class="absolute left-1.5 top-2 -translate-x-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow-xs"></div>
+          <div class="bg-white p-3.5 rounded-2xl border border-emerald-900/10 shadow-xs flex justify-between items-start">
             <div class="space-y-1">
-              <span class="text-[10px] font-bold text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">${item.time}</span>
-              <h4 class="font-bold text-sm ${item.done ? 'line-through text-slate-500' : 'text-white'}">${item.title}</h4>
-              <p class="text-xs text-indigo-300"><i class="fa-solid fa-location-dot me-1"></i>${item.location}</p>
+              <span style="background-color: var(--beige); color: var(--dark-green);" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-900/10">${item.time}</span>
+              <h4 class="font-bold text-sm ${item.done ? 'line-through text-slate-400' : 'text-slate-800'} mt-1">${item.title}</h4>
+              <p style="color: var(--midnight-green);" class="text-xs"><i class="fa-solid fa-location-dot me-1"></i>${item.location}</p>
               <p class="text-xs text-slate-400">${item.notes}</p>
             </div>
             <div class="flex items-center space-x-1">
-              <button onclick="openItineraryModal(${idx})" class="text-slate-500 hover:text-indigo-400 p-1.5 text-xs"><i class="fa-solid fa-pen"></i></button>
-              <button onclick="deleteItineraryItem(${idx})" class="text-slate-500 hover:text-rose-400 p-1.5 text-xs"><i class="fa-solid fa-trash"></i></button>
-              <button onclick="toggleItineraryDone(${idx})" class="text-slate-500 hover:text-indigo-400 p-1">
-                <i class="fa-solid ${item.done ? 'fa-circle-check text-indigo-400' : 'fa-circle'} text-lg"></i>
+              <button onclick="openItineraryModal(${idx})" class="text-slate-400 hover:text-slate-600 p-1.5 text-xs"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteItineraryItem(${idx})" style="color: var(--rosy-brown);" class="p-1.5 text-xs"><i class="fa-solid fa-trash"></i></button>
+              <button onclick="toggleItineraryDone(${idx})" class="p-1">
+                <i class="fa-solid ${item.done ? 'fa-circle-check text-emerald-700' : 'fa-circle text-slate-200'} text-lg"></i>
               </button>
             </div>
-          </div>
-        `;
+          </div>`;
         timelineContainer.appendChild(card);
       });
     }
@@ -786,7 +672,6 @@
     function openItineraryModal(idx = -1) {
       document.getElementById('itin-form-idx').value = idx;
       const trip = getActiveTrip();
-
       if (idx >= 0 && trip.itinerary[activeItineraryDay].items[idx]) {
         const item = trip.itinerary[activeItineraryDay].items[idx];
         document.getElementById('itin-form-title').value = item.title;
@@ -799,7 +684,6 @@
         document.getElementById('itin-form-location').value = 'City Center';
         document.getElementById('itin-form-notes').value = '';
       }
-
       document.getElementById('modal-itinerary').classList.remove('hidden');
     }
 
@@ -807,22 +691,18 @@
       const idx = parseInt(document.getElementById('itin-form-idx').value);
       const title = document.getElementById('itin-form-title').value.trim();
       if (!title) return alert("Please enter activity title!");
-
       const time = document.getElementById('itin-form-time').value.trim() || '12:00 PM';
       const location = document.getElementById('itin-form-location').value.trim() || '';
       const notes = document.getElementById('itin-form-notes').value.trim() || '';
 
       const trip = getActiveTrip();
-      if (!trip.itinerary[activeItineraryDay]) {
-        trip.itinerary[activeItineraryDay] = { tag: `Day ${activeItineraryDay}`, title: "Schedule", items: [] };
-      }
+      if (!trip.itinerary[activeItineraryDay]) trip.itinerary[activeItineraryDay] = { tag: `Day ${activeItineraryDay}`, title: "Schedule", items: [] };
 
       if (idx >= 0) {
         trip.itinerary[activeItineraryDay].items[idx] = { time, title, location, notes, done: trip.itinerary[activeItineraryDay].items[idx].done };
       } else {
         trip.itinerary[activeItineraryDay].items.push({ time, title, location, notes, done: false });
       }
-
       saveAppData();
       closeModal('modal-itinerary');
       renderItineraryPage();
@@ -844,24 +724,18 @@
       renderItineraryPage();
     }
 
-    // PAGE 3: WADDLE & HOTEL PROXIMITY
     function renderWaddlePage() {
       const trip = getActiveTrip();
       document.getElementById('waddle-hotel-title').innerText = trip.activeHotel;
       document.getElementById('waddle-hotel-station').innerHTML = `<strong>Nearest Station:</strong> ${trip.nearestStation}`;
-
       const quickHubsContainer = document.getElementById('waddle-quick-hubs');
       quickHubsContainer.innerHTML = '';
       const stations = [...new Set(trip.places.map(p => p.station))];
-
       stations.forEach(st => {
         const btn = document.createElement('button');
-        btn.className = "text-xs bg-slate-800 border border-slate-700 hover:bg-indigo-950 text-slate-300 px-3 py-1.5 rounded-full font-medium shadow-xs";
+        btn.className = "text-xs bg-white border border-emerald-900/10 text-slate-700 px-3.5 py-1.5 rounded-full font-medium shadow-xs";
         btn.innerText = `📍 ${st}`;
-        btn.onclick = () => {
-          document.getElementById('waddleSearchInput').value = st;
-          executeWaddleSearch();
-        };
+        btn.onclick = () => { document.getElementById('waddleSearchInput').value = st; executeWaddleSearch(); };
         quickHubsContainer.appendChild(btn);
       });
     }
@@ -886,68 +760,51 @@
       const trip = getActiveTrip();
       const query = document.getElementById('waddleSearchInput').value.toLowerCase().trim();
       const container = document.getElementById('waddleSearchResults');
-
-      if (!query) {
-        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Type a place, category, or station above to display cluster spots!</p>`;
-        return;
-      }
-
-      const matches = trip.places.filter(p => 
-        p.name.toLowerCase().includes(query) || 
-        p.category.toLowerCase().includes(query) || 
-        p.station.toLowerCase().includes(query)
-      );
-
-      if (matches.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No cluster places found for "${query}".</p>`;
-        return;
-      }
-
+      if (!query) { container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">Type a place or station above!</p>`; return; }
+      const matches = trip.places.filter(p => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query) || p.station.toLowerCase().includes(query));
+      if (matches.length === 0) { container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No cluster places found.</p>`; return; }
       container.innerHTML = '';
       matches.forEach(spot => {
-        const card = document.createElement('div');
-        card.className = "bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2 shadow-xs";
-        card.innerHTML = `
-          <div class="flex justify-between items-start">
-            <div>
-              <div class="flex items-center space-x-2">
-                <h4 class="font-bold text-sm text-white">${spot.name}</h4>
-                <span class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded">${spot.category}</span>
+        container.innerHTML += `
+          <div class="bg-white p-4 rounded-3xl border border-emerald-900/10 space-y-2 shadow-xs">
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="flex items-center space-x-2"><h4 style="color: var(--dark-green);" class="font-bold text-sm">${spot.name}</h4><span style="background-color: var(--beige); color: var(--dark-green);" class="text-[10px] border border-emerald-900/10 px-2 py-0.5 rounded-full font-semibold">${spot.category}</span></div>
+                <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-train me-1" style="color: var(--moss-green);"></i>${spot.station} (${spot.walkStation})</p>
               </div>
-              <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-train me-1 text-indigo-400"></i>${spot.station} (${spot.walkStation})</p>
+              <a href="${spot.map}" target="_blank" style="background-color: var(--dark-green);" class="text-white font-semibold text-xs px-3 py-1.5 rounded-xl">Map</a>
             </div>
-            <a href="${spot.map}" target="_blank" class="bg-indigo-600 text-white font-semibold text-xs px-2.5 py-1.5 rounded-lg">Map</a>
-          </div>
-          ${spot.review ? `<p class="text-xs bg-slate-900 p-2 rounded text-slate-300 italic border border-slate-700/60">"${spot.review}"</p>` : ''}
-          <div class="flex justify-end pt-1">
-            <button onclick="editSpotReview('${spot.id}')" class="text-[11px] text-indigo-400 hover:underline">
-              <i class="fa-solid fa-comment-dots me-1"></i>Edit Review / Note
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
+            ${spot.review ? `<p class="text-xs bg-slate-50 p-2.5 rounded-2xl text-slate-600 italic border border-slate-100">"${spot.review}"</p>` : ''}
+            <div class="flex justify-end pt-1"><button onclick="openReviewModal('${spot.id}')" style="color: var(--midnight-green);" class="text-[11px] font-semibold hover:underline"><i class="fa-solid fa-comment-dots me-1"></i>Edit Review / Note</button></div>
+          </div>`;
       });
     }
 
-    function editSpotReview(spotId) {
+    function openReviewModal(spotId) {
       const trip = getActiveTrip();
       const spot = trip.places.find(p => p.id === spotId);
       if (!spot) return;
-      const rev = prompt("Add/Edit personal review for " + spot.name + ":", spot.review || "");
-      if (rev !== null) {
-        spot.review = rev;
-        saveAppData();
-        executeWaddleSearch();
-      }
+      document.getElementById('review-spot-id').value = spotId;
+      document.getElementById('modal-review-title').innerText = `Review: ${spot.name}`;
+      document.getElementById('review-form-text').value = spot.review || '';
+      document.getElementById('modal-review').classList.remove('hidden');
     }
 
-    // PAGE 4: MASTER PLACES LIST
+    function saveReviewForm() {
+      const spotId = document.getElementById('review-spot-id').value;
+      const reviewText = document.getElementById('review-form-text').value.trim();
+      const trip = getActiveTrip();
+      const spot = trip.places.find(p => p.id === spotId);
+      if (spot) { spot.review = reviewText; saveAppData(); }
+      closeModal('modal-review');
+      executeWaddleSearch();
+    }
+
     function renderMasterPlacesList() {
       const trip = getActiveTrip();
       const filterText = document.getElementById('masterSearchInput').value.toLowerCase();
       const catText = document.getElementById('masterCategoryFilter').value;
       const container = document.getElementById('masterPlacesContainer');
-
       const filtered = trip.places.filter(p => {
         const matchText = p.name.toLowerCase().includes(filterText) || p.station.toLowerCase().includes(filterText);
         const matchCat = (catText === 'ALL') || (p.category === catText);
@@ -956,51 +813,39 @@
 
       container.innerHTML = '';
       filtered.forEach(spot => {
-        const item = document.createElement('div');
-        item.className = "bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-xs space-y-2";
-        
-        let photoHtml = spot.photo 
-          ? `<img src="${spot.photo}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1567449303078-57ad995bd301?auto=format&fit=crop&w=400&q=80';" class="w-full h-32 object-cover rounded-lg border border-slate-700" alt="${spot.name}" />` 
-          : '';
-
-        item.innerHTML = `
-          <div class="flex justify-between items-start">
-            <div>
-              <div class="flex items-center space-x-1.5">
-                <button onclick="toggleStarSpot('${spot.id}')" class="text-base">
-                  <i class="fa-solid fa-star ${spot.starred ? 'text-amber-400' : 'text-slate-600'}"></i>
-                </button>
-                <h4 class="font-bold text-xs text-white">${spot.name}</h4>
-                <span class="text-[9px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">${spot.category}</span>
+        let photoHtml = spot.photo ? `<img src="${spot.photo}" class="w-full h-36 object-cover rounded-2xl border border-slate-100 mt-2" alt="${spot.name}" />` : '';
+        container.innerHTML += `
+          <div class="bg-white p-3.5 rounded-3xl border border-emerald-900/10 shadow-xs space-y-2">
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="flex items-center space-x-1.5">
+                  <button onclick="toggleStarSpot('${spot.id}')" class="text-base"><i class="fa-solid fa-star ${spot.starred ? 'text-amber-500' : 'text-slate-300'}"></i></button>
+                  <h4 style="color: var(--dark-green);" class="font-bold text-xs">${spot.name}</h4>
+                  <span class="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">${spot.category}</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5">🚉 ${spot.station} (${spot.walkStation})</p>
               </div>
-              <p class="text-[11px] text-slate-400 mt-0.5">🚉 ${spot.station} (${spot.walkStation})</p>
+              <div class="flex items-center space-x-1">
+                <button onclick="openMasterSpotModal('${spot.id}')" class="text-slate-400 hover:text-slate-600 p-1 text-xs"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteMasterSpot('${spot.id}')" style="color: var(--rosy-brown);" class="p-1 text-xs"><i class="fa-solid fa-trash"></i></button>
+                <a href="${spot.map}" target="_blank" style="background-color: var(--beige); color: var(--dark-green);" class="px-2.5 py-1 rounded-xl text-xs font-semibold border border-emerald-900/10">Map</a>
+              </div>
             </div>
-            <div class="flex items-center space-x-1">
-              <button onclick="openMasterSpotModal('${spot.id}')" class="text-slate-500 hover:text-indigo-400 p-1 text-xs"><i class="fa-solid fa-pen"></i></button>
-              <button onclick="deleteMasterSpot('${spot.id}')" class="text-slate-500 hover:text-rose-400 p-1 text-xs"><i class="fa-solid fa-trash"></i></button>
-              <a href="${spot.map}" target="_blank" class="text-indigo-400 bg-indigo-950 border border-indigo-800 px-2 py-1 rounded text-xs font-medium">Map</a>
-            </div>
-          </div>
-          ${photoHtml}
-        `;
-        container.appendChild(item);
+            ${photoHtml}
+          </div>`;
       });
     }
 
     function toggleStarSpot(spotId) {
       const trip = getActiveTrip();
       const spot = trip.places.find(p => p.id === spotId);
-      if (spot) {
-        spot.starred = !spot.starred;
-        saveAppData();
-        renderMasterPlacesList();
-      }
+      if (spot) { spot.starred = !spot.starred; saveAppData(); renderMasterPlacesList(); }
     }
 
     function openMasterSpotModal(spotId = null) {
       document.getElementById('spot-form-id').value = spotId || '';
-      document.getElementById('modal-spot-title').innerText = spotId ? 'Edit Spot Details' : 'Add Master Spot';
-
+      document.getElementById('modal-spot-title').innerText = spotId ? 'Edit Spot' : 'Add Master Spot';
+      document.getElementById('spot-form-file').value = '';
       if (spotId) {
         const trip = getActiveTrip();
         const spot = trip.places.find(p => p.id === spotId);
@@ -1009,16 +854,13 @@
           document.getElementById('spot-form-category').value = spot.category;
           document.getElementById('spot-form-station').value = spot.station;
           document.getElementById('spot-form-walk').value = spot.walkStation;
-          document.getElementById('spot-form-photo').value = spot.photo;
         }
       } else {
         document.getElementById('spot-form-name').value = '';
         document.getElementById('spot-form-category').value = 'Food';
-        document.getElementById('spot-form-station').value = 'Bundaran HI Bank Jakarta';
+        document.getElementById('spot-form-station').value = 'City Center';
         document.getElementById('spot-form-walk').value = '5 mins';
-        document.getElementById('spot-form-photo').value = '';
       }
-
       document.getElementById('modal-master-spot').classList.remove('hidden');
     }
 
@@ -1026,39 +868,47 @@
       const spotId = document.getElementById('spot-form-id').value;
       const name = document.getElementById('spot-form-name').value.trim();
       if (!name) return alert("Please enter spot name!");
-
       const category = document.getElementById('spot-form-category').value;
       const station = document.getElementById('spot-form-station').value.trim() || 'Center Station';
       const walkStation = document.getElementById('spot-form-walk').value.trim() || '5 mins';
-      const photo = document.getElementById('spot-form-photo').value.trim();
+      const fileInput = document.getElementById('spot-form-file');
 
       const trip = getActiveTrip();
-      if (spotId) {
-        const spot = trip.places.find(p => p.id === spotId);
-        if (spot) {
-          spot.name = name;
-          spot.category = category;
-          spot.station = station;
-          spot.walkStation = walkStation;
-          spot.photo = photo;
+      const finishSave = (photoBase64 = '') => {
+        if (spotId) {
+          const spot = trip.places.find(p => p.id === spotId);
+          if (spot) {
+            spot.name = name;
+            spot.category = category;
+            spot.station = station;
+            spot.walkStation = walkStation;
+            if (photoBase64) spot.photo = photoBase64;
+          }
+        } else {
+          trip.places.push({
+            id: "p_" + Date.now(),
+            name, category, station, walkStation,
+            map: `https://maps.google.com/?q=${encodeURIComponent(name)}`,
+            photo: photoBase64, starred: false, review: ""
+          });
         }
-      } else {
-        trip.places.push({
-          id: "p_" + Date.now(),
-          name,
-          category,
-          station,
-          walkStation,
-          map: `https://maps.google.com/?q=${encodeURIComponent(name)}`,
-          photo,
-          starred: false,
-          review: ""
-        });
-      }
+        saveAppData();
+        closeModal('modal-master-spot');
+        renderMasterPlacesList();
+      };
 
-      saveAppData();
-      closeModal('modal-master-spot');
-      renderMasterPlacesList();
+      if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) { finishSave(e.target.result); };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        let existingPhoto = '';
+        if (spotId) {
+          const spot = trip.places.find(p => p.id === spotId);
+          if (spot) existingPhoto = spot.photo;
+        }
+        finishSave(existingPhoto);
+      }
     }
 
     function deleteMasterSpot(spotId) {
@@ -1070,19 +920,19 @@
       }
     }
 
-    // PAGE 5: CHECKLISTS HUB
     function switchChecklistSubTab(subName) {
       ['prep', 'packing', 'expenses'].forEach(s => {
         document.getElementById(`checklist-sub-${s}`).classList.add('hidden');
         const btn = document.getElementById(`checktab-${s}`);
-        btn.classList.remove('border-indigo-500', 'text-indigo-400');
-        btn.classList.add('text-slate-400', 'border-transparent');
+        btn.classList.remove('border-emerald-800');
+        btn.style.color = '#94A3B8';
+        btn.classList.add('border-transparent');
       });
-
       document.getElementById(`checklist-sub-${subName}`).classList.remove('hidden');
       const activeBtn = document.getElementById(`checktab-${subName}`);
-      activeBtn.classList.add('border-indigo-500', 'text-indigo-400');
-      activeBtn.classList.remove('text-slate-400', 'border-transparent');
+      activeBtn.classList.add('border-emerald-800');
+      activeBtn.style.color = 'var(--dark-green)';
+      activeBtn.classList.remove('border-transparent');
 
       if (subName === 'prep') renderPrepList();
       if (subName === 'packing') renderPackingList();
@@ -1102,113 +952,59 @@
       const text = document.getElementById('checklist-item-text').value.trim();
       if (!text) return alert("Please enter description!");
       const mustBring = document.getElementById('checklist-item-mustbring').checked;
-
       const trip = getActiveTrip();
-      if (type === 'prep') {
-        trip.prepChecklist.push({ text, done: false, mustBring });
-        renderPrepList();
-      } else {
-        trip.packingList.push({ text, done: false, mustBring });
-        renderPackingList();
-      }
-
+      if (type === 'prep') { trip.prepChecklist.push({ text, done: false, mustBring }); renderPrepList(); }
+      else { trip.packingList.push({ text, done: false, mustBring }); renderPackingList(); }
       saveAppData();
       closeModal('modal-checklist-item');
     }
 
-    // PREP LIST
     function renderPrepList() {
       const trip = getActiveTrip();
       const container = document.getElementById('prep-items-list');
       container.innerHTML = '';
-
       trip.prepChecklist.forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = "flex items-center justify-between p-2.5 rounded-lg bg-slate-800 border border-slate-700 text-xs";
-        div.innerHTML = `
-          <div class="flex items-center space-x-2">
-            <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePrepItem(${idx})" class="w-4 h-4 text-indigo-600 rounded">
-            <span class="${item.done ? 'line-through text-slate-500' : 'text-slate-200 font-medium'}">${item.text}</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <button onclick="toggleMustBringPrep(${idx})" class="text-sm">
-              <i class="fa-solid fa-triangle-exclamation ${item.mustBring ? 'text-rose-400' : 'text-slate-600'}"></i>
-            </button>
-            <button onclick="deletePrepItem(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        `;
-        container.appendChild(div);
+        container.innerHTML += `
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-white border border-emerald-900/10 text-xs">
+            <div class="flex items-center space-x-2.5">
+              <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePrepItem(${idx})" class="w-4 h-4 text-emerald-800 rounded">
+              <span class="${item.done ? 'line-through text-slate-400' : 'text-slate-800 font-medium'}">${item.text}</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="toggleMustBringPrep(${idx})" class="text-sm"><i class="fa-solid fa-triangle-exclamation ${item.mustBring ? 'text-amber-500' : 'text-slate-300'}"></i></button>
+              <button onclick="deletePrepItem(${idx})" style="color: var(--rosy-brown);" class="p-1"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>`;
       });
     }
 
-    function togglePrepItem(idx) {
-      const trip = getActiveTrip();
-      trip.prepChecklist[idx].done = !trip.prepChecklist[idx].done;
-      saveAppData();
-      renderPrepList();
-    }
+    function togglePrepItem(idx) { const trip = getActiveTrip(); trip.prepChecklist[idx].done = !trip.prepChecklist[idx].done; saveAppData(); renderPrepList(); }
+    function toggleMustBringPrep(idx) { const trip = getActiveTrip(); trip.prepChecklist[idx].mustBring = !trip.prepChecklist[idx].mustBring; saveAppData(); renderPrepList(); }
+    function deletePrepItem(idx) { const trip = getActiveTrip(); trip.prepChecklist.splice(idx, 1); saveAppData(); renderPrepList(); }
 
-    function toggleMustBringPrep(idx) {
-      const trip = getActiveTrip();
-      trip.prepChecklist[idx].mustBring = !trip.prepChecklist[idx].mustBring;
-      saveAppData();
-      renderPrepList();
-    }
-
-    function deletePrepItem(idx) {
-      const trip = getActiveTrip();
-      trip.prepChecklist.splice(idx, 1);
-      saveAppData();
-      renderPrepList();
-    }
-
-    // PACKING LIST
     function renderPackingList() {
       const trip = getActiveTrip();
       const container = document.getElementById('packing-items-list');
       container.innerHTML = '';
-
       trip.packingList.forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = "flex items-center justify-between p-2.5 rounded-lg bg-slate-800 border border-slate-700 text-xs";
-        div.innerHTML = `
-          <div class="flex items-center space-x-2">
-            <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePackingItem(${idx})" class="w-4 h-4 text-indigo-600 rounded">
-            <span class="${item.done ? 'line-through text-slate-500' : 'text-slate-200 font-medium'}">${item.text}</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <button onclick="toggleMustBringPacking(${idx})" class="text-sm">
-              <i class="fa-solid fa-triangle-exclamation ${item.mustBring ? 'text-rose-400' : 'text-slate-600'}"></i>
-            </button>
-            <button onclick="deletePackingItem(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        `;
-        container.appendChild(div);
+        container.innerHTML += `
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-white border border-emerald-900/10 text-xs">
+            <div class="flex items-center space-x-2.5">
+              <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePackingItem(${idx})" class="w-4 h-4 text-emerald-800 rounded">
+              <span class="${item.done ? 'line-through text-slate-400' : 'text-slate-800 font-medium'}">${item.text}</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="toggleMustBringPacking(${idx})" class="text-sm"><i class="fa-solid fa-triangle-exclamation ${item.mustBring ? 'text-amber-500' : 'text-slate-300'}"></i></button>
+              <button onclick="deletePackingItem(${idx})" style="color: var(--rosy-brown);" class="p-1"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>`;
       });
     }
 
-    function togglePackingItem(idx) {
-      const trip = getActiveTrip();
-      trip.packingList[idx].done = !trip.packingList[idx].done;
-      saveAppData();
-      renderPackingList();
-    }
+    function togglePackingItem(idx) { const trip = getActiveTrip(); trip.packingList[idx].done = !trip.packingList[idx].done; saveAppData(); renderPackingList(); }
+    function toggleMustBringPacking(idx) { const trip = getActiveTrip(); trip.packingList[idx].mustBring = !trip.packingList[idx].mustBring; saveAppData(); renderPackingList(); }
+    function deletePackingItem(idx) { const trip = getActiveTrip(); trip.packingList.splice(idx, 1); saveAppData(); renderPackingList(); }
 
-    function toggleMustBringPacking(idx) {
-      const trip = getActiveTrip();
-      trip.packingList[idx].mustBring = !trip.packingList[idx].mustBring;
-      saveAppData();
-      renderPackingList();
-    }
-
-    function deletePackingItem(idx) {
-      const trip = getActiveTrip();
-      trip.packingList.splice(idx, 1);
-      saveAppData();
-      renderPackingList();
-    }
-
-    // CATEGORIZED EXPENSES & BUDGET
     function openExpenseModal() {
       document.getElementById('expense-form-name').value = '';
       document.getElementById('expense-form-category').value = 'Flights';
@@ -1220,12 +1016,9 @@
       const name = document.getElementById('expense-form-name').value.trim();
       const category = document.getElementById('expense-form-category').value;
       const amount = parseFloat(document.getElementById('expense-form-amount').value);
-
       if (!name || isNaN(amount)) return alert("Please enter valid expense details!");
-
       const trip = getActiveTrip();
       trip.expenses.push({ name, category, amount });
-
       saveAppData();
       closeModal('modal-expense');
       renderExpensesList();
@@ -1239,31 +1032,17 @@
       document.getElementById('expenses-total-spent').innerText = `RM ${totalSpent.toFixed(2)}`;
       document.getElementById('expenses-progress-bar').style.width = `${percentage}%`;
 
-      // Category Summary Breakdown Calculation
       const catTotals = {};
-      trip.expenses.forEach(e => {
-        catTotals[e.category] = (catTotals[e.category] || 0) + e.amount;
-      });
-
+      trip.expenses.forEach(e => { catTotals[e.category] = (catTotals[e.category] || 0) + e.amount; });
       const catBreakdownContainer = document.getElementById('expenses-category-breakdown');
       catBreakdownContainer.innerHTML = '';
-
       Object.entries(catTotals).forEach(([cat, sum]) => {
-        catBreakdownContainer.innerHTML += `
-          <div class="bg-slate-800 p-2 rounded-lg border border-slate-700/80 text-center">
-            <span class="text-slate-400 block text-[9px] truncate">${cat}</span>
-            <strong class="text-emerald-400 font-semibold">RM ${sum.toFixed(0)}</strong>
-          </div>`;
+        catBreakdownContainer.innerHTML += `<div class="bg-white p-2.5 rounded-2xl border border-emerald-900/10 text-center"><span class="text-slate-400 block text-[9px] truncate font-medium">${cat}</span><strong style="color: var(--dark-green);" class="font-bold">RM ${sum.toFixed(0)}</strong></div>`;
       });
 
-      // Group Expenses by Category
       const container = document.getElementById('expenses-items-list');
       container.innerHTML = '';
-
-      if (trip.expenses.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No expenses recorded yet.</p>`;
-        return;
-      }
+      if (trip.expenses.length === 0) { container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No expenses recorded.</p>`; return; }
 
       const grouped = {};
       trip.expenses.forEach((item, originalIdx) => {
@@ -1274,25 +1053,22 @@
 
       Object.entries(grouped).forEach(([cat, items]) => {
         const catBox = document.createElement('div');
-        catBox.className = "bg-slate-800 rounded-xl border border-slate-700/80 overflow-hidden space-y-1 p-3";
-        
+        catBox.className = "bg-white rounded-3xl border border-emerald-900/10 overflow-hidden space-y-1 p-3.5 shadow-xs";
         let itemsHtml = items.map(item => `
-          <div class="flex justify-between items-center py-1.5 border-b border-slate-700/50 last:border-b-0 text-xs">
-            <span class="text-slate-200 font-medium">${item.name}</span>
+          <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-b-0 text-xs">
+            <span class="text-slate-800 font-medium">${item.name}</span>
             <div class="flex items-center space-x-2">
-              <span class="text-emerald-400 font-bold">RM ${item.amount.toFixed(2)}</span>
-              <button onclick="deleteExpenseItem(${item.originalIdx})" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash"></i></button>
+              <span style="color: var(--dark-green);" class="font-bold">RM ${item.amount.toFixed(2)}</span>
+              <button onclick="deleteExpenseItem(${item.originalIdx})" style="color: var(--rosy-brown);" class="p-1"><i class="fa-solid fa-trash"></i></button>
             </div>
-          </div>
-        `).join('');
+          </div>`).join('');
 
         catBox.innerHTML = `
-          <div class="flex justify-between items-center pb-1 border-b border-slate-700">
-            <span class="text-[11px] font-bold uppercase text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">${cat}</span>
-            <span class="text-xs text-slate-400 font-semibold">Subtotal: RM ${items.reduce((s, i) => s + i.amount, 0).toFixed(2)}</span>
+          <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+            <span style="background-color: var(--beige); color: var(--dark-green);" class="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border border-emerald-900/10">${cat}</span>
+            <span class="text-xs text-slate-400 font-medium">Subtotal: RM ${items.reduce((s, i) => s + i.amount, 0).toFixed(2)}</span>
           </div>
-          <div class="pt-1">${itemsHtml}</div>
-        `;
+          <div class="pt-1">${itemsHtml}</div>`;
         container.appendChild(catBox);
       });
     }
@@ -1304,10 +1080,7 @@
       renderExpensesList();
     }
 
-    // Initialize App
-    window.addEventListener('DOMContentLoaded', () => {
-      openHomePage();
-    });
+    window.addEventListener('DOMContentLoaded', () => { openHomePage(); });
   </script>
 </body>
 </html>
