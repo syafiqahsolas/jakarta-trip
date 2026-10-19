@@ -20,6 +20,7 @@
       background-color: var(--beige);
       color: #1E293B;
       -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -38,39 +39,77 @@
       box-shadow: 0 8px 18px rgba(10, 51, 35, 0.3);
       border: 4px solid var(--beige);
     }
+
+    /* Soft Pond Card Style */
+    .pond-card {
+      background: #FFFFFF;
+      border: 1px solid rgba(10, 51, 35, 0.1);
+      border-radius: 24px;
+      box-shadow: 0 4px 15px rgba(10, 51, 35, 0.04);
+      transition: all 0.2s ease;
+    }
   </style>
 </head>
 <body class="min-h-screen pb-28">
 
-  <!-- TOP HEADER -->
-  <header style="background-color: var(--dark-green);" class="text-white p-4 sticky top-0 z-40 shadow-sm">
-    <div class="max-w-md mx-auto flex justify-between items-center">
+  <!-- TOP HEADER WITH POND DUCK MASCOT -->
+  <header style="background-color: var(--dark-green);" class="text-white p-4 sticky top-0 z-40 shadow-md">
+    <div class="max-w-md mx-auto flex justify-between items-center relative">
       <div class="flex items-center space-x-3">
         <button id="nav-home-btn" onclick="openHomePage()" style="background-color: var(--midnight-green);" class="p-2.5 rounded-2xl text-white transition hover:opacity-90">
           <i class="fa-solid fa-house text-sm"></i>
         </button>
         <div>
-          <h1 id="global-header-title" class="font-bold text-base leading-tight">Multi-Trip Hub</h1>
+          <h1 id="global-header-title" class="font-bold text-base leading-tight flex items-center gap-1.5">
+            <span>Multi-Trip Hub</span>
+            <span class="text-xs">🪷</span>
+          </h1>
           <p id="global-header-sub" style="color: var(--beige);" class="text-[11px] opacity-90">Select or Manage Your Trips</p>
         </div>
       </div>
-      <button id="switch-trip-top-btn" onclick="openHomePage()" style="background-color: var(--moss-green);" class="hidden text-white text-xs px-3.5 py-2 rounded-xl font-semibold flex items-center gap-1.5 shadow-xs">
-        <i class="fa-solid fa-arrow-left"></i>
-        <span>Trips</span>
-      </button>
+
+      <div class="flex items-center space-x-2">
+        <button id="switch-trip-top-btn" onclick="openHomePage()" style="background-color: var(--moss-green);" class="hidden text-white text-xs px-3 py-1.5 rounded-xl font-semibold items-center gap-1 shadow-xs">
+          <i class="fa-solid fa-arrow-left text-[10px]"></i>
+          <span>Trips</span>
+        </button>
+        
+        <!-- FLUFFY DUCK VECTOR SVG -->
+        <div class="w-10 h-10 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform" title="Quack!">
+          <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-sm">
+            <!-- Duck Body -->
+            <path d="M 30,65 C 20,65 15,50 30,45 C 40,42 55,42 65,48 C 75,40 85,45 80,55 C 82,65 75,78 55,80 C 38,82 30,75 30,65 Z" fill="#F0F7F7" stroke="#D1E5E5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+            <!-- Duck Wing -->
+            <path d="M 45,55 C 55,55 60,65 50,70 C 42,72 40,62 45,55 Z" fill="none" stroke="#D1E5E5" stroke-width="3" stroke-linecap="round" />
+            <!-- Duck Head -->
+            <circle cx="35" cy="40" r="18" fill="#F0F7F7" stroke="#D1E5E5" stroke-width="4" />
+            <!-- Fluffy Head Tuft -->
+            <path d="M 32,22 C 35,18 40,20 38,24" fill="none" stroke="#D1E5E5" stroke-width="3" stroke-linecap="round" />
+            <!-- Duck Beak (Heart-ish Beak) -->
+            <path d="M 22,40 C 16,36 12,42 18,47 C 22,50 25,45 22,40 Z" fill="#FF7A00" stroke="#E06000" stroke-width="1.5" />
+            <!-- Duck Eye -->
+            <ellipse cx="36" cy="36" rx="3" ry="4" fill="#1E293B" />
+          </svg>
+        </div>
+      </div>
     </div>
   </header>
 
   <!-- SECTION 1: HOME PAGE -->
   <section id="section-home" class="max-w-md mx-auto p-4 space-y-4">
     <div class="flex items-center justify-between">
-      <h2 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider">Your Travel Destinations</h2>
+      <h2 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+        <span>Your Travel Destinations</span>
+        <span class="text-xs">🌿</span>
+      </h2>
       <button onclick="openTripModal()" style="background-color: var(--dark-green);" class="text-white text-xs px-3.5 py-2 rounded-xl font-semibold flex items-center gap-1.5 shadow-xs">
         <i class="fa-solid fa-plus text-xs"></i>
         <span>Add Trip</span>
       </button>
     </div>
-    <div id="home-trips-list" class="space-y-3.5"></div>
+
+    <!-- REFINED TRIP CARDS CONTAINER -->
+    <div id="home-trips-list" class="space-y-4"></div>
   </section>
 
   <!-- SECTION 2: TRIP DASHBOARD -->
@@ -80,37 +119,40 @@
     <main>
       <!-- PAGE 1: SUMMARY -->
       <section id="page-summary" class="space-y-4">
-        <div class="bg-white p-5 rounded-3xl border border-emerald-900/10 space-y-3.5 shadow-xs">
-          <div class="flex justify-between items-start">
+        <div class="pond-card p-5 space-y-3.5">
+          <div class="flex justify-between items-start gap-2">
             <div>
-              <span style="background-color: var(--beige); color: var(--dark-green);" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-emerald-800/10">Trip Overview</span>
-              <h3 id="sum-card-title" style="color: var(--dark-green);" class="font-bold text-xl mt-1.5">Jakarta & Bandung</h3>
+              <span style="background-color: var(--beige); color: var(--dark-green);" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-emerald-800/10 inline-flex items-center gap-1">
+                <span>🪷 Trip Overview</span>
+              </span>
+              <h3 id="sum-card-title" style="color: var(--dark-green);" class="font-bold text-xl mt-1.5 leading-snug">Jakarta & Bandung</h3>
             </div>
-            <button onclick="openTripModal(activeTripId)" style="color: var(--dark-green); background-color: var(--beige);" class="text-xs font-semibold px-3 py-1.5 rounded-xl border border-emerald-900/10">
+            <button onclick="openTripModal(activeTripId)" style="color: var(--dark-green); background-color: var(--beige);" class="text-xs font-semibold px-3 py-1.5 rounded-xl border border-emerald-900/10 flex-shrink-0">
               <i class="fa-solid fa-pen me-1 text-[10px]"></i>Edit
             </button>
           </div>
+
           <div class="grid grid-cols-2 gap-2 text-xs pt-1">
             <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
               <span class="text-slate-400 text-[10px] block font-medium">Dates</span>
-              <strong id="sum-card-dates" class="text-slate-800 font-semibold">Nov 21 – 26, 2026</strong>
+              <strong id="sum-card-dates" class="text-slate-800 font-semibold block truncate">Nov 21 – 26, 2026</strong>
             </div>
             <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
               <span class="text-slate-400 text-[10px] block font-medium">Travelers</span>
-              <strong id="sum-card-people" class="text-slate-800 font-semibold">2 Pax</strong>
+              <strong id="sum-card-people" class="text-slate-800 font-semibold block">2 Pax</strong>
             </div>
             <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
               <span class="text-slate-400 text-[10px] block font-medium">Target Budget</span>
-              <strong id="sum-card-budget" style="color: var(--midnight-green);" class="font-bold">RM 2,000 / pax</strong>
+              <strong id="sum-card-budget" style="color: var(--midnight-green);" class="font-bold block truncate">RM 2,000 / pax</strong>
             </div>
             <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
               <span class="text-slate-400 text-[10px] block font-medium">Accommodation Base</span>
-              <strong id="sum-card-hotel" style="color: var(--dark-green);" class="font-semibold truncate block">Hotel Grand Sahid Jaya</strong>
+              <strong id="sum-card-hotel" style="color: var(--dark-green);" class="font-semibold block truncate">Hotel Grand Sahid Jaya</strong>
             </div>
           </div>
         </div>
 
-        <div class="bg-white p-4 rounded-3xl border border-emerald-900/10 space-y-2.5 shadow-xs">
+        <div class="pond-card p-4 space-y-2.5">
           <div class="flex justify-between items-center">
             <h4 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider"><i class="fa-solid fa-clock-rotate-left me-1.5" style="color: var(--moss-green);"></i>Tentative Highlights</h4>
             <button onclick="switchDashboardPage('itinerary')" style="color: var(--midnight-green);" class="text-[11px] font-semibold hover:underline">Full Plan ➔</button>
@@ -118,7 +160,7 @@
           <div id="summary-tentative-snapshot" class="space-y-2 text-xs"></div>
         </div>
 
-        <div class="bg-white p-4 rounded-3xl border border-emerald-900/10 space-y-2.5 shadow-xs">
+        <div class="pond-card p-4 space-y-2.5">
           <div class="flex justify-between items-center">
             <h4 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider"><i class="fa-solid fa-star me-1.5 text-amber-500"></i>Starred / Highlight Spots</h4>
             <button onclick="switchDashboardPage('master')" style="color: var(--midnight-green);" class="text-[11px] font-semibold hover:underline">See All ➔</button>
@@ -126,7 +168,7 @@
           <div id="summary-starred-spots" class="grid grid-cols-2 gap-2 text-xs"></div>
         </div>
 
-        <div class="bg-white p-4 rounded-3xl border border-emerald-900/10 space-y-2.5 shadow-xs">
+        <div class="pond-card p-4 space-y-2.5">
           <div class="flex justify-between items-center">
             <h4 style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation me-1.5" style="color: var(--rosy-brown);"></i>Must-Bring Important Items</h4>
             <button onclick="switchDashboardPage('checklists')" style="color: var(--midnight-green);" class="text-[11px] font-semibold hover:underline">Checklists ➔</button>
@@ -162,7 +204,7 @@
           <p id="waddle-hotel-station" style="color: var(--beige);" class="text-xs"><strong>Nearest Station:</strong> Setiabudi Astra (1 min walk)</p>
         </div>
 
-        <div class="bg-white rounded-3xl p-4 shadow-xs border border-emerald-900/10 space-y-3">
+        <div class="pond-card p-4 space-y-3">
           <label style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider block"><i class="fa-solid fa-magnifying-glass me-2" style="color: var(--moss-green);"></i>Waddle & Category Search</label>
           <input type="text" id="waddleSearchInput" oninput="executeWaddleSearch()" placeholder="Search by category, station, or place..." class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-700">
         </div>
@@ -220,7 +262,7 @@
         </div>
 
         <div id="checklist-sub-expenses" class="space-y-3 hidden">
-          <div class="bg-white p-4 rounded-3xl border border-emerald-900/10 space-y-2.5 shadow-xs">
+          <div class="pond-card p-4 space-y-2.5">
             <div class="flex justify-between items-center">
               <span class="text-xs text-slate-400 font-medium">Total Spent</span>
               <strong id="expenses-total-spent" style="color: var(--dark-green);" class="text-base font-bold">RM 0.00</strong>
@@ -357,7 +399,7 @@
           <select id="expense-form-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800">
             <option value="Flights">✈️ Flights</option>
             <option value="Accommodation">🏨 Accommodation</option>
-            <option value="Transport">VPN Transport / Train</option>
+            <option value="Transport">🚆 Transport / Train</option>
             <option value="Food & Dining">🍜 Food & Dining</option>
             <option value="Shopping">🛍️ Shopping</option>
             <option value="Activities">🎟️ Activities / Tickets</option>
@@ -485,29 +527,43 @@
       document.getElementById('section-home').classList.add('hidden');
       document.getElementById('section-trip-dashboard').classList.remove('hidden');
       document.getElementById('switch-trip-top-btn').classList.remove('hidden');
+      document.getElementById('switch-trip-top-btn').classList.add('flex');
       document.getElementById('global-header-title').innerText = trip.title;
       document.getElementById('global-header-sub').innerText = trip.dates;
       switchDashboardPage('summary');
     }
 
+    // PROPERLY FORMATTED & WRAPPED CARD COMPONENT FIX
     function renderHomePageTrips() {
       const container = document.getElementById('home-trips-list');
       container.innerHTML = '';
       Object.values(appData).forEach(trip => {
         const card = document.createElement('div');
-        card.className = "bg-white border border-emerald-900/10 rounded-3xl p-4.5 space-y-3 shadow-xs";
+        card.className = "pond-card p-5 space-y-4";
         card.innerHTML = `
-          <div class="flex justify-between items-start">
-            <div>
-              <h3 style="color: var(--dark-green);" class="font-bold text-base">${trip.title}</h3>
-              <p class="text-xs text-slate-400 mt-0.5"><i class="fa-solid fa-calendar me-1"></i>${trip.dates} • ${trip.people}</p>
+          <div class="flex flex-wrap justify-between items-start gap-2">
+            <div class="pr-2 max-w-[200px] sm:max-w-xs">
+              <h3 style="color: var(--dark-green);" class="font-bold text-base leading-snug break-words">${trip.title}</h3>
+              <p class="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                <i class="fa-solid fa-calendar text-[10px]"></i>
+                <span>${trip.dates} • ${trip.people}</span>
+              </p>
             </div>
-            <span style="background-color: var(--beige); color: var(--dark-green);" class="text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-900/10">${trip.budget}</span>
+            <span style="background-color: var(--beige); color: var(--dark-green);" class="text-xs font-semibold px-3 py-1 rounded-full border border-emerald-900/10 whitespace-nowrap shadow-xs">
+              ${trip.budget}
+            </span>
           </div>
-          <div class="flex items-center space-x-2 pt-2 border-t border-slate-100 text-xs">
-            <button onclick="openTripDashboard('${trip.id}')" style="background-color: var(--dark-green);" class="text-white font-semibold py-2 px-3 rounded-xl flex-1 text-center shadow-xs">Open Dashboard ➔</button>
-            <button onclick="openTripModal('${trip.id}')" class="bg-slate-100 text-slate-600 p-2 rounded-xl"><i class="fa-solid fa-pen"></i></button>
-            <button onclick="deleteTrip('${trip.id}')" style="background-color: var(--rosy-brown);" class="text-white p-2 rounded-xl"><i class="fa-solid fa-trash"></i></button>
+
+          <div class="flex items-center space-x-2 pt-3 border-t border-slate-100">
+            <button onclick="openTripDashboard('${trip.id}')" style="background-color: var(--dark-green);" class="text-white font-semibold py-2.5 px-4 rounded-xl flex-1 text-center text-xs shadow-xs hover:opacity-95 transition">
+              Open Dashboard ➔
+            </button>
+            <button onclick="openTripModal('${trip.id}')" class="bg-slate-100 text-slate-600 p-2.5 rounded-xl hover:bg-slate-200 transition">
+              <i class="fa-solid fa-pen text-xs"></i>
+            </button>
+            <button onclick="deleteTrip('${trip.id}')" style="background-color: var(--rosy-brown);" class="text-white p-2.5 rounded-xl hover:opacity-90 transition">
+              <i class="fa-solid fa-trash text-xs"></i>
+            </button>
           </div>
         `;
         container.appendChild(card);
@@ -650,7 +706,7 @@
         card.className = "relative pl-7 group";
         card.innerHTML = `
           <div style="background-color: var(--moss-green);" class="absolute left-1.5 top-2 -translate-x-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow-xs"></div>
-          <div class="bg-white p-3.5 rounded-2xl border border-emerald-900/10 shadow-xs flex justify-between items-start">
+          <div class="pond-card p-3.5 flex justify-between items-start">
             <div class="space-y-1">
               <span style="background-color: var(--beige); color: var(--dark-green);" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-900/10">${item.time}</span>
               <h4 class="font-bold text-sm ${item.done ? 'line-through text-slate-400' : 'text-slate-800'} mt-1">${item.title}</h4>
@@ -766,7 +822,7 @@
       container.innerHTML = '';
       matches.forEach(spot => {
         container.innerHTML += `
-          <div class="bg-white p-4 rounded-3xl border border-emerald-900/10 space-y-2 shadow-xs">
+          <div class="pond-card p-4 space-y-2">
             <div class="flex justify-between items-start">
               <div>
                 <div class="flex items-center space-x-2"><h4 style="color: var(--dark-green);" class="font-bold text-sm">${spot.name}</h4><span style="background-color: var(--beige); color: var(--dark-green);" class="text-[10px] border border-emerald-900/10 px-2 py-0.5 rounded-full font-semibold">${spot.category}</span></div>
@@ -815,7 +871,7 @@
       filtered.forEach(spot => {
         let photoHtml = spot.photo ? `<img src="${spot.photo}" class="w-full h-36 object-cover rounded-2xl border border-slate-100 mt-2" alt="${spot.name}" />` : '';
         container.innerHTML += `
-          <div class="bg-white p-3.5 rounded-3xl border border-emerald-900/10 shadow-xs space-y-2">
+          <div class="pond-card p-3.5 space-y-2">
             <div class="flex justify-between items-start">
               <div>
                 <div class="flex items-center space-x-1.5">
@@ -1053,7 +1109,7 @@
 
       Object.entries(grouped).forEach(([cat, items]) => {
         const catBox = document.createElement('div');
-        catBox.className = "bg-white rounded-3xl border border-emerald-900/10 overflow-hidden space-y-1 p-3.5 shadow-xs";
+        catBox.className = "pond-card overflow-hidden space-y-1 p-3.5";
         let itemsHtml = items.map(item => `
           <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-b-0 text-xs">
             <span class="text-slate-800 font-medium">${item.name}</span>
