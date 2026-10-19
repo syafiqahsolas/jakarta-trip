@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Jakarta & Bandung Travel Dashboard</title>
+  <title>Multi-Trip Travel Hub & Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
@@ -12,297 +12,401 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-24">
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen pb-20">
 
-  <!-- TOP APP HEADER -->
-  <header class="bg-indigo-600 text-white p-4 sticky top-0 z-50 shadow-md">
+  <!-- TOP GLOBAL HEADER -->
+  <header class="bg-indigo-950 border-b border-indigo-800 p-4 sticky top-0 z-50 shadow-md">
     <div class="max-w-md mx-auto flex justify-between items-center">
-      <div>
-        <h1 class="font-bold text-base leading-tight">🇮🇩 Jakarta & Bandung 2026</h1>
-        <p class="text-[11px] text-indigo-200">21 Nov – 26 Nov 2026 • Mobile Travel Hub</p>
+      <div class="flex items-center space-x-2">
+        <button id="nav-home-btn" onclick="openHomePage()" class="bg-indigo-800 hover:bg-indigo-700 p-2 rounded-lg text-white transition">
+          <i class="fa-solid fa-house text-sm"></i>
+        </button>
+        <div>
+          <h1 id="global-header-title" class="font-bold text-base leading-tight text-white">Multi-Trip Hub</h1>
+          <p id="global-header-sub" class="text-[11px] text-indigo-300">Select or Manage Your Trips</p>
+        </div>
       </div>
-      <span class="bg-indigo-500 text-xs px-2.5 py-1 rounded-full border border-indigo-300 font-medium">RM2,000 / pax</span>
+      <button id="switch-trip-top-btn" onclick="openHomePage()" class="hidden bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 shadow-sm">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Trips</span>
+      </button>
     </div>
   </header>
 
-  <!-- NAVIGATION TABS -->
-  <nav class="bg-white border-b border-slate-200 sticky top-[57px] z-40 shadow-xs">
-    <div class="max-w-md mx-auto flex text-center text-xs font-semibold">
-      <button onclick="switchTab('itinerary')" id="tab-itinerary" class="flex-1 py-3 border-b-2 border-indigo-600 text-indigo-600">
-        <i class="fa-solid me-1 fa-calendar-day text-sm"></i><br>Itinerary
-      </button>
-      <button onclick="switchTab('clusters')" id="tab-clusters" class="flex-1 py-3 text-slate-500 border-b-2 border-transparent">
-        <i class="fa-solid me-1 fa-person-walking text-sm"></i><br>Waddle Search
-      </button>
-      <button onclick="switchTab('places')" id="tab-places" class="flex-1 py-3 text-slate-500 border-b-2 border-transparent">
-        <i class="fa-solid me-1 fa-list-check text-sm"></i><br>Master Places
-      </button>
-      <button onclick="switchTab('checklist')" id="tab-checklist" class="flex-1 py-3 text-slate-500 border-b-2 border-transparent">
-        <i class="fa-solid me-1 fa-suitcase text-sm"></i><br>Checklist
+  <!-- ==================================================================== -->
+  <!-- SECTION 1: HOME PAGE (TRIP HUB WITH ADD/EDIT/DELETE TRIPS)          -->
+  <!-- ==================================================================== -->
+  <section id="section-home" class="max-w-md mx-auto p-4 space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="font-bold text-slate-200 text-sm uppercase tracking-wider">Your Travel Destinations</h2>
+      <button onclick="addNewTripPrompt()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 shadow-sm">
+        <i class="fa-solid fa-plus"></i>
+        <span>Add Trip</span>
       </button>
     </div>
-  </nav>
 
-  <!-- MAIN APP CONTAINER -->
-  <main class="max-w-md mx-auto p-4">
+    <!-- TRIP CARDS CONTAINER -->
+    <div id="home-trips-list" class="space-y-3">
+      <!-- Dynamic JS rendered trip cards -->
+    </div>
+  </section>
 
-    <!-- TAB 1: ITINERARY -->
-    <section id="view-itinerary" class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="font-bold text-slate-700 text-sm uppercase tracking-wider">Tentative Daily Schedule</h2>
-        <span class="text-xs text-slate-500"><i class="fa-solid fa-cloud-sun me-1"></i>Weather Adaptive</span>
-      </div>
-
-      <!-- DAY PICKER SLIDER -->
-      <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-1">
-        <button onclick="selectDay(1)" id="daybtn-1" class="px-3 py-2 rounded-lg bg-indigo-600 text-white font-medium text-xs whitespace-nowrap shadow-sm">Day 1 (21/11)</button>
-        <button onclick="selectDay(2)" id="daybtn-2" class="px-3 py-2 rounded-lg bg-white text-slate-600 border font-medium text-xs whitespace-nowrap">Day 2 (22/11)</button>
-        <button onclick="selectDay(3)" id="daybtn-3" class="px-3 py-2 rounded-lg bg-white text-slate-600 border font-medium text-xs whitespace-nowrap">Day 3 (23/11)</button>
-        <button onclick="selectDay(4)" id="daybtn-4" class="px-3 py-2 rounded-lg bg-white text-slate-600 border font-medium text-xs whitespace-nowrap">Day 4 (24/11)</button>
-        <button onclick="selectDay(5)" id="daybtn-5" class="px-3 py-2 rounded-lg bg-white text-slate-600 border font-medium text-xs whitespace-nowrap">Day 5 (25/11)</button>
-        <button onclick="selectDay(6)" id="daybtn-6" class="px-3 py-2 rounded-lg bg-white text-slate-600 border font-medium text-xs whitespace-nowrap">Day 6 (26/11)</button>
-      </div>
-
-      <!-- DAY HEADER CARD -->
-      <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3.5 flex justify-between items-center shadow-xs">
-        <div>
-          <span id="day-tag" class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded">CENTRAL / WEST JAKARTA</span>
-          <h3 id="day-title" class="font-bold text-slate-800 text-sm mt-1">Arrival & Historical Exploration</h3>
-        </div>
-        <button onclick="addCustomActivity()" class="bg-white border border-indigo-200 text-indigo-600 text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-xs">
-          <i class="fa-solid fa-plus me-1"></i>Add
+  <!-- ==================================================================== -->
+  <!-- SECTION 2: TRIP DASHBOARD (WHEN A TRIP IS SELECTED)                  -->
+  <!-- ==================================================================== -->
+  <div id="section-trip-dashboard" class="hidden">
+    
+    <!-- DASHBOARD SUB-NAVIGATION BAR (5 PAGES) -->
+    <nav class="bg-slate-800 border-b border-slate-700 sticky top-[57px] z-40 shadow-xs">
+      <div class="max-w-md mx-auto flex text-center text-[10px] sm:text-xs font-semibold">
+        <button onclick="switchDashboardPage('summary')" id="nav-summary" class="flex-1 py-2.5 border-b-2 border-indigo-500 text-indigo-400">
+          <i class="fa-solid fa-chart-pie text-sm block mb-0.5"></i>Summary
+        </button>
+        <button onclick="switchDashboardPage('itinerary')" id="nav-itinerary" class="flex-1 py-2.5 text-slate-400 border-b-2 border-transparent">
+          <i class="fa-solid fa-calendar-day text-sm block mb-0.5"></i>Itinerary
+        </button>
+        <button onclick="switchDashboardPage('waddle')" id="nav-waddle" class="flex-1 py-2.5 text-slate-400 border-b-2 border-transparent">
+          <i class="fa-solid fa-person-walking text-sm block mb-0.5"></i>Waddle
+        </button>
+        <button onclick="switchDashboardPage('master')" id="nav-master" class="flex-1 py-2.5 text-slate-400 border-b-2 border-transparent">
+          <i class="fa-solid fa-map-location-dot text-sm block mb-0.5"></i>Master
+        </button>
+        <button onclick="switchDashboardPage('checklists')" id="nav-checklists" class="flex-1 py-2.5 text-slate-400 border-b-2 border-transparent">
+          <i class="fa-solid fa-list-check text-sm block mb-0.5"></i>Checklist
         </button>
       </div>
+    </nav>
 
-      <!-- TIMELINE LIST -->
-      <div id="timeline-list" class="space-y-3 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-200">
-        <!-- JS Rendered -->
-      </div>
-    </section>
+    <!-- MAIN TRIP CONTENT AREA -->
+    <main class="max-w-md mx-auto p-4">
 
-    <!-- TAB 2: WADDLE CLUSTER SEARCH -->
-    <section id="view-clusters" class="space-y-4 hidden">
-      <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-3">
-        <label class="font-bold text-slate-700 text-sm block"><i class="fa-solid fa-magnifying-glass me-2 text-indigo-600"></i>Waddle Cluster Search</label>
-        <input type="text" id="clusterQuery" oninput="searchCluster()" placeholder="Type spot or station (e.g., Tuku, Thamrin, Blok M)..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-      </div>
-
-      <!-- QUICK HUB BUTTONS -->
-      <div class="flex flex-wrap gap-1.5">
-        <button onclick="quickSearch('Blok M BCA')" class="text-xs bg-white border border-slate-200 hover:bg-indigo-50 text-slate-700 px-3 py-1.5 rounded-full font-medium shadow-xs">📍 Blok M</button>
-        <button onclick="quickSearch('Bundaran HI Bank Jakarta')" class="text-xs bg-white border border-slate-200 hover:bg-indigo-50 text-slate-700 px-3 py-1.5 rounded-full font-medium shadow-xs">📍 Bundaran HI</button>
-        <button onclick="quickSearch('Thamrin')" class="text-xs bg-white border border-slate-200 hover:bg-indigo-50 text-slate-700 px-3 py-1.5 rounded-full font-medium shadow-xs">📍 Thamrin</button>
-        <button onclick="quickSearch('Jakarta Kota')" class="text-xs bg-white border border-slate-200 hover:bg-indigo-50 text-slate-700 px-3 py-1.5 rounded-full font-medium shadow-xs">📍 Kota Tua</button>
-      </div>
-
-      <!-- RESULTS DISPLAY -->
-      <div id="clusterResults" class="space-y-3">
-        <div class="bg-white p-6 rounded-xl text-center text-slate-400 border border-dashed border-slate-300">
-          <i class="fa-solid fa-map-location-dot text-3xl mb-2 text-slate-300"></i>
-          <p class="text-xs">Type a location above or tap a quick hub button to see nearby spots!</p>
+      <!-- PAGE 1: DASHBOARD SUMMARY -->
+      <section id="page-summary" class="space-y-4">
+        <!-- TRIP METRICS EDITABLE CARD -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3 shadow-sm">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">Trip Overview</span>
+              <h3 id="sum-card-title" class="font-bold text-lg text-white mt-1">Jakarta & Bandung</h3>
+            </div>
+            <button onclick="editTripOverviewModal()" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold bg-indigo-950 px-2.5 py-1 rounded border border-indigo-800">
+              <i class="fa-solid fa-pen me-1"></i>Edit
+            </button>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs text-slate-300 pt-1">
+            <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
+              <span class="text-slate-500 text-[10px] block">Dates</span>
+              <strong id="sum-card-dates" class="text-white">Nov 21 – 26, 2026</strong>
+            </div>
+            <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
+              <span class="text-slate-500 text-[10px] block">Travelers</span>
+              <strong id="sum-card-people" class="text-white">2 Pax</strong>
+            </div>
+            <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
+              <span class="text-slate-500 text-[10px] block">Target Budget</span>
+              <strong id="sum-card-budget" class="text-emerald-400">RM 2,000 / pax</strong>
+            </div>
+            <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
+              <span class="text-slate-500 text-[10px] block">Accommodation Hub</span>
+              <strong id="sum-card-hotel" class="text-indigo-300">Hotel Grand Sahid Jaya</strong>
+            </div>
+          </div>
         </div>
-      </div>
-    </section>
 
-    <!-- TAB 3: MASTER PLACES DATABASE -->
-    <section id="view-places" class="space-y-4 hidden">
-      <div class="flex space-x-2">
-        <input type="text" id="placeFilterInput" oninput="renderMasterPlaces()" placeholder="Search master list..." class="flex-1 bg-white border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        <select id="categorySelect" onchange="renderMasterPlaces()" class="bg-white border border-slate-300 rounded-lg p-2.5 text-sm">
-          <option value="ALL">All Types</option>
-          <option value="Food">Food</option>
-          <option value="Coffee">Coffee</option>
-          <option value="Dessert">Dessert</option>
-          <option value="Shopping Mall">Malls</option>
-          <option value="Attraction">Attractions</option>
-        </select>
-      </div>
-
-      <div id="masterPlacesList" class="space-y-2">
-        <!-- JS Rendered -->
-      </div>
-    </section>
-
-    <!-- TAB 4: CHECKLIST & BOOKING -->
-    <section id="view-checklist" class="space-y-4 hidden">
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-        <h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-square-check text-indigo-600 me-2"></i>Trip Preparation Checklist</h3>
-        <div id="checklist-items" class="space-y-2">
-          <!-- JS Rendered -->
+        <!-- TENTATIVE SUMMARY QUICK SNAPSHOT -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 shadow-sm">
+          <div class="flex justify-between items-center">
+            <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-clock-rotate-left me-1 text-indigo-400"></i>Tentative Highlights</h4>
+            <button onclick="switchDashboardPage('itinerary')" class="text-[11px] text-indigo-400 hover:underline">Full Plan ➔</button>
+          </div>
+          <div id="summary-tentative-snapshot" class="space-y-1.5 text-xs">
+            <!-- JS Rendered Brief Snapshot -->
+          </div>
         </div>
-      </div>
 
-      <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-2">
-        <h4 class="font-bold text-indigo-900 text-xs uppercase tracking-wider">Quick Booking Links</h4>
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <a href="https://ticket.kcic.co.id" target="_blank" class="bg-white p-2.5 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🚅 Whoosh Train</a>
-          <a href="https://www.tiket.com" target="_blank" class="bg-white p-2.5 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🚆 Panoramic Train</a>
-          <a href="https://www.bandung-driver.net" target="_blank" class="bg-white p-2.5 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🚗 Supir Bandung</a>
-          <a href="https://www.google.com/maps" target="_blank" class="bg-white p-2.5 rounded-lg text-indigo-600 font-semibold border border-indigo-200 text-center shadow-xs">🗺️ Google Maps</a>
+        <!-- HIGHLIGHT SPOTS TO GO -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 shadow-sm">
+          <div class="flex justify-between items-center">
+            <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-star me-1 text-amber-400"></i>Starred / Highlight Spots</h4>
+            <button onclick="switchDashboardPage('master')" class="text-[11px] text-indigo-400 hover:underline">See All ➔</button>
+          </div>
+          <div id="summary-starred-spots" class="grid grid-cols-2 gap-2 text-xs">
+            <!-- JS Rendered Starred Spots -->
+          </div>
         </div>
-      </div>
-    </section>
 
-  </main>
+        <!-- MUST BRING ITEMS SNAPSHOT -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 shadow-sm">
+          <div class="flex justify-between items-center">
+            <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation me-1 text-rose-400"></i>Must-Bring Important Items</h4>
+            <button onclick="switchDashboardPage('checklists')" class="text-[11px] text-indigo-400 hover:underline">Checklists ➔</button>
+          </div>
+          <div id="summary-must-bring-items" class="space-y-1 text-xs">
+            <!-- JS Rendered Important Items -->
+          </div>
+        </div>
+      </section>
 
-  <!-- JAVASCRIPT APP LOGIC -->
+      <!-- PAGE 2: FULL DETAILED ITINERARY -->
+      <section id="page-itinerary" class="space-y-4 hidden">
+        <div class="flex items-center justify-between">
+          <h2 class="font-bold text-slate-200 text-sm uppercase tracking-wider">Detailed Daily Itinerary</h2>
+          <button onclick="addNewItineraryItem()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow-xs">
+            <i class="fa-solid fa-plus me-1"></i>Add Activity
+          </button>
+        </div>
+
+        <!-- DAY SWITCHER -->
+        <div id="itinerary-day-buttons" class="flex space-x-2 overflow-x-auto no-scrollbar pb-1">
+          <!-- JS Rendered Day Tabs -->
+        </div>
+
+        <!-- TIMELINE LIST -->
+        <div id="itinerary-timeline-container" class="space-y-3 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-700">
+          <!-- JS Rendered Detailed Items -->
+        </div>
+      </section>
+
+      <!-- PAGE 3: WADDLE SEARCH & HOTEL PROXIMITY -->
+      <section id="page-waddle" class="space-y-4 hidden">
+        <!-- HOTEL & NEAREST STATION BANNER -->
+        <div class="bg-indigo-950 border border-indigo-800 p-4 rounded-xl shadow-sm space-y-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-900 px-2 py-0.5 rounded">Accommodation Hub</span>
+              <h3 id="waddle-hotel-title" class="font-bold text-base text-white mt-1">Hotel Grand Sahid Jaya</h3>
+            </div>
+            <button onclick="editAccommodationInfo()" class="text-xs text-indigo-300 hover:text-white font-semibold">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+          </div>
+          <p id="waddle-hotel-station" class="text-xs text-indigo-200"><strong>Nearest Station:</strong> Setiabudi Astra (1 min walk)</p>
+        </div>
+
+        <!-- SEARCH INPUT -->
+        <div class="bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-700 space-y-3">
+          <label class="font-bold text-slate-200 text-sm block"><i class="fa-solid fa-magnifying-glass me-2 text-indigo-400"></i>Waddle & Category Search</label>
+          <input type="text" id="waddleSearchInput" oninput="executeWaddleSearch()" placeholder="Search by category, station, or place..." class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <!-- QUICK HUBS & CATEGORIES -->
+        <div id="waddle-quick-hubs" class="flex flex-wrap gap-1.5">
+          <!-- JS Quick Hub Buttons -->
+        </div>
+
+        <!-- CLUSTER RESULTS CONTAINER -->
+        <div id="waddleSearchResults" class="space-y-3">
+          <!-- JS Rendered Cluster Cards & Reviews -->
+        </div>
+      </section>
+
+      <!-- PAGE 4: MASTERPLACE SEARCH & DISCOVERIES -->
+      <section id="page-master" class="space-y-4 hidden">
+        <div class="flex justify-between items-center">
+          <h2 class="font-bold text-slate-200 text-sm uppercase tracking-wider">Master Place Database</h2>
+          <button onclick="addNewMasterPlace()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow-xs">
+            <i class="fa-solid fa-plus me-1"></i>Add Spot
+          </button>
+        </div>
+
+        <div class="flex space-x-2">
+          <input type="text" id="masterSearchInput" oninput="renderMasterPlacesList()" placeholder="Search place or station..." class="flex-1 bg-slate-800 border border-slate-700 text-white rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <select id="masterCategoryFilter" onchange="renderMasterPlacesList()" class="bg-slate-800 border border-slate-700 text-white rounded-lg p-2.5 text-sm">
+            <option value="ALL">All Types</option>
+            <option value="Food">Food</option>
+            <option value="Coffee">Coffee</option>
+            <option value="Dessert">Dessert</option>
+            <option value="Shopping Mall">Malls</option>
+            <option value="Attraction">Attractions</option>
+          </select>
+        </div>
+
+        <!-- SPOTS LIST -->
+        <div id="masterPlacesContainer" class="space-y-3">
+          <!-- JS Rendered Master Items -->
+        </div>
+      </section>
+
+      <!-- PAGE 5: CHECKLIST HUB (EXPENSES, PACKING, TRAVEL PREP) -->
+      <section id="page-checklists" class="space-y-4 hidden">
+        <!-- TABS SUB-NAVIGATION FOR CHECKLIST PAGE -->
+        <div class="flex border-b border-slate-700 text-xs font-semibold">
+          <button onclick="switchChecklistSubTab('prep')" id="checktab-prep" class="flex-1 py-2 border-b-2 border-indigo-500 text-indigo-400">
+            Prep Checklist
+          </button>
+          <button onclick="switchChecklistSubTab('packing')" id="checktab-packing" class="flex-1 py-2 text-slate-400 border-b-2 border-transparent">
+            Packing List
+          </button>
+          <button onclick="switchChecklistSubTab('expenses')" id="checktab-expenses" class="flex-1 py-2 text-slate-400 border-b-2 border-transparent">
+            Expenses
+          </button>
+        </div>
+
+        <!-- SUB TAB 1: TRAVEL PREP CHECKLIST -->
+        <div id="checklist-sub-prep" class="space-y-3">
+          <div class="flex justify-between items-center">
+            <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Travel Preparation Tasks</h3>
+            <button onclick="addPrepItem()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded font-semibold">
+              <i class="fa-solid fa-plus me-1"></i>Add Task
+            </button>
+          </div>
+          <div id="prep-items-list" class="space-y-2">
+            <!-- JS Rendered Prep Items -->
+          </div>
+        </div>
+
+        <!-- SUB TAB 2: PACKING LIST -->
+        <div id="checklist-sub-packing" class="space-y-3 hidden">
+          <div class="flex justify-between items-center">
+            <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Luggage Packing List</h3>
+            <button onclick="addPackingItem()" class="text-xs bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1 rounded font-semibold">
+              <i class="fa-solid fa-plus me-1"></i>Add Packing Item
+            </button>
+          </div>
+          <div id="packing-items-list" class="space-y-2">
+            <!-- JS Rendered Packing Items -->
+          </div>
+        </div>
+
+        <!-- SUB TAB 3: EXPENSES & BUDGET -->
+        <div id="checklist-sub-expenses" class="space-y-3 hidden">
+          <div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-slate-400">Total Spent</span>
+              <strong id="expenses-total-spent" class="text-emerald-400 text-sm">RM 0.00</strong>
+            </div>
+            <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-700">
+              <div id="expenses-progress-bar" class="bg-emerald-500 h-full w-0 transition-all"></div>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center">
+            <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Expense Itemization</h3>
+            <button onclick="addExpenseItem()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded font-semibold">
+              <i class="fa-solid fa-plus me-1"></i>Add Expense
+            </button>
+          </div>
+          <div id="expenses-items-list" class="space-y-2">
+            <!-- JS Rendered Expenses -->
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- JAVASCRIPT GLOBAL ENGINE -->
   <script>
-    // Master Places Database
-    const masterPlaces = [
-      { name: "Grand Indonesia", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "7 mins", map: "https://maps.google.com/?q=Grand+Indonesia" },
-      { name: "Thamrin City", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "18 mins", map: "https://maps.google.com/?q=Thamrin+City" },
-      { name: "Plaza Indonesia", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "6 mins", map: "https://maps.google.com/?q=Plaza+Indonesia" },
-      { name: "Sarinah", category: "Shop", station: "Bundaran HI Bank Jakarta", walkStation: "14 mins", map: "https://maps.google.com/?q=Sarinah+Jakarta" },
-      { name: "Djournal Coffee", category: "Coffee", station: "Bundaran HI Bank Jakarta", walkStation: "9 mins", map: "https://maps.google.com/?q=Djournal+Coffee+Grand+Indonesia" },
-      { name: "Fore Coffee", category: "Coffee", station: "Bundaran HI Bank Jakarta", walkStation: "14 mins", map: "https://maps.google.com/?q=Fore+Coffee" },
-      { name: "Tuku", category: "Coffee", station: "Blok M BCA", walkStation: "5 mins", map: "https://maps.google.com/?q=Tuku+Blok+M" },
-      { name: "Futago", category: "Food", station: "Blok M BCA", walkStation: "2 mins", map: "https://maps.google.com/?q=Futago+Blok+M" },
-      { name: "Fuku", category: "Dessert", station: "Blok M BCA", walkStation: "5 mins", map: "https://maps.google.com/?q=Fuku+Blok+M" },
-      { name: "Drunk Baker", category: "Dessert", station: "Blok M BCA", walkStation: "5 mins", map: "https://maps.google.com/?q=Drunk+Baker+Blok+M" },
-      { name: "Row 9", category: "Attraction", station: "Blok M BCA", walkStation: "5 mins", map: "https://maps.google.com/?q=Row+9+Blok+M" },
-      { name: "Block M Square", category: "Shopping Mall", station: "Blok M BCA", walkStation: "4 mins", map: "https://maps.google.com/?q=Blok+M+Square" },
-      { name: "Crepe O Butter", category: "Dessert", station: "Blok M BCA", walkStation: "9 mins", map: "https://maps.google.com/?q=Crepe+O+Butter+Blok+M" },
-      { name: "Pasar Santa", category: "Local Market", station: "ASEAN Headquarters", walkStation: "31 mins", map: "https://maps.google.com/?q=Pasar+Santa" },
-      { name: "Chillax", category: "Attraction", station: "Setiabudi Astra", walkStation: "1 min", map: "https://maps.google.com/?q=Chillax+Sudirman" },
-      { name: "bopet mini", category: "Food", station: "Bendungan Hilir", walkStation: "18 mins", map: "https://maps.google.com/?q=bopet+mini" },
-      { name: "RM Surya", category: "Food", station: "Bendungan Hilir", walkStation: "19 mins", map: "https://maps.google.com/?q=RM+Surya+Benhil" },
-      { name: "Jakarta Old Town", category: "Attraction", station: "Jakarta Kota", walkStation: "5 mins", map: "https://maps.google.com/?q=Kota+Tua+Jakarta" },
-      { name: "Cove Batavia PIK", category: "Shopping Mall", station: "No station nearby", walkStation: "-", map: "https://maps.google.com/?q=Cove+Batavia+PIK" },
-      { name: "Stone Garden Citatah", category: "Attraction", station: "Bandung Area", walkStation: "-", map: "https://maps.google.com/?q=Stone+Garden+Citatah" },
-      { name: "Warung Kopi Imah Babaturan", category: "Food", station: "Bandung Area", walkStation: "-", map: "https://maps.google.com/?q=Imah+Babaturan+Bandung" },
-      { name: "Taman Hutan Raya Ir. H. Djuanda", category: "Attraction", station: "Bandung Area", walkStation: "-", map: "https://maps.google.com/?q=Tahura+Djuanda+Bandung" }
-    ];
-
-    // 6-Day Itinerary Data
-    const defaultItinerary = {
-      1: {
-        tag: "Central / West Jakarta",
-        title: "Arrival & Historical Exploration",
-        items: [
-          { time: "08:00 AM", title: "Arrival at Airport (CGK)", notes: "Grab transport to Hotel Grand Sahid Jaya", done: false },
-          { time: "12:00 PM", title: "Kota Tua (Old Town)", notes: "Explore historic buildings & Cafe Batavia", done: false },
-          { time: "06:00 PM", title: "Cove Batavia PIK", notes: "Sunset walk & dinner by the sea", done: false },
-          { time: "09:00 PM", title: "Return Back to Hotel", notes: "Rest up for Day 2 waddling", done: false }
-        ]
-      },
-      2: {
-        tag: "South Jakarta Waddling",
-        title: "Shopping & Culinary Hunt",
-        items: [
-          { time: "08:00 AM", title: "Waddle Keluar", notes: "Start from Hotel Grand Sahid Jaya", done: false },
-          { time: "09:00 AM", title: "Thamrin City", notes: "Batik shopping & local food", done: false },
-          { time: "12:00 PM", title: "Pasar Santa", notes: "Thrift shops, coffee & street food", done: false },
-          { time: "02:00 PM", title: "Blok M Little Tokyo Cluster", notes: "Waddle between Tuku, Futago, Drunk Baker & Row 9", done: false },
-          { time: "06:00 PM", title: "Lotte Mall", notes: "Indoor dinner & chill", done: false }
-        ]
-      },
-      3: {
-        tag: "Jakarta ➔ Bandung",
-        title: "Scenic Train Ride & Heritage",
-        items: [
-          { time: "07:00 AM", title: "Check Out Hotel", notes: "Head to Gambir Railway Station", done: false },
-          { time: "08:30 AM", title: "Parahyangan Panoramic Train", notes: "Scenic train ride to Bandung Station", done: false },
-          { time: "02:00 PM", title: "Check-in Homestay Bandung", notes: "Unpack and refresh", done: false },
-          { time: "04:00 PM", title: "Warung Nasi Ibu Imas", notes: "Authentic Sundanese food", done: false },
-          { time: "06:00 PM", title: "Braga Citywalk", notes: "Evening walk along historic street", done: false }
-        ]
-      },
-      4: {
-        tag: "Nature & West Bandung",
-        title: "Geological Gems & Cafe Hopping",
-        items: [
-          { time: "08:00 AM", title: "Stone Garden Citatah", notes: "Limestone hills & scenic view", done: false },
-          { time: "10:00 AM", title: "Tebing Masigit / Gua Pawon", notes: "Prehistoric caves and cliffs", done: false },
-          { time: "01:00 PM", title: "Warung Sego Nusantara", notes: "Lunch stop", done: false },
-          { time: "03:00 PM", title: "IKEA Kota Baru Parahyangan", notes: "Cool off & shop", done: false },
-          { time: "06:00 PM", title: "Bumi Hejo", notes: "Outdoor dining complex", done: false }
-        ]
-      },
-      5: {
-        tag: "North Bandung Nature",
-        title: "Forest Walk & Aesthetic Cafes",
-        items: [
-          { time: "09:00 AM", title: "Taman Hutan Raya Ir. H. Djuanda", notes: "Forest trail walk & fresh air", done: false },
-          { time: "12:00 PM", title: "Warung Ketan Bakar Bu Isah", notes: "Traditional grilled sticky rice", done: false },
-          { time: "01:00 PM", title: "Hidden Farm Plantshop Cafe", notes: "Aesthetic garden cafe", done: false },
-          { time: "03:00 PM", title: "Kampung Pelangi / ArtSociates Gallery", notes: "Art exhibition & photo spots", done: false }
-        ]
-      },
-      6: {
-        tag: "Bandung ➔ Jakarta ➔ Flight",
-        title: "Whoosh Experience & Departure",
-        items: [
-          { time: "08:00 AM", title: "Warung Kopi Imah Babaturan", notes: "Breakfast icon in Bandung", done: false },
-          { time: "11:00 AM", title: "Take Whoosh Bullet Train", notes: "Padalarang/Teballuar ➔ Halim Station (45 mins)", done: false },
-          { time: "01:20 PM", title: "Grand Indonesia / Sarinah", notes: "Final souvenir & coffee run", done: false },
-          { time: "04:00 PM", title: "Airport Train to CGK Airport", notes: "Sudirman Baru ➔ Soekarno-Hatta Airport", done: false },
-          { time: "07:00 PM", title: "Flight Departure Home", notes: "Safe flight back to Malaysia!", done: false }
+    // Initial Seed Database
+    const defaultData = {
+      "jakarta_bandung_2026": {
+        id: "jakarta_bandung_2026",
+        title: "🇮🇩 Jakarta & Bandung Trip",
+        dates: "Nov 21 – 26, 2026",
+        people: "2 Pax",
+        budget: "RM 2,000 / pax",
+        budgetValue: 2000,
+        activeHotel: "Hotel Grand Sahid Jaya",
+        nearestStation: "Setiabudi Astra (1 min walk)",
+        itinerary: {
+          1: { tag: "Central / West Jakarta", title: "Arrival & Historical Exploration", items: [{ time: "08:00 AM", title: "Arrival at CGK Airport", location: "Soekarno-Hatta CGK", notes: "Grab transport to Hotel Grand Sahid Jaya", done: false }, { time: "12:00 PM", title: "Kota Tua (Old Town)", location: "Jakarta Kota", notes: "Explore historic buildings & Cafe Batavia", done: false }, { time: "06:00 PM", title: "Cove Batavia PIK", location: "PIK Area", notes: "Sunset walk & dinner by the sea", done: false }] },
+          2: { tag: "South Jakarta Waddling", title: "Shopping & Culinary Hunt", items: [{ time: "09:00 AM", title: "Thamrin City", location: "Bundaran HI", notes: "Batik shopping & local bites", done: false }, { time: "02:00 PM", title: "Blok M Little Tokyo", location: "Blok M BCA", notes: "Waddle between Tuku, Futago & Drunk Baker", done: false }] },
+          3: { tag: "Jakarta ➔ Bandung", title: "Scenic Train Ride", items: [{ time: "08:30 AM", title: "Parahyangan Panoramic Train", location: "Gambir Railway Station", notes: "Scenic train ride to Bandung Station", done: false }] }
+        },
+        places: [
+          { id: "p1", name: "Grand Indonesia", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "7 mins", map: "https://maps.google.com/?q=Grand+Indonesia", photo: "https://images.unsplash.com/photo-1567449303078-57ad995bd301?auto=format&fit=crop&w=400&q=80", starred: true, review: "Great high-end mall with amazing food options." },
+          { id: "p2", name: "Thamrin City", category: "Shopping Mall", station: "Bundaran HI Bank Jakarta", walkStation: "18 mins", map: "https://maps.google.com/?q=Thamrin+City", photo: "", starred: true, review: "The best place for affordable batik and traditional clothes." },
+          { id: "p3", name: "Tuku Coffee", category: "Coffee", station: "Blok M BCA", walkStation: "5 mins", map: "https://maps.google.com/?q=Tuku+Blok+M", photo: "", starred: true, review: "Famous Kopi Toko Tuku - try the Es Kopi Tetangga!" },
+          { id: "p4", name: "Futago Ya", category: "Food", station: "Blok M BCA", walkStation: "2 mins", map: "https://maps.google.com/?q=Futago+Blok+M", photo: "", starred: false, review: "Delicious Japanese udon in Little Tokyo." },
+          { id: "p5", name: "Chillax Sudirman", category: "Attraction", station: "Setiabudi Astra", walkStation: "1 min", map: "https://maps.google.com/?q=Chillax+Sudirman", photo: "", starred: true, review: "Open-air alfresco dining right next to Setiabudi station." }
+        ],
+        prepChecklist: [
+          { text: "Check Passport Validity (>6 months)", done: true, mustBring: true },
+          { text: "Book AirAsia / Flight Tickets", done: true, mustBring: true },
+          { text: "Buy eSIM / Pocket Wifi", done: true, mustBring: true },
+          { text: "Book Whoosh Bullet Train Ticket", done: false, mustBring: false }
+        ],
+        packingList: [
+          { text: "Universal Power Adapter", done: true, mustBring: true },
+          { text: "Breathable Cotton Wear", done: false, mustBring: false },
+          { text: "Comfortable Sneakers", done: true, mustBring: false }
+        ],
+        expenses: [
+          { name: "AirAsia Flight Ticket", amount: 344.48 },
+          { name: "Hotel Accommodation", amount: 142.86 },
+          { name: "Whoosh Train Ticket", amount: 200.00 }
         ]
       }
     };
 
-    const defaultChecklist = [
-      { text: "Check Passport Validity (> 6 months)", done: true },
-      { text: "Book AirAsia / Flight Tickets", done: true },
-      { text: "Book Whoosh Bullet Train Tickets", done: false },
-      { text: "Book Parahyangan Panoramic Train", done: false },
-      { text: "Buy eSIM / Pocket Wifi (CelcomDigi/TNG)", done: true },
-      { text: "Exchange Currency / Prepare Touch 'n Go eWallet", done: false },
-      { text: "Download Gojek / Grab Apps", done: false }
-    ];
+    // State Variables
+    let appData = JSON.parse(localStorage.getItem('my_multi_trip_app')) || defaultData;
+    let activeTripId = localStorage.getItem('my_active_trip_id') || "jakarta_bandung_2026";
+    let activeItineraryDay = 1;
 
-    let itineraryData = JSON.parse(localStorage.getItem('my_itinerary')) || defaultItinerary;
-    let checklistData = JSON.parse(localStorage.getItem('my_checklist')) || defaultChecklist;
-    let currentDay = 1;
-
-    // Tab Switching
-    function switchTab(tabName) {
-      document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
-      document.getElementById(`view-${tabName}`).classList.remove('hidden');
-
-      document.querySelectorAll('nav button').forEach(btn => {
-        btn.classList.remove('border-indigo-600', 'text-indigo-600');
-        btn.classList.add('text-slate-500', 'border-transparent');
-      });
-      const activeBtn = document.getElementById(`tab-${tabName}`);
-      activeBtn.classList.add('border-indigo-600', 'text-indigo-600');
-      activeBtn.classList.remove('text-slate-500', 'border-transparent');
+    function saveAppData() {
+      localStorage.setItem('my_multi_trip_app', JSON.stringify(appData));
+      localStorage.setItem('my_active_trip_id', activeTripId);
     }
 
-    // Itinerary Logic
-    function selectDay(dayNum) {
-      currentDay = dayNum;
-      for (let i = 1; i <= 6; i++) {
-        const btn = document.getElementById(`daybtn-${i}`);
-        btn.className = (i === dayNum) 
-          ? "px-3 py-2 rounded-lg bg-indigo-600 text-white font-medium text-xs whitespace-nowrap shadow-sm"
-          : "px-3 py-2 rounded-lg bg-white text-slate-600 border font-medium text-xs whitespace-nowrap";
+    function getActiveTrip() {
+      if (!appData[activeTripId]) {
+        activeTripId = Object.keys(appData)[0];
       }
-      renderItinerary();
+      return appData[activeTripId];
     }
 
-    function renderItinerary() {
-      const dayInfo = itineraryData[currentDay];
-      document.getElementById('day-tag').innerText = dayInfo.tag;
-      document.getElementById('day-title').innerText = dayInfo.title;
+    // SECTION SWITCHING
+    function openHomePage() {
+      document.getElementById('section-home').classList.remove('hidden');
+      document.getElementById('section-trip-dashboard').classList.add('hidden');
+      document.getElementById('switch-trip-top-btn').classList.add('hidden');
+      document.getElementById('global-header-title').innerText = "Multi-Trip Hub";
+      document.getElementById('global-header-sub').innerText = "Select or Manage Your Trips";
+      renderHomePageTrips();
+    }
 
-      const container = document.getElementById('timeline-list');
+    function openTripDashboard(tripId) {
+      activeTripId = tripId;
+      saveAppData();
+      const trip = getActiveTrip();
+
+      document.getElementById('section-home').classList.add('hidden');
+      document.getElementById('section-trip-dashboard').classList.remove('hidden');
+      document.getElementById('switch-trip-top-btn').classList.remove('hidden');
+      document.getElementById('global-header-title').innerText = trip.title;
+      document.getElementById('global-header-sub').innerText = trip.dates;
+
+      switchDashboardPage('summary');
+    }
+
+    // HOME PAGE LOGIC (CRUD TRIPS)
+    function renderHomePageTrips() {
+      const container = document.getElementById('home-trips-list');
       container.innerHTML = '';
 
-      dayInfo.items.forEach((item, idx) => {
-        const isDone = item.done ? 'line-through text-slate-400' : 'text-slate-800';
+      Object.values(appData).forEach(trip => {
         const card = document.createElement('div');
-        card.className = "relative pl-7 group";
+        card.className = "bg-slate-800 border border-slate-700 rounded-xl p-4 space-y-3 shadow-sm";
         card.innerHTML = `
-          <div class="absolute left-1.5 top-1.5 -translate-x-1/2 w-4 h-4 rounded-full bg-indigo-600 border-2 border-white shadow-xs"></div>
-          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex justify-between items-start">
-            <div class="space-y-1">
-              <span class="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">${item.time}</span>
-              <h4 class="font-bold text-sm ${isDone}">${item.title}</h4>
-              <p class="text-xs text-slate-500">${item.notes}</p>
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-bold text-base text-white">${trip.title}</h3>
+              <p class="text-xs text-slate-400"><i class="fa-solid fa-calendar me-1"></i>${trip.dates} • ${trip.people}</p>
             </div>
-            <button onclick="toggleItemDone(${currentDay}, ${idx})" class="text-slate-300 hover:text-indigo-600 p-1">
-              <i class="fa-solid ${item.done ? 'fa-circle-check text-indigo-600' : 'fa-circle'} text-lg"></i>
+            <span class="text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded">${trip.budget}</span>
+          </div>
+          <div class="flex items-center space-x-2 pt-2 border-t border-slate-700/60 text-xs">
+            <button onclick="openTripDashboard('${trip.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-3 rounded-lg flex-1 text-center">
+              Open Dashboard ➔
+            </button>
+            <button onclick="editTripBasicInfo('${trip.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded-lg">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button onclick="deleteTrip('${trip.id}')" class="bg-rose-950 hover:bg-rose-900 text-rose-300 p-2 rounded-lg border border-rose-800">
+              <i class="fa-solid fa-trash"></i>
             </button>
           </div>
         `;
@@ -310,142 +414,638 @@
       });
     }
 
-    function toggleItemDone(day, idx) {
-      itineraryData[day].items[idx].done = !itineraryData[day].items[idx].done;
-      localStorage.setItem('my_itinerary', JSON.stringify(itineraryData));
-      renderItinerary();
+    function addNewTripPrompt() {
+      const title = prompt("Enter Trip Destination Name (e.g., 🇮🇳 Kashmir / 🇯🇵 Tokyo):");
+      if (!title) return;
+      const dates = prompt("Enter Trip Dates:", "Upcoming 2026");
+      const people = prompt("Number of Travelers:", "2 Pax");
+      const budget = prompt("Target Budget:", "RM 2,000 / pax");
+
+      const id = "trip_" + Date.now();
+      appData[id] = {
+        id,
+        title,
+        dates: dates || "Upcoming",
+        people: people || "1 Pax",
+        budget: budget || "RM 2,000 / pax",
+        budgetValue: 2000,
+        activeHotel: "Central Hotel",
+        nearestStation: "Main Transit Hub",
+        itinerary: { 1: { tag: "Day 1", title: "Arrival", items: [{ time: "12:00 PM", title: "Check-in", location: "Hotel", notes: "Unpack and relax", done: false }] } },
+        places: [],
+        prepChecklist: [{ text: "Passport Valid", done: true, mustBring: true }],
+        packingList: [{ text: "Clothes & Charger", done: false, mustBring: false }],
+        expenses: []
+      };
+
+      saveAppData();
+      renderHomePageTrips();
     }
 
-    function addCustomActivity() {
+    function editTripBasicInfo(tripId) {
+      const trip = appData[tripId];
+      const title = prompt("Edit Trip Title:", trip.title);
+      if (!title) return;
+      const dates = prompt("Edit Dates:", trip.dates);
+      const people = prompt("Edit Travelers:", trip.people);
+      const budget = prompt("Edit Budget:", trip.budget);
+
+      trip.title = title;
+      trip.dates = dates || trip.dates;
+      trip.people = people || trip.people;
+      trip.budget = budget || trip.budget;
+
+      saveAppData();
+      renderHomePageTrips();
+    }
+
+    function deleteTrip(tripId) {
+      if (Object.keys(appData).length <= 1) {
+        alert("You must keep at least one trip in your hub!");
+        return;
+      }
+      if (confirm("Are you sure you want to delete this trip entirely?")) {
+        delete appData[tripId];
+        saveAppData();
+        renderHomePageTrips();
+      }
+    }
+
+    // DASHBOARD PAGES SWITCHING
+    function switchDashboardPage(pageName) {
+      const pages = ['summary', 'itinerary', 'waddle', 'master', 'checklists'];
+      pages.forEach(p => {
+        document.getElementById(`page-${p}`).classList.add('hidden');
+        const navBtn = document.getElementById(`nav-${p}`);
+        navBtn.classList.remove('border-indigo-500', 'text-indigo-400');
+        navBtn.classList.add('text-slate-400', 'border-transparent');
+      });
+
+      document.getElementById(`page-${pageName}`).classList.remove('hidden');
+      const activeNav = document.getElementById(`nav-${pageName}`);
+      activeNav.classList.add('border-indigo-500', 'text-indigo-400');
+      activeNav.classList.remove('text-slate-400', 'border-transparent');
+
+      if (pageName === 'summary') renderSummaryPage();
+      if (pageName === 'itinerary') renderItineraryPage();
+      if (pageName === 'waddle') renderWaddlePage();
+      if (pageName === 'master') renderMasterPlacesList();
+      if (pageName === 'checklists') switchChecklistSubTab('prep');
+    }
+
+    // PAGE 1: SUMMARY LOGIC
+    function renderSummaryPage() {
+      const trip = getActiveTrip();
+      document.getElementById('sum-card-title').innerText = trip.title;
+      document.getElementById('sum-card-dates').innerText = trip.dates;
+      document.getElementById('sum-card-people').innerText = trip.people;
+      document.getElementById('sum-card-budget').innerText = trip.budget;
+      document.getElementById('sum-card-hotel').innerText = trip.activeHotel;
+
+      // Render Tentative Snapshot
+      const snapContainer = document.getElementById('summary-tentative-snapshot');
+      snapContainer.innerHTML = '';
+      const day1 = trip.itinerary[1];
+      if (day1 && day1.items.length > 0) {
+        day1.items.forEach(item => {
+          snapContainer.innerHTML += `
+            <div class="bg-slate-900/80 p-2 rounded border border-slate-700/60 flex justify-between">
+              <span><strong>${item.time}:</strong> ${item.title}</span>
+              <span class="text-slate-500">${item.location}</span>
+            </div>`;
+        });
+      } else {
+        snapContainer.innerHTML = `<p class="text-slate-500">No tentative items yet.</p>`;
+      }
+
+      // Render Starred Spots
+      const starContainer = document.getElementById('summary-starred-spots');
+      starContainer.innerHTML = '';
+      const starred = trip.places.filter(p => p.starred);
+      if (starred.length > 0) {
+        starred.forEach(spot => {
+          starContainer.innerHTML += `
+            <div class="bg-slate-900/80 p-2 rounded border border-slate-700/60 flex items-center justify-between">
+              <span class="font-bold text-white">${spot.name}</span>
+              <i class="fa-solid fa-star text-amber-400"></i>
+            </div>`;
+        });
+      } else {
+        starContainer.innerHTML = `<p class="text-slate-500 col-span-2">Star spots in Master list to highlight them here!</p>`;
+      }
+
+      // Render Must Bring Items
+      const mustContainer = document.getElementById('summary-must-bring-items');
+      mustContainer.innerHTML = '';
+      const mustItems = [...trip.prepChecklist, ...trip.packingList].filter(i => i.mustBring);
+      if (mustItems.length > 0) {
+        mustItems.forEach(item => {
+          mustContainer.innerHTML += `
+            <div class="flex items-center space-x-2 text-slate-300">
+              <i class="fa-solid fa-check-circle text-emerald-400 text-xs"></i>
+              <span class="${item.done ? 'line-through text-slate-500' : ''}">${item.text}</span>
+            </div>`;
+        });
+      } else {
+        mustContainer.innerHTML = `<p class="text-slate-500">No must-bring items marked yet.</p>`;
+      }
+    }
+
+    function editTripOverviewModal() {
+      const trip = getActiveTrip();
+      const title = prompt("Edit Trip Title:", trip.title);
+      if (!title) return;
+      const dates = prompt("Edit Dates:", trip.dates);
+      const people = prompt("Edit Travelers:", trip.people);
+      const budget = prompt("Edit Target Budget:", trip.budget);
+      const hotel = prompt("Edit Accommodation Hotel:", trip.activeHotel);
+
+      trip.title = title;
+      trip.dates = dates || trip.dates;
+      trip.people = people || trip.people;
+      trip.budget = budget || trip.budget;
+      trip.activeHotel = hotel || trip.activeHotel;
+
+      saveAppData();
+      renderSummaryPage();
+    }
+
+    // PAGE 2: ITINERARY LOGIC
+    function renderItineraryPage() {
+      const trip = getActiveTrip();
+      const btnContainer = document.getElementById('itinerary-day-buttons');
+      btnContainer.innerHTML = '';
+
+      Object.keys(trip.itinerary).forEach(d => {
+        const btn = document.createElement('button');
+        btn.className = (parseInt(d) === activeItineraryDay)
+          ? "px-3.5 py-2 rounded-lg bg-indigo-600 text-white font-semibold text-xs whitespace-nowrap shadow-sm"
+          : "px-3.5 py-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-medium text-xs whitespace-nowrap";
+        btn.innerText = `Day ${d}`;
+        btn.onclick = () => { activeItineraryDay = parseInt(d); renderItineraryPage(); };
+        btnContainer.appendChild(btn);
+      });
+
+      const timelineContainer = document.getElementById('itinerary-timeline-container');
+      timelineContainer.innerHTML = '';
+      const dayData = trip.itinerary[activeItineraryDay] || { items: [] };
+
+      (dayData.items || []).forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = "relative pl-7 group";
+        card.innerHTML = `
+          <div class="absolute left-1.5 top-1.5 -translate-x-1/2 w-4 h-4 rounded-full bg-indigo-500 border-2 border-slate-900 shadow-xs"></div>
+          <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-xs flex justify-between items-start">
+            <div class="space-y-1">
+              <span class="text-[10px] font-bold text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">${item.time}</span>
+              <h4 class="font-bold text-sm ${item.done ? 'line-through text-slate-500' : 'text-white'}">${item.title}</h4>
+              <p class="text-xs text-indigo-300"><i class="fa-solid fa-location-dot me-1"></i>${item.location}</p>
+              <p class="text-xs text-slate-400">${item.notes}</p>
+            </div>
+            <div class="flex items-center space-x-1">
+              <button onclick="editItineraryItem(${activeItineraryDay}, ${idx})" class="text-slate-500 hover:text-indigo-400 p-1.5 text-xs"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteItineraryItem(${activeItineraryDay}, ${idx})" class="text-slate-500 hover:text-rose-400 p-1.5 text-xs"><i class="fa-solid fa-trash"></i></button>
+              <button onclick="toggleItineraryDone(${activeItineraryDay}, ${idx})" class="text-slate-500 hover:text-indigo-400 p-1">
+                <i class="fa-solid ${item.done ? 'fa-circle-check text-indigo-400' : 'fa-circle'} text-lg"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        timelineContainer.appendChild(card);
+      });
+    }
+
+    function addNewItineraryItem() {
+      const trip = getActiveTrip();
       const title = prompt("Enter Activity Title:");
       if (!title) return;
-      const time = prompt("Enter Estimated Time:", "03:00 PM");
-      const notes = prompt("Enter Notes / Vibe:", "Weather contingency plan");
+      const time = prompt("Enter Time (e.g., 02:00 PM):", "02:00 PM");
+      const location = prompt("Enter Location / Station:", "City Center");
+      const notes = prompt("Enter Activity Notes:", "");
 
-      itineraryData[currentDay].items.push({ time, title, notes, done: false });
-      localStorage.setItem('my_itinerary', JSON.stringify(itineraryData));
-      renderItinerary();
+      if (!trip.itinerary[activeItineraryDay]) {
+        trip.itinerary[activeItineraryDay] = { tag: `Day ${activeItineraryDay}`, title: "Schedule", items: [] };
+      }
+
+      trip.itinerary[activeItineraryDay].items.push({
+        time: time || "12:00 PM",
+        title,
+        location: location || "",
+        notes: notes || "",
+        done: false
+      });
+
+      saveAppData();
+      renderItineraryPage();
     }
 
-    // Cluster Search Logic
-    function searchCluster() {
-      const query = document.getElementById('clusterQuery').value.toLowerCase().trim();
-      const resultsContainer = document.getElementById('clusterResults');
+    function editItineraryItem(day, idx) {
+      const trip = getActiveTrip();
+      const item = trip.itinerary[day].items[idx];
+      const title = prompt("Edit Title:", item.title);
+      if (!title) return;
+      const time = prompt("Edit Time:", item.time);
+      const location = prompt("Edit Location:", item.location);
+      const notes = prompt("Edit Notes:", item.notes);
+
+      trip.itinerary[day].items[idx] = { time: time || item.time, title, location: location || "", notes: notes || "", done: item.done };
+      saveAppData();
+      renderItineraryPage();
+    }
+
+    function deleteItineraryItem(day, idx) {
+      const trip = getActiveTrip();
+      if (confirm("Delete this itinerary activity?")) {
+        trip.itinerary[day].items.splice(idx, 1);
+        saveAppData();
+        renderItineraryPage();
+      }
+    }
+
+    function toggleItineraryDone(day, idx) {
+      const trip = getActiveTrip();
+      trip.itinerary[day].items[idx].done = !trip.itinerary[day].items[idx].done;
+      saveAppData();
+      renderItineraryPage();
+    }
+
+    // PAGE 3: WADDLE & HOTEL PROXIMITY SEARCH
+    function renderWaddlePage() {
+      const trip = getActiveTrip();
+      document.getElementById('waddle-hotel-title').innerText = trip.activeHotel;
+      document.getElementById('waddle-hotel-station').innerHTML = `<strong>Nearest Station:</strong> ${trip.nearestStation}`;
+
+      const quickHubsContainer = document.getElementById('waddle-quick-hubs');
+      quickHubsContainer.innerHTML = '';
+      const stations = [...new Set(trip.places.map(p => p.station))];
+
+      stations.forEach(st => {
+        const btn = document.createElement('button');
+        btn.className = "text-xs bg-slate-800 border border-slate-700 hover:bg-indigo-950 text-slate-300 px-3 py-1.5 rounded-full font-medium shadow-xs";
+        btn.innerText = `📍 ${st}`;
+        btn.onclick = () => {
+          document.getElementById('waddleSearchInput').value = st;
+          executeWaddleSearch();
+        };
+        quickHubsContainer.appendChild(btn);
+      });
+    }
+
+    function editAccommodationInfo() {
+      const trip = getActiveTrip();
+      const hotel = prompt("Edit Hotel Name:", trip.activeHotel);
+      if (!hotel) return;
+      const station = prompt("Edit Nearest Train/Transit Station & Walk Time:", trip.nearestStation);
+
+      trip.activeHotel = hotel;
+      trip.nearestStation = station || trip.nearestStation;
+
+      saveAppData();
+      renderWaddlePage();
+    }
+
+    function executeWaddleSearch() {
+      const trip = getActiveTrip();
+      const query = document.getElementById('waddleSearchInput').value.toLowerCase().trim();
+      const container = document.getElementById('waddleSearchResults');
 
       if (!query) {
-        resultsContainer.innerHTML = `
-          <div class="bg-white p-6 rounded-xl text-center text-slate-400 border border-dashed border-slate-300">
-            <i class="fa-solid fa-map-location-dot text-3xl mb-2 text-slate-300"></i>
-            <p class="text-xs">Type a location above or tap a quick hub button to see nearby spots!</p>
-          </div>`;
+        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Type a place, category, or station above to display cluster spots!</p>`;
         return;
       }
 
-      const matched = masterPlaces.find(p => p.name.toLowerCase().includes(query) || p.station.toLowerCase().includes(query));
+      const matches = trip.places.filter(p => 
+        p.name.toLowerCase().includes(query) || 
+        p.category.toLowerCase().includes(query) || 
+        p.station.toLowerCase().includes(query)
+      );
 
-      if (!matched || matched.station === "No station nearby") {
-        resultsContainer.innerHTML = `
-          <div class="bg-white p-4 rounded-xl text-center text-slate-500 border border-slate-200">
-            <p class="text-xs">No station cluster found for "<strong>${query}</strong>". Try searching <em>Blok M</em> or <em>Thamrin</em>!</p>
-          </div>`;
+      if (matches.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No cluster places found for "${query}".</p>`;
         return;
       }
 
-      const clusterSpots = masterPlaces.filter(p => p.station === matched.station);
-
-      let html = `
-        <div class="bg-white rounded-xl border border-indigo-200 p-4 shadow-sm space-y-3">
-          <div class="flex justify-between items-center border-b pb-2">
-            <div>
-              <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase">Waddle Hub</span>
-              <h3 class="font-bold text-slate-800 text-sm mt-0.5">📍 ${matched.station}</h3>
-            </div>
-            <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-semibold">${clusterSpots.length} Spots Nearby</span>
-          </div>
-          <div class="divide-y divide-slate-100">
-      `;
-
-      clusterSpots.forEach(spot => {
-        html += `
-          <div class="py-2.5 flex justify-between items-center">
-            <div>
-              <h4 class="font-bold text-xs text-slate-800">${spot.name}</h4>
-              <p class="text-[11px] text-slate-500"><i class="fa-solid fa-person-walking me-1 text-indigo-500"></i>${spot.walkStation} from station</p>
-            </div>
-            <a href="${spot.map}" target="_blank" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2.5 py-1 rounded-lg text-xs font-semibold">
-              Map <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-            </a>
-          </div>
-        `;
-      });
-
-      html += `</div></div>`;
-      resultsContainer.innerHTML = html;
-    }
-
-    function quickSearch(term) {
-      document.getElementById('clusterQuery').value = term;
-      searchCluster();
-    }
-
-    // Master Places Rendering
-    function renderMasterPlaces() {
-      const filterText = document.getElementById('placeFilterInput').value.toLowerCase();
-      const catText = document.getElementById('categorySelect').value;
-      const listContainer = document.getElementById('masterPlacesList');
-
-      const filtered = masterPlaces.filter(p => {
-        const matchesText = p.name.toLowerCase().includes(filterText) || p.station.toLowerCase().includes(filterText);
-        const matchesCat = (catText === 'ALL') || (p.category === catText);
-        return matchesText && matchesCat;
-      });
-
-      listContainer.innerHTML = '';
-      filtered.forEach(p => {
-        const item = document.createElement('div');
-        item.className = "bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex justify-between items-center";
-        item.innerHTML = `
-          <div>
-            <div class="flex items-center space-x-1.5">
-              <h4 class="font-bold text-xs text-slate-800">${p.name}</h4>
-              <span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">${p.category}</span>
-            </div>
-            <p class="text-[11px] text-slate-500 mt-0.5">🚉 ${p.station} (${p.walkStation})</p>
-          </div>
-          <a href="${p.map}" target="_blank" class="text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg text-xs font-medium">
-            Take Me
-          </a>
-        `;
-        listContainer.appendChild(item);
-      });
-    }
-
-    // Checklist Rendering
-    function renderChecklist() {
-      const container = document.getElementById('checklist-items');
       container.innerHTML = '';
-      checklistData.forEach((item, idx) => {
+      matches.forEach(spot => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2 shadow-xs";
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="flex items-center space-x-2">
+                <h4 class="font-bold text-sm text-white">${spot.name}</h4>
+                <span class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded">${spot.category}</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-train me-1 text-indigo-400"></i>${spot.station} (${spot.walkStation})</p>
+            </div>
+            <a href="${spot.map}" target="_blank" class="bg-indigo-600 text-white font-semibold text-xs px-2.5 py-1.5 rounded-lg">Map</a>
+          </div>
+          ${spot.review ? `<p class="text-xs bg-slate-900 p-2 rounded text-slate-300 italic border border-slate-700/60">"${spot.review}"</p>` : ''}
+          <div class="flex justify-end pt-1">
+            <button onclick="editSpotReview('${spot.id}')" class="text-[11px] text-indigo-400 hover:underline">
+              <i class="fa-solid fa-comment-dots me-1"></i>Edit Review / Note
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function editSpotReview(spotId) {
+      const trip = getActiveTrip();
+      const spot = trip.places.find(p => p.id === spotId);
+      if (!spot) return;
+      const rev = prompt("Add/Edit personal review or note for " + spot.name + ":", spot.review || "");
+      spot.review = rev || "";
+      saveAppData();
+      executeWaddleSearch();
+    }
+
+    // PAGE 4: MASTER PLACES LIST
+    function renderMasterPlacesList() {
+      const trip = getActiveTrip();
+      const filterText = document.getElementById('masterSearchInput').value.toLowerCase();
+      const catText = document.getElementById('masterCategoryFilter').value;
+      const container = document.getElementById('masterPlacesContainer');
+
+      const filtered = trip.places.filter(p => {
+        const matchText = p.name.toLowerCase().includes(filterText) || p.station.toLowerCase().includes(filterText);
+        const matchCat = (catText === 'ALL') || (p.category === catText);
+        return matchText && matchCat;
+      });
+
+      container.innerHTML = '';
+      filtered.forEach(spot => {
+        const item = document.createElement('div');
+        item.className = "bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-xs space-y-2";
+        
+        let photoHtml = spot.photo ? `<img src="${spot.photo}" class="w-full h-32 object-cover rounded-lg border border-slate-700" alt="${spot.name}" />` : '';
+
+        item.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="flex items-center space-x-1.5">
+                <button onclick="toggleStarSpot('${spot.id}')" class="text-base">
+                  <i class="fa-solid fa-star ${spot.starred ? 'text-amber-400' : 'text-slate-600'}"></i>
+                </button>
+                <h4 class="font-bold text-xs text-white">${spot.name}</h4>
+                <span class="text-[9px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">${spot.category}</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-0.5">🚉 ${spot.station} (${spot.walkStation})</p>
+            </div>
+            <div class="flex items-center space-x-1">
+              <button onclick="editMasterSpot('${spot.id}')" class="text-slate-500 hover:text-indigo-400 p-1 text-xs"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteMasterSpot('${spot.id}')" class="text-slate-500 hover:text-rose-400 p-1 text-xs"><i class="fa-solid fa-trash"></i></button>
+              <a href="${spot.map}" target="_blank" class="text-indigo-400 bg-indigo-950 border border-indigo-800 px-2 py-1 rounded text-xs font-medium">Map</a>
+            </div>
+          </div>
+          ${photoHtml}
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function toggleStarSpot(spotId) {
+      const trip = getActiveTrip();
+      const spot = trip.places.find(p => p.id === spotId);
+      if (spot) {
+        spot.starred = !spot.starred;
+        saveAppData();
+        renderMasterPlacesList();
+      }
+    }
+
+    function addNewMasterPlace() {
+      const trip = getActiveTrip();
+      const name = prompt("Enter Spot Name:");
+      if (!name) return;
+      const category = prompt("Category (Food / Coffee / Dessert / Shopping Mall / Attraction):", "Food");
+      const station = prompt("Nearest Train Station:", "City Center");
+      const walkStation = prompt("Walk distance from station:", "5 mins");
+      const photo = prompt("Optional Photo URL Link:", "");
+
+      trip.places.push({
+        id: "p_" + Date.now(),
+        name,
+        category: category || "Spot",
+        station: station || "Center Station",
+        walkStation: walkStation || "5 mins",
+        map: `https://maps.google.com/?q=${encodeURIComponent(name)}`,
+        photo: photo || "",
+        starred: false,
+        review: ""
+      });
+
+      saveAppData();
+      renderMasterPlacesList();
+    }
+
+    function editMasterSpot(spotId) {
+      const trip = getActiveTrip();
+      const spot = trip.places.find(p => p.id === spotId);
+      if (!spot) return;
+
+      const name = prompt("Edit Name:", spot.name);
+      if (!name) return;
+      const category = prompt("Edit Category:", spot.category);
+      const station = prompt("Edit Station:", spot.station);
+      const photo = prompt("Edit Photo URL:", spot.photo);
+
+      spot.name = name;
+      spot.category = category || spot.category;
+      spot.station = station || spot.station;
+      spot.photo = photo || spot.photo;
+
+      saveAppData();
+      renderMasterPlacesList();
+    }
+
+    function deleteMasterSpot(spotId) {
+      const trip = getActiveTrip();
+      if (confirm("Delete this spot from database?")) {
+        trip.places = trip.places.filter(p => p.id !== spotId);
+        saveAppData();
+        renderMasterPlacesList();
+      }
+    }
+
+    // PAGE 5: CHECKLISTS HUB (PREP, PACKING, EXPENSES)
+    function switchChecklistSubTab(subName) {
+      ['prep', 'packing', 'expenses'].forEach(s => {
+        document.getElementById(`checklist-sub-${s}`).classList.add('hidden');
+        const btn = document.getElementById(`checktab-${s}`);
+        btn.classList.remove('border-indigo-500', 'text-indigo-400');
+        btn.classList.add('text-slate-400', 'border-transparent');
+      });
+
+      document.getElementById(`checklist-sub-${subName}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`checktab-${subName}`);
+      activeBtn.classList.add('border-indigo-500', 'text-indigo-400');
+      activeBtn.classList.remove('text-slate-400', 'border-transparent');
+
+      if (subName === 'prep') renderPrepList();
+      if (subName === 'packing') renderPackingList();
+      if (subName === 'expenses') renderExpensesList();
+    }
+
+    // PREP LIST
+    function renderPrepList() {
+      const trip = getActiveTrip();
+      const container = document.getElementById('prep-items-list');
+      container.innerHTML = '';
+
+      trip.prepChecklist.forEach((item, idx) => {
         const div = document.createElement('div');
-        div.className = "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs";
+        div.className = "flex items-center justify-between p-2.5 rounded-lg bg-slate-800 border border-slate-700 text-xs";
         div.innerHTML = `
-          <span class="${item.done ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}">${item.text}</span>
-          <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleChecklist(${idx})" class="w-4 h-4 text-indigo-600 rounded">
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePrepItem(${idx})" class="w-4 h-4 text-indigo-600 rounded">
+            <span class="${item.done ? 'line-through text-slate-500' : 'text-slate-200 font-medium'}">${item.text}</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="toggleMustBringPrep(${idx})" class="text-sm">
+              <i class="fa-solid fa-triangle-exclamation ${item.mustBring ? 'text-rose-400' : 'text-slate-600'}"></i>
+            </button>
+            <button onclick="deletePrepItem(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash"></i></button>
+          </div>
         `;
         container.appendChild(div);
       });
     }
 
-    function toggleChecklist(idx) {
-      checklistData[idx].done = !checklistData[idx].done;
-      localStorage.setItem('my_checklist', JSON.stringify(checklistData));
-      renderChecklist();
+    function togglePrepItem(idx) {
+      const trip = getActiveTrip();
+      trip.prepChecklist[idx].done = !trip.prepChecklist[idx].done;
+      saveAppData();
+      renderPrepList();
     }
 
-    // Initial Load
+    function toggleMustBringPrep(idx) {
+      const trip = getActiveTrip();
+      trip.prepChecklist[idx].mustBring = !trip.prepChecklist[idx].mustBring;
+      saveAppData();
+      renderPrepList();
+    }
+
+    function addPrepItem() {
+      const trip = getActiveTrip();
+      const text = prompt("Enter Travel Preparation Task:");
+      if (!text) return;
+      trip.prepChecklist.push({ text, done: false, mustBring: false });
+      saveAppData();
+      renderPrepList();
+    }
+
+    function deletePrepItem(idx) {
+      const trip = getActiveTrip();
+      trip.prepChecklist.splice(idx, 1);
+      saveAppData();
+      renderPrepList();
+    }
+
+    // PACKING LIST
+    function renderPackingList() {
+      const trip = getActiveTrip();
+      const container = document.getElementById('packing-items-list');
+      container.innerHTML = '';
+
+      trip.packingList.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = "flex items-center justify-between p-2.5 rounded-lg bg-slate-800 border border-slate-700 text-xs";
+        div.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePackingItem(${idx})" class="w-4 h-4 text-indigo-600 rounded">
+            <span class="${item.done ? 'line-through text-slate-500' : 'text-slate-200 font-medium'}">${item.text}</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="toggleMustBringPacking(${idx})" class="text-sm">
+              <i class="fa-solid fa-triangle-exclamation ${item.mustBring ? 'text-rose-400' : 'text-slate-600'}"></i>
+            </button>
+            <button onclick="deletePackingItem(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function togglePackingItem(idx) {
+      const trip = getActiveTrip();
+      trip.packingList[idx].done = !trip.packingList[idx].done;
+      saveAppData();
+      renderPackingList();
+    }
+
+    function toggleMustBringPacking(idx) {
+      const trip = getActiveTrip();
+      trip.packingList[idx].mustBring = !trip.packingList[idx].mustBring;
+      saveAppData();
+      renderPackingList();
+    }
+
+    function addPackingItem() {
+      const trip = getActiveTrip();
+      const text = prompt("Enter Luggage Packing Item:");
+      if (!text) return;
+      trip.packingList.push({ text, done: false, mustBring: false });
+      saveAppData();
+      renderPackingList();
+    }
+
+    function deletePackingItem(idx) {
+      const trip = getActiveTrip();
+      trip.packingList.splice(idx, 1);
+      saveAppData();
+      renderPackingList();
+    }
+
+    // EXPENSES & BUDGET
+    function renderExpensesList() {
+      const trip = getActiveTrip();
+      const totalSpent = trip.expenses.reduce((sum, item) => sum + item.amount, 0);
+      const percentage = Math.min(100, (totalSpent / (trip.budgetValue || 2000)) * 100);
+
+      document.getElementById('expenses-total-spent').innerText = `RM ${totalSpent.toFixed(2)}`;
+      document.getElementById('expenses-progress-bar').style.width = `${percentage}%`;
+
+      const container = document.getElementById('expenses-items-list');
+      container.innerHTML = '';
+
+      trip.expenses.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = "flex justify-between items-center p-2.5 rounded-lg bg-slate-800 border border-slate-700 text-xs";
+        div.innerHTML = `
+          <span class="text-slate-200 font-medium">${item.name}</span>
+          <div class="flex items-center space-x-2">
+            <span class="text-emerald-400 font-bold">RM ${item.amount.toFixed(2)}</span>
+            <button onclick="deleteExpenseItem(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addExpenseItem() {
+      const trip = getActiveTrip();
+      const name = prompt("Enter Expense Item (e.g. Flight, Food, Driver):");
+      if (!name) return;
+      const amount = prompt("Enter Amount (MYR):", "50");
+      if (amount && !isNaN(amount)) {
+        trip.expenses.push({ name, amount: parseFloat(amount) });
+        saveAppData();
+        renderExpensesList();
+      }
+    }
+
+    function deleteExpenseItem(idx) {
+      const trip = getActiveTrip();
+      trip.expenses.splice(idx, 1);
+      saveAppData();
+      renderExpensesList();
+    }
+
+    // App Initialization
     window.addEventListener('DOMContentLoaded', () => {
-      renderItinerary();
-      renderMasterPlaces();
-      renderChecklist();
+      openHomePage();
     });
   </script>
 </body>
