@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Multi-Trip Travel Hub & Dashboard</title>
+  <title>Multi-Trip Travel Dashboard Hub</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
     body { -webkit-tap-highlight-color: transparent; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .modal-backdrop { background-color: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen pb-20">
 
   <!-- TOP GLOBAL HEADER -->
-  <header class="bg-indigo-950 border-b border-indigo-800 p-4 sticky top-0 z-50 shadow-md">
+  <header class="bg-indigo-950 border-b border-indigo-800 p-4 sticky top-0 z-40 shadow-md">
     <div class="max-w-md mx-auto flex justify-between items-center">
       <div class="flex items-center space-x-2">
         <button id="nav-home-btn" onclick="openHomePage()" class="bg-indigo-800 hover:bg-indigo-700 p-2 rounded-lg text-white transition">
@@ -34,12 +35,12 @@
   </header>
 
   <!-- ==================================================================== -->
-  <!-- SECTION 1: HOME PAGE (TRIP HUB WITH ADD/EDIT/DELETE TRIPS)          -->
+  <!-- SECTION 1: HOME PAGE (TRIP HUB)                                      -->
   <!-- ==================================================================== -->
   <section id="section-home" class="max-w-md mx-auto p-4 space-y-4">
     <div class="flex items-center justify-between">
       <h2 class="font-bold text-slate-200 text-sm uppercase tracking-wider">Your Travel Destinations</h2>
-      <button onclick="addNewTripPrompt()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 shadow-sm">
+      <button onclick="openTripModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 shadow-sm">
         <i class="fa-solid fa-plus"></i>
         <span>Add Trip</span>
       </button>
@@ -52,12 +53,12 @@
   </section>
 
   <!-- ==================================================================== -->
-  <!-- SECTION 2: TRIP DASHBOARD (WHEN A TRIP IS SELECTED)                  -->
+  <!-- SECTION 2: TRIP DASHBOARD                                           -->
   <!-- ==================================================================== -->
   <div id="section-trip-dashboard" class="hidden">
     
-    <!-- DASHBOARD SUB-NAVIGATION BAR (5 PAGES) -->
-    <nav class="bg-slate-800 border-b border-slate-700 sticky top-[57px] z-40 shadow-xs">
+    <!-- DASHBOARD SUB-NAVIGATION BAR -->
+    <nav class="bg-slate-800 border-b border-slate-700 sticky top-[57px] z-30 shadow-xs">
       <div class="max-w-md mx-auto flex text-center text-[10px] sm:text-xs font-semibold">
         <button onclick="switchDashboardPage('summary')" id="nav-summary" class="flex-1 py-2.5 border-b-2 border-indigo-500 text-indigo-400">
           <i class="fa-solid fa-chart-pie text-sm block mb-0.5"></i>Summary
@@ -82,14 +83,13 @@
 
       <!-- PAGE 1: DASHBOARD SUMMARY -->
       <section id="page-summary" class="space-y-4">
-        <!-- TRIP METRICS EDITABLE CARD -->
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3 shadow-sm">
           <div class="flex justify-between items-start">
             <div>
               <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">Trip Overview</span>
               <h3 id="sum-card-title" class="font-bold text-lg text-white mt-1">Jakarta & Bandung</h3>
             </div>
-            <button onclick="editTripOverviewModal()" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold bg-indigo-950 px-2.5 py-1 rounded border border-indigo-800">
+            <button onclick="openTripModal(activeTripId)" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold bg-indigo-950 px-2.5 py-1 rounded border border-indigo-800">
               <i class="fa-solid fa-pen me-1"></i>Edit
             </button>
           </div>
@@ -107,43 +107,34 @@
               <strong id="sum-card-budget" class="text-emerald-400">RM 2,000 / pax</strong>
             </div>
             <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60">
-              <span class="text-slate-500 text-[10px] block">Accommodation Hub</span>
+              <span class="text-slate-500 text-[10px] block">Accommodation Base</span>
               <strong id="sum-card-hotel" class="text-indigo-300">Hotel Grand Sahid Jaya</strong>
             </div>
           </div>
         </div>
 
-        <!-- TENTATIVE SUMMARY QUICK SNAPSHOT -->
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 shadow-sm">
           <div class="flex justify-between items-center">
             <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-clock-rotate-left me-1 text-indigo-400"></i>Tentative Highlights</h4>
             <button onclick="switchDashboardPage('itinerary')" class="text-[11px] text-indigo-400 hover:underline">Full Plan ➔</button>
           </div>
-          <div id="summary-tentative-snapshot" class="space-y-1.5 text-xs">
-            <!-- JS Rendered Brief Snapshot -->
-          </div>
+          <div id="summary-tentative-snapshot" class="space-y-1.5 text-xs"></div>
         </div>
 
-        <!-- HIGHLIGHT SPOTS TO GO -->
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 shadow-sm">
           <div class="flex justify-between items-center">
             <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-star me-1 text-amber-400"></i>Starred / Highlight Spots</h4>
             <button onclick="switchDashboardPage('master')" class="text-[11px] text-indigo-400 hover:underline">See All ➔</button>
           </div>
-          <div id="summary-starred-spots" class="grid grid-cols-2 gap-2 text-xs">
-            <!-- JS Rendered Starred Spots -->
-          </div>
+          <div id="summary-starred-spots" class="grid grid-cols-2 gap-2 text-xs"></div>
         </div>
 
-        <!-- MUST BRING ITEMS SNAPSHOT -->
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-2 shadow-sm">
           <div class="flex justify-between items-center">
             <h4 class="font-bold text-xs text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation me-1 text-rose-400"></i>Must-Bring Important Items</h4>
             <button onclick="switchDashboardPage('checklists')" class="text-[11px] text-indigo-400 hover:underline">Checklists ➔</button>
           </div>
-          <div id="summary-must-bring-items" class="space-y-1 text-xs">
-            <!-- JS Rendered Important Items -->
-          </div>
+          <div id="summary-must-bring-items" class="space-y-1 text-xs"></div>
         </div>
       </section>
 
@@ -151,60 +142,46 @@
       <section id="page-itinerary" class="space-y-4 hidden">
         <div class="flex items-center justify-between">
           <h2 class="font-bold text-slate-200 text-sm uppercase tracking-wider">Detailed Daily Itinerary</h2>
-          <button onclick="addNewItineraryItem()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow-xs">
+          <button onclick="openItineraryModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow-xs">
             <i class="fa-solid fa-plus me-1"></i>Add Activity
           </button>
         </div>
 
-        <!-- DAY SWITCHER -->
-        <div id="itinerary-day-buttons" class="flex space-x-2 overflow-x-auto no-scrollbar pb-1">
-          <!-- JS Rendered Day Tabs -->
-        </div>
+        <div id="itinerary-day-buttons" class="flex space-x-2 overflow-x-auto no-scrollbar pb-1"></div>
 
-        <!-- TIMELINE LIST -->
-        <div id="itinerary-timeline-container" class="space-y-3 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-700">
-          <!-- JS Rendered Detailed Items -->
-        </div>
+        <div id="itinerary-timeline-container" class="space-y-3 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-700"></div>
       </section>
 
       <!-- PAGE 3: WADDLE SEARCH & HOTEL PROXIMITY -->
       <section id="page-waddle" class="space-y-4 hidden">
-        <!-- HOTEL & NEAREST STATION BANNER -->
         <div class="bg-indigo-950 border border-indigo-800 p-4 rounded-xl shadow-sm space-y-2">
           <div class="flex justify-between items-start">
             <div>
               <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-900 px-2 py-0.5 rounded">Accommodation Hub</span>
               <h3 id="waddle-hotel-title" class="font-bold text-base text-white mt-1">Hotel Grand Sahid Jaya</h3>
             </div>
-            <button onclick="editAccommodationInfo()" class="text-xs text-indigo-300 hover:text-white font-semibold">
+            <button onclick="openHotelModal()" class="text-xs text-indigo-300 hover:text-white font-semibold bg-indigo-900 px-2.5 py-1 rounded">
               <i class="fa-solid fa-pen"></i>
             </button>
           </div>
           <p id="waddle-hotel-station" class="text-xs text-indigo-200"><strong>Nearest Station:</strong> Setiabudi Astra (1 min walk)</p>
         </div>
 
-        <!-- SEARCH INPUT -->
         <div class="bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-700 space-y-3">
           <label class="font-bold text-slate-200 text-sm block"><i class="fa-solid fa-magnifying-glass me-2 text-indigo-400"></i>Waddle & Category Search</label>
           <input type="text" id="waddleSearchInput" oninput="executeWaddleSearch()" placeholder="Search by category, station, or place..." class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
 
-        <!-- QUICK HUBS & CATEGORIES -->
-        <div id="waddle-quick-hubs" class="flex flex-wrap gap-1.5">
-          <!-- JS Quick Hub Buttons -->
-        </div>
+        <div id="waddle-quick-hubs" class="flex flex-wrap gap-1.5"></div>
 
-        <!-- CLUSTER RESULTS CONTAINER -->
-        <div id="waddleSearchResults" class="space-y-3">
-          <!-- JS Rendered Cluster Cards & Reviews -->
-        </div>
+        <div id="waddleSearchResults" class="space-y-3"></div>
       </section>
 
       <!-- PAGE 4: MASTERPLACE SEARCH & DISCOVERIES -->
       <section id="page-master" class="space-y-4 hidden">
         <div class="flex justify-between items-center">
           <h2 class="font-bold text-slate-200 text-sm uppercase tracking-wider">Master Place Database</h2>
-          <button onclick="addNewMasterPlace()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow-xs">
+          <button onclick="openMasterSpotModal()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow-xs">
             <i class="fa-solid fa-plus me-1"></i>Add Spot
           </button>
         </div>
@@ -221,15 +198,11 @@
           </select>
         </div>
 
-        <!-- SPOTS LIST -->
-        <div id="masterPlacesContainer" class="space-y-3">
-          <!-- JS Rendered Master Items -->
-        </div>
+        <div id="masterPlacesContainer" class="space-y-3"></div>
       </section>
 
-      <!-- PAGE 5: CHECKLIST HUB (EXPENSES, PACKING, TRAVEL PREP) -->
+      <!-- PAGE 5: CHECKLIST HUB -->
       <section id="page-checklists" class="space-y-4 hidden">
-        <!-- TABS SUB-NAVIGATION FOR CHECKLIST PAGE -->
         <div class="flex border-b border-slate-700 text-xs font-semibold">
           <button onclick="switchChecklistSubTab('prep')" id="checktab-prep" class="flex-1 py-2 border-b-2 border-indigo-500 text-indigo-400">
             Prep Checklist
@@ -238,37 +211,33 @@
             Packing List
           </button>
           <button onclick="switchChecklistSubTab('expenses')" id="checktab-expenses" class="flex-1 py-2 text-slate-400 border-b-2 border-transparent">
-            Expenses
+            Categorized Expenses
           </button>
         </div>
 
-        <!-- SUB TAB 1: TRAVEL PREP CHECKLIST -->
+        <!-- SUB TAB 1: PREP CHECKLIST -->
         <div id="checklist-sub-prep" class="space-y-3">
           <div class="flex justify-between items-center">
             <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Travel Preparation Tasks</h3>
-            <button onclick="addPrepItem()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded font-semibold">
+            <button onclick="openChecklistItemModal('prep')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded font-semibold">
               <i class="fa-solid fa-plus me-1"></i>Add Task
             </button>
           </div>
-          <div id="prep-items-list" class="space-y-2">
-            <!-- JS Rendered Prep Items -->
-          </div>
+          <div id="prep-items-list" class="space-y-2"></div>
         </div>
 
         <!-- SUB TAB 2: PACKING LIST -->
         <div id="checklist-sub-packing" class="space-y-3 hidden">
           <div class="flex justify-between items-center">
             <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Luggage Packing List</h3>
-            <button onclick="addPackingItem()" class="text-xs bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1 rounded font-semibold">
+            <button onclick="openChecklistItemModal('packing')" class="text-xs bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1 rounded font-semibold">
               <i class="fa-solid fa-plus me-1"></i>Add Packing Item
             </button>
           </div>
-          <div id="packing-items-list" class="space-y-2">
-            <!-- JS Rendered Packing Items -->
-          </div>
+          <div id="packing-items-list" class="space-y-2"></div>
         </div>
 
-        <!-- SUB TAB 3: EXPENSES & BUDGET -->
+        <!-- SUB TAB 3: CATEGORIZED EXPENSES -->
         <div id="checklist-sub-expenses" class="space-y-3 hidden">
           <div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2">
             <div class="flex justify-between items-center">
@@ -280,15 +249,16 @@
             </div>
           </div>
 
-          <div class="flex justify-between items-center">
-            <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Expense Itemization</h3>
-            <button onclick="addExpenseItem()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded font-semibold">
+          <!-- CATEGORY TOTALS SUMMARY BAR -->
+          <div id="expenses-category-breakdown" class="grid grid-cols-3 gap-1.5 text-[11px]"></div>
+
+          <div class="flex justify-between items-center pt-2">
+            <h3 class="font-bold text-slate-200 text-xs uppercase tracking-wider">Categorized Expenses</h3>
+            <button onclick="openExpenseModal()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded font-semibold">
               <i class="fa-solid fa-plus me-1"></i>Add Expense
             </button>
           </div>
-          <div id="expenses-items-list" class="space-y-2">
-            <!-- JS Rendered Expenses -->
-          </div>
+          <div id="expenses-items-list" class="space-y-3"></div>
         </div>
 
       </section>
@@ -297,9 +267,209 @@
 
   </div>
 
+  <!-- ==================================================================== -->
+  <!-- CUSTOM SLEEK MODAL BOXES (REPLACES BROWSER PROMPTS)                  -->
+  <!-- ==================================================================== -->
+
+  <!-- MODAL 1: TRIP FORM MODAL -->
+  <div id="modal-trip" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+        <h3 id="modal-trip-title" class="font-bold text-white text-base">Add New Trip</h3>
+        <button onclick="closeModal('modal-trip')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <input type="hidden" id="trip-form-id" />
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Trip Destination Name</label>
+          <input type="text" id="trip-form-title" placeholder="e.g. 🇮🇩 Jakarta & Bandung" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Trip Dates</label>
+          <input type="text" id="trip-form-dates" placeholder="e.g. Nov 21 – 26, 2026" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Travelers Count</label>
+          <input type="text" id="trip-form-people" placeholder="e.g. 2 Pax" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Target Budget</label>
+          <input type="text" id="trip-form-budget" placeholder="e.g. RM 2,000 / pax" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Accommodation Hotel</label>
+          <input type="text" id="trip-form-hotel" placeholder="e.g. Hotel Grand Sahid Jaya" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal('modal-trip')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
+        <button onclick="saveTripForm()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Save Trip</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ITINERARY ITEM MODAL -->
+  <div id="modal-itinerary" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+        <h3 id="modal-itin-title" class="font-bold text-white text-base">Itinerary Activity</h3>
+        <button onclick="closeModal('modal-itinerary')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <input type="hidden" id="itin-form-idx" value="-1" />
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Activity Title</label>
+          <input type="text" id="itin-form-title" placeholder="e.g. Kota Tua Exploration" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Estimated Time</label>
+          <input type="text" id="itin-form-time" placeholder="e.g. 12:00 PM" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Location / Station</label>
+          <input type="text" id="itin-form-location" placeholder="e.g. Jakarta Kota" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Activity Notes / Highlights</label>
+          <textarea id="itin-form-notes" placeholder="e.g. Explore historic cafe & museums" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 h-20"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal('modal-itinerary')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
+        <button onclick="saveItineraryForm()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Save Activity</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: MASTER SPOT FORM MODAL -->
+  <div id="modal-master-spot" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+        <h3 id="modal-spot-title" class="font-bold text-white text-base">Add / Edit Master Spot</h3>
+        <button onclick="closeModal('modal-master-spot')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <input type="hidden" id="spot-form-id" />
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Spot Name</label>
+          <input type="text" id="spot-form-name" placeholder="e.g. Grand Indonesia" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Category</label>
+          <select id="spot-form-category" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+            <option value="Food">Food</option>
+            <option value="Coffee">Coffee</option>
+            <option value="Dessert">Dessert</option>
+            <option value="Shopping Mall">Shopping Mall</option>
+            <option value="Attraction">Attraction</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Nearest Station</label>
+          <input type="text" id="spot-form-station" placeholder="e.g. Bundaran HI Bank Jakarta" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Walk Time from Station</label>
+          <input type="text" id="spot-form-walk" placeholder="e.g. 7 mins" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Photo Image Link (URL)</label>
+          <input type="text" id="spot-form-photo" placeholder="https://..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal('modal-master-spot')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
+        <button onclick="saveMasterSpotForm()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold">Save Spot</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: CATEGORIZED EXPENSE MODAL -->
+  <div id="modal-expense" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+        <h3 class="font-bold text-white text-base">Add Categorized Expense</h3>
+        <button onclick="closeModal('modal-expense')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Expense Description</label>
+          <input type="text" id="expense-form-name" placeholder="e.g. AirAsia Flight Ticket" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Expense Category</label>
+          <select id="expense-form-category" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+            <option value="Flights">✈️ Flights</option>
+            <option value="Accommodation">🏨 Accommodation</option>
+            <option value="Transport">🚆 Transport / Train</option>
+            <option value="Food & Dining">🍜 Food & Dining</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Activities">🎟️ Activities / Tickets</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Amount (MYR)</label>
+          <input type="number" step="0.01" id="expense-form-amount" placeholder="e.g. 344.48" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal('modal-expense')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
+        <button onclick="saveExpenseForm()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold">Save Expense</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: CHECKLIST ITEM MODAL -->
+  <div id="modal-checklist-item" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+        <h3 id="modal-checklist-title" class="font-bold text-white text-base">Add Item</h3>
+        <button onclick="closeModal('modal-checklist-item')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <input type="hidden" id="checklist-type-target" value="prep" />
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Item Description</label>
+          <input type="text" id="checklist-item-text" placeholder="e.g. Check Passport Validity" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="checklist-item-mustbring" class="w-4 h-4 text-rose-500 rounded">
+          <label for="checklist-item-mustbring" class="text-slate-300">Mark as Must-Bring / Priority</label>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal('modal-checklist-item')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
+        <button onclick="saveChecklistItemForm()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Save Item</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: HOTEL EDIT MODAL -->
+  <div id="modal-hotel" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+        <h3 class="font-bold text-white text-base">Accommodation Hub</h3>
+        <button onclick="closeModal('modal-hotel')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Hotel / Stay Name</label>
+          <input type="text" id="hotel-form-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Nearest Station & Walk Distance</label>
+          <input type="text" id="hotel-form-station" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal('modal-hotel')" class="px-3 py-2 bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
+        <button onclick="saveHotelForm()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Save Details</button>
+      </div>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT GLOBAL ENGINE -->
   <script>
-    // Initial Seed Database
     const defaultData = {
       "jakarta_bandung_2026": {
         id: "jakarta_bandung_2026",
@@ -334,14 +504,13 @@
           { text: "Comfortable Sneakers", done: true, mustBring: false }
         ],
         expenses: [
-          { name: "AirAsia Flight Ticket", amount: 344.48 },
-          { name: "Hotel Accommodation", amount: 142.86 },
-          { name: "Whoosh Train Ticket", amount: 200.00 }
+          { name: "AirAsia Flight Ticket", category: "Flights", amount: 344.48 },
+          { name: "Hotel Accommodation", category: "Accommodation", amount: 142.86 },
+          { name: "Whoosh Train Ticket", category: "Transport", amount: 200.00 }
         ]
       }
     };
 
-    // State Variables
     let appData = JSON.parse(localStorage.getItem('my_multi_trip_app')) || defaultData;
     let activeTripId = localStorage.getItem('my_active_trip_id') || "jakarta_bandung_2026";
     let activeItineraryDay = 1;
@@ -358,7 +527,11 @@
       return appData[activeTripId];
     }
 
-    // SECTION SWITCHING
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+    // SECTION NAVIGATION
     function openHomePage() {
       document.getElementById('section-home').classList.remove('hidden');
       document.getElementById('section-trip-dashboard').classList.add('hidden');
@@ -382,7 +555,7 @@
       switchDashboardPage('summary');
     }
 
-    // HOME PAGE LOGIC (CRUD TRIPS)
+    // HOME PAGE
     function renderHomePageTrips() {
       const container = document.getElementById('home-trips-list');
       container.innerHTML = '';
@@ -402,7 +575,7 @@
             <button onclick="openTripDashboard('${trip.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-3 rounded-lg flex-1 text-center">
               Open Dashboard ➔
             </button>
-            <button onclick="editTripBasicInfo('${trip.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded-lg">
+            <button onclick="openTripModal('${trip.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded-lg">
               <i class="fa-solid fa-pen"></i>
             </button>
             <button onclick="deleteTrip('${trip.id}')" class="bg-rose-950 hover:bg-rose-900 text-rose-300 p-2 rounded-lg border border-rose-800">
@@ -414,57 +587,75 @@
       });
     }
 
-    function addNewTripPrompt() {
-      const title = prompt("Enter Trip Destination Name (e.g., 🇮🇳 Kashmir / 🇯🇵 Tokyo):");
-      if (!title) return;
-      const dates = prompt("Enter Trip Dates:", "Upcoming 2026");
-      const people = prompt("Number of Travelers:", "2 Pax");
-      const budget = prompt("Target Budget:", "RM 2,000 / pax");
+    function openTripModal(tripId = null) {
+      document.getElementById('trip-form-id').value = tripId || '';
+      document.getElementById('modal-trip-title').innerText = tripId ? 'Edit Trip Details' : 'Add New Trip';
 
-      const id = "trip_" + Date.now();
-      appData[id] = {
-        id,
-        title,
-        dates: dates || "Upcoming",
-        people: people || "1 Pax",
-        budget: budget || "RM 2,000 / pax",
-        budgetValue: 2000,
-        activeHotel: "Central Hotel",
-        nearestStation: "Main Transit Hub",
-        itinerary: { 1: { tag: "Day 1", title: "Arrival", items: [{ time: "12:00 PM", title: "Check-in", location: "Hotel", notes: "Unpack and relax", done: false }] } },
-        places: [],
-        prepChecklist: [{ text: "Passport Valid", done: true, mustBring: true }],
-        packingList: [{ text: "Clothes & Charger", done: false, mustBring: false }],
-        expenses: []
-      };
+      if (tripId && appData[tripId]) {
+        const t = appData[tripId];
+        document.getElementById('trip-form-title').value = t.title;
+        document.getElementById('trip-form-dates').value = t.dates;
+        document.getElementById('trip-form-people').value = t.people;
+        document.getElementById('trip-form-budget').value = t.budget;
+        document.getElementById('trip-form-hotel').value = t.activeHotel;
+      } else {
+        document.getElementById('trip-form-title').value = '';
+        document.getElementById('trip-form-dates').value = '';
+        document.getElementById('trip-form-people').value = '2 Pax';
+        document.getElementById('trip-form-budget').value = 'RM 2,000 / pax';
+        document.getElementById('trip-form-hotel').value = 'Central Hotel';
+      }
 
-      saveAppData();
-      renderHomePageTrips();
+      document.getElementById('modal-trip').classList.remove('hidden');
     }
 
-    function editTripBasicInfo(tripId) {
-      const trip = appData[tripId];
-      const title = prompt("Edit Trip Title:", trip.title);
-      if (!title) return;
-      const dates = prompt("Edit Dates:", trip.dates);
-      const people = prompt("Edit Travelers:", trip.people);
-      const budget = prompt("Edit Budget:", trip.budget);
+    function saveTripForm() {
+      const id = document.getElementById('trip-form-id').value;
+      const title = document.getElementById('trip-form-title').value.trim();
+      if (!title) return alert("Please enter trip title!");
 
-      trip.title = title;
-      trip.dates = dates || trip.dates;
-      trip.people = people || trip.people;
-      trip.budget = budget || trip.budget;
+      const dates = document.getElementById('trip-form-dates').value.trim() || 'Upcoming';
+      const people = document.getElementById('trip-form-people').value.trim() || '1 Pax';
+      const budget = document.getElementById('trip-form-budget').value.trim() || 'RM 2,000 / pax';
+      const hotel = document.getElementById('trip-form-hotel').value.trim() || 'Central Hotel';
+
+      if (id && appData[id]) {
+        appData[id].title = title;
+        appData[id].dates = dates;
+        appData[id].people = people;
+        appData[id].budget = budget;
+        appData[id].activeHotel = hotel;
+      } else {
+        const newId = "trip_" + Date.now();
+        appData[newId] = {
+          id: newId,
+          title,
+          dates,
+          people,
+          budget,
+          budgetValue: 2000,
+          activeHotel: hotel,
+          nearestStation: "Main Station",
+          itinerary: { 1: { tag: "Day 1", title: "Arrival", items: [{ time: "12:00 PM", title: "Check-in Hotel", location: hotel, notes: "Unpack and relax", done: false }] } },
+          places: [],
+          prepChecklist: [{ text: "Check Passport", done: true, mustBring: true }],
+          packingList: [{ text: "Clothes & Shoes", done: false, mustBring: false }],
+          expenses: []
+        };
+      }
 
       saveAppData();
-      renderHomePageTrips();
+      closeModal('modal-trip');
+      if (!document.getElementById('section-home').classList.contains('hidden')) {
+        renderHomePageTrips();
+      } else {
+        renderSummaryPage();
+      }
     }
 
     function deleteTrip(tripId) {
-      if (Object.keys(appData).length <= 1) {
-        alert("You must keep at least one trip in your hub!");
-        return;
-      }
-      if (confirm("Are you sure you want to delete this trip entirely?")) {
+      if (Object.keys(appData).length <= 1) return alert("Keep at least one trip!");
+      if (confirm("Delete this trip?")) {
         delete appData[tripId];
         saveAppData();
         renderHomePageTrips();
@@ -473,8 +664,7 @@
 
     // DASHBOARD PAGES SWITCHING
     function switchDashboardPage(pageName) {
-      const pages = ['summary', 'itinerary', 'waddle', 'master', 'checklists'];
-      pages.forEach(p => {
+      ['summary', 'itinerary', 'waddle', 'master', 'checklists'].forEach(p => {
         document.getElementById(`page-${p}`).classList.add('hidden');
         const navBtn = document.getElementById(`nav-${p}`);
         navBtn.classList.remove('border-indigo-500', 'text-indigo-400');
@@ -493,7 +683,7 @@
       if (pageName === 'checklists') switchChecklistSubTab('prep');
     }
 
-    // PAGE 1: SUMMARY LOGIC
+    // PAGE 1: SUMMARY
     function renderSummaryPage() {
       const trip = getActiveTrip();
       document.getElementById('sum-card-title').innerText = trip.title;
@@ -502,7 +692,6 @@
       document.getElementById('sum-card-budget').innerText = trip.budget;
       document.getElementById('sum-card-hotel').innerText = trip.activeHotel;
 
-      // Render Tentative Snapshot
       const snapContainer = document.getElementById('summary-tentative-snapshot');
       snapContainer.innerHTML = '';
       const day1 = trip.itinerary[1];
@@ -518,7 +707,6 @@
         snapContainer.innerHTML = `<p class="text-slate-500">No tentative items yet.</p>`;
       }
 
-      // Render Starred Spots
       const starContainer = document.getElementById('summary-starred-spots');
       starContainer.innerHTML = '';
       const starred = trip.places.filter(p => p.starred);
@@ -534,7 +722,6 @@
         starContainer.innerHTML = `<p class="text-slate-500 col-span-2">Star spots in Master list to highlight them here!</p>`;
       }
 
-      // Render Must Bring Items
       const mustContainer = document.getElementById('summary-must-bring-items');
       mustContainer.innerHTML = '';
       const mustItems = [...trip.prepChecklist, ...trip.packingList].filter(i => i.mustBring);
@@ -551,26 +738,7 @@
       }
     }
 
-    function editTripOverviewModal() {
-      const trip = getActiveTrip();
-      const title = prompt("Edit Trip Title:", trip.title);
-      if (!title) return;
-      const dates = prompt("Edit Dates:", trip.dates);
-      const people = prompt("Edit Travelers:", trip.people);
-      const budget = prompt("Edit Target Budget:", trip.budget);
-      const hotel = prompt("Edit Accommodation Hotel:", trip.activeHotel);
-
-      trip.title = title;
-      trip.dates = dates || trip.dates;
-      trip.people = people || trip.people;
-      trip.budget = budget || trip.budget;
-      trip.activeHotel = hotel || trip.activeHotel;
-
-      saveAppData();
-      renderSummaryPage();
-    }
-
-    // PAGE 2: ITINERARY LOGIC
+    // PAGE 2: ITINERARY
     function renderItineraryPage() {
       const trip = getActiveTrip();
       const btnContainer = document.getElementById('itinerary-day-buttons');
@@ -603,9 +771,9 @@
               <p class="text-xs text-slate-400">${item.notes}</p>
             </div>
             <div class="flex items-center space-x-1">
-              <button onclick="editItineraryItem(${activeItineraryDay}, ${idx})" class="text-slate-500 hover:text-indigo-400 p-1.5 text-xs"><i class="fa-solid fa-pen"></i></button>
-              <button onclick="deleteItineraryItem(${activeItineraryDay}, ${idx})" class="text-slate-500 hover:text-rose-400 p-1.5 text-xs"><i class="fa-solid fa-trash"></i></button>
-              <button onclick="toggleItineraryDone(${activeItineraryDay}, ${idx})" class="text-slate-500 hover:text-indigo-400 p-1">
+              <button onclick="openItineraryModal(${idx})" class="text-slate-500 hover:text-indigo-400 p-1.5 text-xs"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteItineraryItem(${idx})" class="text-slate-500 hover:text-rose-400 p-1.5 text-xs"><i class="fa-solid fa-trash"></i></button>
+              <button onclick="toggleItineraryDone(${idx})" class="text-slate-500 hover:text-indigo-400 p-1">
                 <i class="fa-solid ${item.done ? 'fa-circle-check text-indigo-400' : 'fa-circle'} text-lg"></i>
               </button>
             </div>
@@ -615,61 +783,68 @@
       });
     }
 
-    function addNewItineraryItem() {
+    function openItineraryModal(idx = -1) {
+      document.getElementById('itin-form-idx').value = idx;
       const trip = getActiveTrip();
-      const title = prompt("Enter Activity Title:");
-      if (!title) return;
-      const time = prompt("Enter Time (e.g., 02:00 PM):", "02:00 PM");
-      const location = prompt("Enter Location / Station:", "City Center");
-      const notes = prompt("Enter Activity Notes:", "");
 
+      if (idx >= 0 && trip.itinerary[activeItineraryDay].items[idx]) {
+        const item = trip.itinerary[activeItineraryDay].items[idx];
+        document.getElementById('itin-form-title').value = item.title;
+        document.getElementById('itin-form-time').value = item.time;
+        document.getElementById('itin-form-location').value = item.location;
+        document.getElementById('itin-form-notes').value = item.notes;
+      } else {
+        document.getElementById('itin-form-title').value = '';
+        document.getElementById('itin-form-time').value = '02:00 PM';
+        document.getElementById('itin-form-location').value = 'City Center';
+        document.getElementById('itin-form-notes').value = '';
+      }
+
+      document.getElementById('modal-itinerary').classList.remove('hidden');
+    }
+
+    function saveItineraryForm() {
+      const idx = parseInt(document.getElementById('itin-form-idx').value);
+      const title = document.getElementById('itin-form-title').value.trim();
+      if (!title) return alert("Please enter activity title!");
+
+      const time = document.getElementById('itin-form-time').value.trim() || '12:00 PM';
+      const location = document.getElementById('itin-form-location').value.trim() || '';
+      const notes = document.getElementById('itin-form-notes').value.trim() || '';
+
+      const trip = getActiveTrip();
       if (!trip.itinerary[activeItineraryDay]) {
         trip.itinerary[activeItineraryDay] = { tag: `Day ${activeItineraryDay}`, title: "Schedule", items: [] };
       }
 
-      trip.itinerary[activeItineraryDay].items.push({
-        time: time || "12:00 PM",
-        title,
-        location: location || "",
-        notes: notes || "",
-        done: false
-      });
+      if (idx >= 0) {
+        trip.itinerary[activeItineraryDay].items[idx] = { time, title, location, notes, done: trip.itinerary[activeItineraryDay].items[idx].done };
+      } else {
+        trip.itinerary[activeItineraryDay].items.push({ time, title, location, notes, done: false });
+      }
 
       saveAppData();
+      closeModal('modal-itinerary');
       renderItineraryPage();
     }
 
-    function editItineraryItem(day, idx) {
+    function deleteItineraryItem(idx) {
       const trip = getActiveTrip();
-      const item = trip.itinerary[day].items[idx];
-      const title = prompt("Edit Title:", item.title);
-      if (!title) return;
-      const time = prompt("Edit Time:", item.time);
-      const location = prompt("Edit Location:", item.location);
-      const notes = prompt("Edit Notes:", item.notes);
-
-      trip.itinerary[day].items[idx] = { time: time || item.time, title, location: location || "", notes: notes || "", done: item.done };
-      saveAppData();
-      renderItineraryPage();
-    }
-
-    function deleteItineraryItem(day, idx) {
-      const trip = getActiveTrip();
-      if (confirm("Delete this itinerary activity?")) {
-        trip.itinerary[day].items.splice(idx, 1);
+      if (confirm("Delete activity?")) {
+        trip.itinerary[activeItineraryDay].items.splice(idx, 1);
         saveAppData();
         renderItineraryPage();
       }
     }
 
-    function toggleItineraryDone(day, idx) {
+    function toggleItineraryDone(idx) {
       const trip = getActiveTrip();
-      trip.itinerary[day].items[idx].done = !trip.itinerary[day].items[idx].done;
+      trip.itinerary[activeItineraryDay].items[idx].done = !trip.itinerary[activeItineraryDay].items[idx].done;
       saveAppData();
       renderItineraryPage();
     }
 
-    // PAGE 3: WADDLE & HOTEL PROXIMITY SEARCH
+    // PAGE 3: WADDLE & HOTEL PROXIMITY
     function renderWaddlePage() {
       const trip = getActiveTrip();
       document.getElementById('waddle-hotel-title').innerText = trip.activeHotel;
@@ -691,16 +866,19 @@
       });
     }
 
-    function editAccommodationInfo() {
+    function openHotelModal() {
       const trip = getActiveTrip();
-      const hotel = prompt("Edit Hotel Name:", trip.activeHotel);
-      if (!hotel) return;
-      const station = prompt("Edit Nearest Train/Transit Station & Walk Time:", trip.nearestStation);
+      document.getElementById('hotel-form-name').value = trip.activeHotel;
+      document.getElementById('hotel-form-station').value = trip.nearestStation;
+      document.getElementById('modal-hotel').classList.remove('hidden');
+    }
 
-      trip.activeHotel = hotel;
-      trip.nearestStation = station || trip.nearestStation;
-
+    function saveHotelForm() {
+      const trip = getActiveTrip();
+      trip.activeHotel = document.getElementById('hotel-form-name').value.trim() || trip.activeHotel;
+      trip.nearestStation = document.getElementById('hotel-form-station').value.trim() || trip.nearestStation;
       saveAppData();
+      closeModal('modal-hotel');
       renderWaddlePage();
     }
 
@@ -755,10 +933,12 @@
       const trip = getActiveTrip();
       const spot = trip.places.find(p => p.id === spotId);
       if (!spot) return;
-      const rev = prompt("Add/Edit personal review or note for " + spot.name + ":", spot.review || "");
-      spot.review = rev || "";
-      saveAppData();
-      executeWaddleSearch();
+      const rev = prompt("Add/Edit personal review for " + spot.name + ":", spot.review || "");
+      if (rev !== null) {
+        spot.review = rev;
+        saveAppData();
+        executeWaddleSearch();
+      }
     }
 
     // PAGE 4: MASTER PLACES LIST
@@ -779,7 +959,9 @@
         const item = document.createElement('div');
         item.className = "bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-xs space-y-2";
         
-        let photoHtml = spot.photo ? `<img src="${spot.photo}" class="w-full h-32 object-cover rounded-lg border border-slate-700" alt="${spot.name}" />` : '';
+        let photoHtml = spot.photo 
+          ? `<img src="${spot.photo}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1567449303078-57ad995bd301?auto=format&fit=crop&w=400&q=80';" class="w-full h-32 object-cover rounded-lg border border-slate-700" alt="${spot.name}" />` 
+          : '';
 
         item.innerHTML = `
           <div class="flex justify-between items-start">
@@ -794,7 +976,7 @@
               <p class="text-[11px] text-slate-400 mt-0.5">🚉 ${spot.station} (${spot.walkStation})</p>
             </div>
             <div class="flex items-center space-x-1">
-              <button onclick="editMasterSpot('${spot.id}')" class="text-slate-500 hover:text-indigo-400 p-1 text-xs"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="openMasterSpotModal('${spot.id}')" class="text-slate-500 hover:text-indigo-400 p-1 text-xs"><i class="fa-solid fa-pen"></i></button>
               <button onclick="deleteMasterSpot('${spot.id}')" class="text-slate-500 hover:text-rose-400 p-1 text-xs"><i class="fa-solid fa-trash"></i></button>
               <a href="${spot.map}" target="_blank" class="text-indigo-400 bg-indigo-950 border border-indigo-800 px-2 py-1 rounded text-xs font-medium">Map</a>
             </div>
@@ -815,61 +997,80 @@
       }
     }
 
-    function addNewMasterPlace() {
-      const trip = getActiveTrip();
-      const name = prompt("Enter Spot Name:");
-      if (!name) return;
-      const category = prompt("Category (Food / Coffee / Dessert / Shopping Mall / Attraction):", "Food");
-      const station = prompt("Nearest Train Station:", "City Center");
-      const walkStation = prompt("Walk distance from station:", "5 mins");
-      const photo = prompt("Optional Photo URL Link:", "");
+    function openMasterSpotModal(spotId = null) {
+      document.getElementById('spot-form-id').value = spotId || '';
+      document.getElementById('modal-spot-title').innerText = spotId ? 'Edit Spot Details' : 'Add Master Spot';
 
-      trip.places.push({
-        id: "p_" + Date.now(),
-        name,
-        category: category || "Spot",
-        station: station || "Center Station",
-        walkStation: walkStation || "5 mins",
-        map: `https://maps.google.com/?q=${encodeURIComponent(name)}`,
-        photo: photo || "",
-        starred: false,
-        review: ""
-      });
+      if (spotId) {
+        const trip = getActiveTrip();
+        const spot = trip.places.find(p => p.id === spotId);
+        if (spot) {
+          document.getElementById('spot-form-name').value = spot.name;
+          document.getElementById('spot-form-category').value = spot.category;
+          document.getElementById('spot-form-station').value = spot.station;
+          document.getElementById('spot-form-walk').value = spot.walkStation;
+          document.getElementById('spot-form-photo').value = spot.photo;
+        }
+      } else {
+        document.getElementById('spot-form-name').value = '';
+        document.getElementById('spot-form-category').value = 'Food';
+        document.getElementById('spot-form-station').value = 'Bundaran HI Bank Jakarta';
+        document.getElementById('spot-form-walk').value = '5 mins';
+        document.getElementById('spot-form-photo').value = '';
+      }
 
-      saveAppData();
-      renderMasterPlacesList();
+      document.getElementById('modal-master-spot').classList.remove('hidden');
     }
 
-    function editMasterSpot(spotId) {
+    function saveMasterSpotForm() {
+      const spotId = document.getElementById('spot-form-id').value;
+      const name = document.getElementById('spot-form-name').value.trim();
+      if (!name) return alert("Please enter spot name!");
+
+      const category = document.getElementById('spot-form-category').value;
+      const station = document.getElementById('spot-form-station').value.trim() || 'Center Station';
+      const walkStation = document.getElementById('spot-form-walk').value.trim() || '5 mins';
+      const photo = document.getElementById('spot-form-photo').value.trim();
+
       const trip = getActiveTrip();
-      const spot = trip.places.find(p => p.id === spotId);
-      if (!spot) return;
-
-      const name = prompt("Edit Name:", spot.name);
-      if (!name) return;
-      const category = prompt("Edit Category:", spot.category);
-      const station = prompt("Edit Station:", spot.station);
-      const photo = prompt("Edit Photo URL:", spot.photo);
-
-      spot.name = name;
-      spot.category = category || spot.category;
-      spot.station = station || spot.station;
-      spot.photo = photo || spot.photo;
+      if (spotId) {
+        const spot = trip.places.find(p => p.id === spotId);
+        if (spot) {
+          spot.name = name;
+          spot.category = category;
+          spot.station = station;
+          spot.walkStation = walkStation;
+          spot.photo = photo;
+        }
+      } else {
+        trip.places.push({
+          id: "p_" + Date.now(),
+          name,
+          category,
+          station,
+          walkStation,
+          map: `https://maps.google.com/?q=${encodeURIComponent(name)}`,
+          photo,
+          starred: false,
+          review: ""
+        });
+      }
 
       saveAppData();
+      closeModal('modal-master-spot');
       renderMasterPlacesList();
     }
 
     function deleteMasterSpot(spotId) {
       const trip = getActiveTrip();
-      if (confirm("Delete this spot from database?")) {
+      if (confirm("Delete spot?")) {
         trip.places = trip.places.filter(p => p.id !== spotId);
         saveAppData();
         renderMasterPlacesList();
       }
     }
 
-    // PAGE 5: CHECKLISTS HUB (PREP, PACKING, EXPENSES)
+    // PAGE 5: CHECKLISTS HUB
     function switchChecklistSubTab(subName) {
       ['prep', 'packing', 'expenses'].forEach(s => {
         document.getElementById(`checklist-sub-${s}`).classList.add('hidden');
@@ -886,6 +1087,33 @@
       if (subName === 'prep') renderPrepList();
       if (subName === 'packing') renderPackingList();
       if (subName === 'expenses') renderExpensesList();
+    }
+
+    function openChecklistItemModal(type) {
+      document.getElementById('checklist-type-target').value = type;
+      document.getElementById('modal-checklist-title').innerText = type === 'prep' ? 'Add Prep Task' : 'Add Packing Item';
+      document.getElementById('checklist-item-text').value = '';
+      document.getElementById('checklist-item-mustbring').checked = false;
+      document.getElementById('modal-checklist-item').classList.remove('hidden');
+    }
+
+    function saveChecklistItemForm() {
+      const type = document.getElementById('checklist-type-target').value;
+      const text = document.getElementById('checklist-item-text').value.trim();
+      if (!text) return alert("Please enter description!");
+      const mustBring = document.getElementById('checklist-item-mustbring').checked;
+
+      const trip = getActiveTrip();
+      if (type === 'prep') {
+        trip.prepChecklist.push({ text, done: false, mustBring });
+        renderPrepList();
+      } else {
+        trip.packingList.push({ text, done: false, mustBring });
+        renderPackingList();
+      }
+
+      saveAppData();
+      closeModal('modal-checklist-item');
     }
 
     // PREP LIST
@@ -923,15 +1151,6 @@
     function toggleMustBringPrep(idx) {
       const trip = getActiveTrip();
       trip.prepChecklist[idx].mustBring = !trip.prepChecklist[idx].mustBring;
-      saveAppData();
-      renderPrepList();
-    }
-
-    function addPrepItem() {
-      const trip = getActiveTrip();
-      const text = prompt("Enter Travel Preparation Task:");
-      if (!text) return;
-      trip.prepChecklist.push({ text, done: false, mustBring: false });
       saveAppData();
       renderPrepList();
     }
@@ -982,15 +1201,6 @@
       renderPackingList();
     }
 
-    function addPackingItem() {
-      const trip = getActiveTrip();
-      const text = prompt("Enter Luggage Packing Item:");
-      if (!text) return;
-      trip.packingList.push({ text, done: false, mustBring: false });
-      saveAppData();
-      renderPackingList();
-    }
-
     function deletePackingItem(idx) {
       const trip = getActiveTrip();
       trip.packingList.splice(idx, 1);
@@ -998,7 +1208,29 @@
       renderPackingList();
     }
 
-    // EXPENSES & BUDGET
+    // CATEGORIZED EXPENSES & BUDGET
+    function openExpenseModal() {
+      document.getElementById('expense-form-name').value = '';
+      document.getElementById('expense-form-category').value = 'Flights';
+      document.getElementById('expense-form-amount').value = '';
+      document.getElementById('modal-expense').classList.remove('hidden');
+    }
+
+    function saveExpenseForm() {
+      const name = document.getElementById('expense-form-name').value.trim();
+      const category = document.getElementById('expense-form-category').value;
+      const amount = parseFloat(document.getElementById('expense-form-amount').value);
+
+      if (!name || isNaN(amount)) return alert("Please enter valid expense details!");
+
+      const trip = getActiveTrip();
+      trip.expenses.push({ name, category, amount });
+
+      saveAppData();
+      closeModal('modal-expense');
+      renderExpensesList();
+    }
+
     function renderExpensesList() {
       const trip = getActiveTrip();
       const totalSpent = trip.expenses.reduce((sum, item) => sum + item.amount, 0);
@@ -1007,33 +1239,62 @@
       document.getElementById('expenses-total-spent').innerText = `RM ${totalSpent.toFixed(2)}`;
       document.getElementById('expenses-progress-bar').style.width = `${percentage}%`;
 
+      // Category Summary Breakdown Calculation
+      const catTotals = {};
+      trip.expenses.forEach(e => {
+        catTotals[e.category] = (catTotals[e.category] || 0) + e.amount;
+      });
+
+      const catBreakdownContainer = document.getElementById('expenses-category-breakdown');
+      catBreakdownContainer.innerHTML = '';
+
+      Object.entries(catTotals).forEach(([cat, sum]) => {
+        catBreakdownContainer.innerHTML += `
+          <div class="bg-slate-800 p-2 rounded-lg border border-slate-700/80 text-center">
+            <span class="text-slate-400 block text-[9px] truncate">${cat}</span>
+            <strong class="text-emerald-400 font-semibold">RM ${sum.toFixed(0)}</strong>
+          </div>`;
+      });
+
+      // Group Expenses by Category
       const container = document.getElementById('expenses-items-list');
       container.innerHTML = '';
 
-      trip.expenses.forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = "flex justify-between items-center p-2.5 rounded-lg bg-slate-800 border border-slate-700 text-xs";
-        div.innerHTML = `
-          <span class="text-slate-200 font-medium">${item.name}</span>
-          <div class="flex items-center space-x-2">
-            <span class="text-emerald-400 font-bold">RM ${item.amount.toFixed(2)}</span>
-            <button onclick="deleteExpenseItem(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    function addExpenseItem() {
-      const trip = getActiveTrip();
-      const name = prompt("Enter Expense Item (e.g. Flight, Food, Driver):");
-      if (!name) return;
-      const amount = prompt("Enter Amount (MYR):", "50");
-      if (amount && !isNaN(amount)) {
-        trip.expenses.push({ name, amount: parseFloat(amount) });
-        saveAppData();
-        renderExpensesList();
+      if (trip.expenses.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No expenses recorded yet.</p>`;
+        return;
       }
+
+      const grouped = {};
+      trip.expenses.forEach((item, originalIdx) => {
+        const cat = item.category || 'Other';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push({ ...item, originalIdx });
+      });
+
+      Object.entries(grouped).forEach(([cat, items]) => {
+        const catBox = document.createElement('div');
+        catBox.className = "bg-slate-800 rounded-xl border border-slate-700/80 overflow-hidden space-y-1 p-3";
+        
+        let itemsHtml = items.map(item => `
+          <div class="flex justify-between items-center py-1.5 border-b border-slate-700/50 last:border-b-0 text-xs">
+            <span class="text-slate-200 font-medium">${item.name}</span>
+            <div class="flex items-center space-x-2">
+              <span class="text-emerald-400 font-bold">RM ${item.amount.toFixed(2)}</span>
+              <button onclick="deleteExpenseItem(${item.originalIdx})" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+
+        catBox.innerHTML = `
+          <div class="flex justify-between items-center pb-1 border-b border-slate-700">
+            <span class="text-[11px] font-bold uppercase text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">${cat}</span>
+            <span class="text-xs text-slate-400 font-semibold">Subtotal: RM ${items.reduce((s, i) => s + i.amount, 0).toFixed(2)}</span>
+          </div>
+          <div class="pt-1">${itemsHtml}</div>
+        `;
+        container.appendChild(catBox);
+      });
     }
 
     function deleteExpenseItem(idx) {
@@ -1043,7 +1304,7 @@
       renderExpensesList();
     }
 
-    // App Initialization
+    // Initialize App
     window.addEventListener('DOMContentLoaded', () => {
       openHomePage();
     });
