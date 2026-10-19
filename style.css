@@ -63,7 +63,9 @@ body {
   border: 3.5px solid var(--pond-bg);
 }
 
-/* Smooth Transitions for Donut Ring */
+/* ==========================================================================
+   DONUT CHART PROGRESS RING
+   ========================================================================== */
 #expense-donut-ring {
   transition: stroke-dasharray 0.5s ease-in-out;
 }
