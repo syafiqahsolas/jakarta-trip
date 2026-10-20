@@ -1,3 +1,5 @@
+const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
+
 /* ==========================================================================
    DATE HELPER FUNCTIONS
    ========================================================================== */
@@ -676,39 +678,58 @@ function openMasterSpotModal(spotId = null) {
   document.getElementById('modal-master-spot').classList.remove('hidden');
 }
 
-function saveMasterSpotForm() {
+async function saveMasterSpotForm() {
   const spotId = document.getElementById('spot-form-id').value;
   const name = document.getElementById('spot-form-name').value.trim();
-  if (!name) return alert("Please enter spot name!");
-  
   const category = document.getElementById('spot-form-category').value;
   const station = document.getElementById('spot-form-station').value.trim() || 'Center Station';
-  const walkStation = document.getElementById('spot-form-walk').value.trim() || '5 mins';
-  const fileInput = document.getElementById('spot-form-file');
+  
+  if (!name) return alert("Please enter spot name!");
 
   const trip = getActiveTrip();
-  const finishSave = (photoBase64 = '') => {
-    if (spotId) {
-      const spot = trip.places.find(p => p.id === spotId);
-      if (spot) {
-        spot.name = name;
-        spot.category = category;
-        spot.station = station;
-        spot.walkStation = walkStation;
-        if (photoBase64) spot.photo = photoBase64;
-      }
-    } else {
-      trip.places.push({
-        id: "p_" + Date.now(),
-        name, category, station, walkStation,
-        map: `https://maps.google.com/?q=${encodeURIComponent(name)}`,
-        photo: photoBase64, starred: false, review: ""
-      });
+
+  if (spotId) {
+    // Edit existing local spot
+    const spot = trip.places.find(p => p.id === spotId);
+    if (spot) {
+      spot.name = name;
+      spot.category = category;
     }
-    saveAppData();
-    closeModal('modal-master-spot');
-    renderMasterPlacesList();
-  };
+  } else {
+    // Add new spot locally for immediate UI display
+    const newLocalSpot = {
+      id: "p_" + Date.now(),
+      name: name,
+      category: category,
+      station: station,
+      walkStation: "Calculating...",
+      map: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
+      starred: false,
+      review: ""
+    };
+    trip.places.push(newLocalSpot);
+
+    // Send to Google Sheet backend to sync across all devices (Jakarta, Bandung, etc.)
+    try {
+      await fetch(GOOGLE_SHEET_API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "ADD_SPOT",
+          name: name,
+          category: category,
+          station: station
+        })
+      });
+      console.log("Spot sent to Google Sheet successfully!");
+    } catch (err) {
+      console.warn("Offline mode: Saved locally only.", err);
+    }
+  }
+
+  saveAppData();
+  closeModal('modal-master-spot');
+  renderMasterPlacesList();
+}
 
   if (fileInput.files && fileInput.files[0]) {
     const reader = new FileReader();
@@ -1007,3 +1028,21 @@ function deleteExpenseItem(idx) {
 window.addEventListener('DOMContentLoaded', () => {
   openHomePage('upcoming');
 });
+
+async function syncFromGoogleSheet() {
+  try {
+    const res = await fetch(GOOGLE_SHEET_API_URL);
+    const cloudData = await res.json();
+    
+    if (cloudData.places && cloudData.places.length > 0) {
+      const trip = getActiveTrip();
+      // Merge cloud places into your app data
+      trip.places = cloudData.places;
+      saveAppData();
+      renderMasterPlacesList();
+      console.log("Successfully synced places from Google Sheet!");
+    }
+  } catch (err) {
+    console.warn("Could not reach Google Sheet, using local data cache.", err);
+  }
+}
