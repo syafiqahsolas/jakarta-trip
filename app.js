@@ -1,6 +1,6 @@
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * Fully Integrated with index.html (#waddle-quick-hubs & Summary Must Visit max 5)
+ * Fixed Category Filter, Summary-Only Must-Visits, Edit Location Modal
  */
 
 const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
@@ -30,6 +30,7 @@ let activeTripId = "trip_jakarta_bandung";
 let activeItineraryDay = 1;
 let selectedWaddleCluster = "NEAR_HOTEL";
 let editingItineraryIndex = null;
+let editingPlaceId = null;
 
 // --- INITIALIZATION ---
 window.onload = async function() {
@@ -87,7 +88,7 @@ async function syncFromGoogleSheet() {
       renderUpcomingTripsList();
       renderAllTripsList();
       renderActiveTripDashboard();
-      console.log("Synced latest cloud data & clusters!");
+      console.log("Synced latest cloud data & places!");
     }
   } catch (err) {
     console.warn("Using offline local cache.", err);
@@ -160,7 +161,7 @@ function openTripDashboard(tripId) {
   switchDashboardPage('summary');
 }
 
-// --- SUMMARY DASHBOARD & MUST-VISITS (MAX 5 STRICTLY ON SUMMARY) ---
+// --- ACTIVE TRIP SUMMARY & MUST-VISITS (STRICTLY CAPPED AT 5 ON SUMMARY PAGE) ---
 function renderActiveTripDashboard() {
   const trip = getActiveTrip();
   if (!trip) return;
@@ -186,12 +187,12 @@ function renderStarredLocationsSummary() {
   const container = document.getElementById('summary-starred-container');
   if (!container) return;
 
-  // Capped at 5 items strictly
+  // Filter starred spots and strictly cap at 5 items
   const starred = (trip.places || []).filter(p => p.starred).slice(0, 5);
   container.innerHTML = "";
 
   if (starred.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 py-3 text-center">No starred locations yet. Click the star ⭐ icon in Locations to mark up to 5 must-visits!</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 py-3 text-center">No starred locations yet. Tap the star ⭐ icon in Locations to feature up to 5 must-visits!</p>`;
     return;
   }
 
@@ -221,7 +222,7 @@ function toggleStarSpot(placeId) {
   }
 }
 
-// --- MASTER LOCATIONS ---
+// --- MASTER LOCATIONS (WITH WORKING CATEGORY FILTER & EDIT MODAL) ---
 function renderMasterPlacesList() {
   const container = document.getElementById('masterPlacesContainer');
   if (!container) return;
@@ -229,10 +230,21 @@ function renderMasterPlacesList() {
   container.innerHTML = "";
 
   const query = (document.getElementById('masterSearchInput')?.value || '').toLowerCase();
-  const filtered = (trip.places || []).filter(p => p.name.toLowerCase().includes(query) || (p.station && p.station.toLowerCase().includes(query)));
+  const catFilter = document.getElementById('masterCategoryFilter')?.value || 'ALL';
+
+  const filtered = (trip.places || []).filter(p => {
+    const matchesQuery = p.name.toLowerCase().includes(query) || (p.station && p.station.toLowerCase().includes(query));
+    
+    // Exact category matching fix
+    const pCat = (p.category || '').toLowerCase();
+    const filterCat = catFilter.toLowerCase();
+    const matchesCat = filterCat === 'all' || pCat === filterCat || pCat.includes(filterCat);
+    
+    return matchesQuery && matchesCat;
+  });
 
   if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No locations found. Click "+ Add Spot" to add one!</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots found matching filter.</p>`;
     return;
   }
 
@@ -246,6 +258,7 @@ function renderMasterPlacesList() {
             ${place.starred ? '★' : '☆'}
           </button>
           <h4 style="color: var(--pond-green);" class="font-bold text-sm">${place.name}</h4>
+          <button onclick="openEditSpotModal('${place.id}')" class="text-stone-300 hover:text-stone-600 text-xs ms-1"><i class="fa-solid fa-pen"></i></button>
         </div>
         <p class="text-stone-500">${place.category || 'General'} • Station: <strong class="text-stone-700">${place.station || 'Auto-Assigned'}</strong></p>
         ${place.walk ? `<p class="text-[11px] text-emerald-700"><i class="fa-solid fa-person-walking me-1"></i>${place.walk}</p>` : ''}
@@ -259,6 +272,20 @@ function renderMasterPlacesList() {
 }
 
 function openMasterSpotModal() {
+  editingPlaceId = null;
+  document.getElementById('spot-form-name').value = '';
+  document.getElementById('spot-form-category').value = 'Attraction';
+  openModal('modal-master-spot');
+}
+
+function openEditSpotModal(placeId) {
+  const trip = getActiveTrip();
+  const place = (trip.places || []).find(p => p.id === placeId);
+  if (!place) return;
+
+  editingPlaceId = placeId;
+  document.getElementById('spot-form-name').value = place.name || '';
+  document.getElementById('spot-form-category').value = place.category || 'Attraction';
   openModal('modal-master-spot');
 }
 
@@ -271,14 +298,23 @@ function saveMasterSpotForm() {
   const trip = getActiveTrip();
   if (!trip.places) trip.places = [];
 
-  trip.places.push({
-    id: "p_" + Date.now(),
-    name: name,
-    category: category,
-    station: "Near Hotel Area",
-    map: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
-    starred: false
-  });
+  if (editingPlaceId) {
+    const place = trip.places.find(p => p.id === editingPlaceId);
+    if (place) {
+      place.name = name;
+      place.category = category;
+      place.map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
+    }
+  } else {
+    trip.places.push({
+      id: "p_" + Date.now(),
+      name: name,
+      category: category,
+      station: "Near Hotel Area",
+      map: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
+      starred: false
+    });
+  }
 
   saveAppData();
   closeModal('modal-master-spot');
@@ -288,14 +324,14 @@ function saveMasterSpotForm() {
   document.getElementById('spot-form-name').value = '';
 }
 
-// --- WADDLE WITH INTERACTIVE QUICK HUBS ---
+// --- WADDLE WITH QUICK HUBS ---
 function executeWaddleSearch() {
   renderWaddleView();
 }
 
 function renderWaddleView() {
   const container = document.getElementById('waddleSearchResults');
-  const quickHubsContainer = document.getElementById('waddle-quick-hubs'); // Matches your HTML ID!
+  const quickHubsContainer = document.getElementById('waddle-quick-hubs');
   if (!container) return;
   
   const trip = getActiveTrip();
@@ -304,7 +340,6 @@ function renderWaddleView() {
   const hotelStation = (trip.hotelStation || 'Setiabudi Astra').toLowerCase();
   const places = trip.places || [];
 
-  // Extract unique stations to generate Cluster Hub Tags
   const stationSet = new Set();
   places.forEach(p => {
     if (p.station && p.station !== 'N/A' && p.station !== 'No station nearby') {
@@ -312,25 +347,21 @@ function renderWaddleView() {
     }
   });
 
-  // Render Hub Chips inside #waddle-quick-hubs
   if (quickHubsContainer) {
     quickHubsContainer.innerHTML = "";
     
-    // "Near Hotel" Default Tag
     const hotelChip = document.createElement('button');
     hotelChip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${selectedWaddleCluster === 'NEAR_HOTEL' ? 'bg-emerald-800 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
     hotelChip.innerHTML = `<i class="fa-solid fa-hotel me-1"></i>Near Hotel`;
     hotelChip.onclick = () => { selectedWaddleCluster = 'NEAR_HOTEL'; renderWaddleView(); };
     quickHubsContainer.appendChild(hotelChip);
 
-    // "All Clusters" Tag
     const allChip = document.createElement('button');
     allChip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${selectedWaddleCluster === 'ALL' ? 'bg-emerald-800 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
     allChip.innerText = `All Clusters`;
     allChip.onclick = () => { selectedWaddleCluster = 'ALL'; renderWaddleView(); };
     quickHubsContainer.appendChild(allChip);
 
-    // Dynamic Station Chips
     stationSet.forEach(stationName => {
       const chip = document.createElement('button');
       chip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${selectedWaddleCluster === stationName ? 'bg-emerald-800 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
@@ -340,7 +371,6 @@ function renderWaddleView() {
     });
   }
 
-  // Filter Places based on selected hub pill or search input
   const searchQuery = (document.getElementById('waddleSearchInput')?.value || '').toLowerCase();
   
   let filtered = places.filter(p => {
