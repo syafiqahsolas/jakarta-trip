@@ -1,6 +1,6 @@
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * Fully Synchronized Mobile & Desktop Backend + Bulk Unstar + Clean Summary
+ * 100% Synced with your uploaded index.html
  */
 
 const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
@@ -17,7 +17,7 @@ let appData = {
       people: "5 Pax",
       budget: "RM 2,000 / pax",
       activeHotel: "Hotel Grand Sahid Jaya",
-      hotelStation: "Setiabudi Astra",
+      hotelStation: "Setiabudi Astra (1 min walk)",
       places: [],
       itinerary: [],
       checklists: { prep: [], packing: [] },
@@ -120,12 +120,19 @@ function openHomePage(subTab = 'upcoming') {
 function switchHomeTab(tabName) {
   const upcomingView = document.getElementById('home-view-upcoming');
   const allView = document.getElementById('home-view-all');
+  const btnUpcoming = document.getElementById('home-tab-upcoming');
+  const btnAll = document.getElementById('home-tab-all');
+
   if (tabName === 'upcoming') {
     if (upcomingView) upcomingView.classList.remove('hidden');
     if (allView) allView.classList.add('hidden');
+    if (btnUpcoming) btnUpcoming.classList.add('text-stone-800');
+    if (btnAll) btnAll.classList.remove('text-stone-800');
   } else {
     if (upcomingView) upcomingView.classList.add('hidden');
     if (allView) allView.classList.remove('hidden');
+    if (btnUpcoming) btnUpcoming.classList.remove('text-stone-800');
+    if (btnAll) btnAll.classList.add('text-stone-800');
     renderAllTripsList();
   }
 }
@@ -136,14 +143,14 @@ function switchDashboardPage(pageName) {
     const el = document.getElementById(`page-${p}`);
     if (el) el.classList.add('hidden');
     const navBtn = document.getElementById(`nav-${p}`);
-    if (navBtn) navBtn.classList.remove('nav-tab-active');
+    if (navBtn) navBtn.classList.remove('text-stone-800', 'font-bold');
   });
 
   const targetPage = document.getElementById(`page-${pageName}`);
   if (targetPage) targetPage.classList.remove('hidden');
 
   const activeNav = document.getElementById(`nav-${pageName}`);
-  if (activeNav) activeNav.classList.add('nav-tab-active');
+  if (activeNav) activeNav.classList.add('text-stone-800', 'font-bold');
 
   if (pageName === 'summary') renderStarredLocationsSummary();
   if (pageName === 'itinerary') renderItinerary();
@@ -161,7 +168,7 @@ function openTripDashboard(tripId) {
   switchDashboardPage('summary');
 }
 
-// --- ACTIVE TRIP SUMMARY & MUST-VISITS (MAX 5 STRICTLY ON SUMMARY) ---
+// --- ACTIVE TRIP SUMMARY & MUST-VISITS ---
 function renderActiveTripDashboard() {
   const trip = getActiveTrip();
   if (!trip) return;
@@ -174,8 +181,8 @@ function renderActiveTripDashboard() {
 
   const hotelTitle = document.getElementById('waddle-hotel-title');
   const hotelStation = document.getElementById('waddle-hotel-station');
-  if (hotelTitle) hotelTitle.innerText = trip.activeHotel || 'Hotel Base Not Set';
-  if (hotelStation) hotelStation.innerHTML = `<strong>Nearest Station:</strong> ${trip.hotelStation || 'Setiabudi Astra'}`;
+  if (hotelTitle) hotelTitle.innerText = trip.activeHotel || 'Hotel Grand Sahid Jaya';
+  if (hotelStation) hotelStation.innerHTML = `<strong>Nearest Station:</strong> ${trip.hotelStation || 'Setiabudi Astra (1 min walk)'}`;
 
   renderStarredLocationsSummary();
   renderMasterPlacesList();
@@ -184,33 +191,54 @@ function renderActiveTripDashboard() {
 
 function renderStarredLocationsSummary() {
   const trip = getActiveTrip();
-  const container = document.getElementById('summary-starred-spots') || document.getElementById('summary-starred-container');
+  const container = document.getElementById('summary-starred-spots');
+  const snapshotContainer = document.getElementById('summary-tentative-snapshot');
   if (!container) return;
 
-  // Filter ONLY explicitly starred spots and strictly cap at 5 items
+  // Filter ONLY starred spots and cap at 5
   const starred = (trip.places || []).filter(p => p.starred === true).slice(0, 5);
   container.innerHTML = "";
 
   if (starred.length === 0) {
     container.innerHTML = `<p class="col-span-2 text-xs text-stone-400 py-3 text-center">No starred locations yet. Tap the star ⭐ icon in Locations to feature up to 5 must-visits!</p>`;
-    return;
+  } else {
+    starred.forEach(p => {
+      const card = document.createElement('div');
+      card.className = "lily-card p-3 flex justify-between items-center text-xs col-span-2 sm:col-span-1";
+      card.innerHTML = `
+        <div class="space-y-0.5 overflow-hidden">
+          <h5 style="color: var(--pond-green);" class="font-bold text-xs truncate flex items-center gap-1">
+            <span class="text-amber-400">★</span>
+            <span class="truncate">${p.name}</span>
+          </h5>
+          <p class="text-stone-500 text-[10px] truncate">${p.category} • ${p.station || 'Near Hotel'}</p>
+        </div>
+        <a href="${p.map || '#'}" target="_blank" class="px-2.5 py-1 rounded-xl text-[10px] font-semibold bg-emerald-100 text-emerald-800 flex-shrink-0 ms-2">Map ➔</a>
+      `;
+      container.appendChild(card);
+    });
   }
 
-  starred.forEach(p => {
-    const card = document.createElement('div');
-    card.className = "lily-card p-3 flex justify-between items-center text-xs col-span-2 sm:col-span-1";
-    card.innerHTML = `
-      <div class="space-y-0.5">
-        <h5 style="color: var(--pond-green);" class="font-bold text-xs truncate flex items-center gap-1">
-          <span class="text-amber-400">★</span>
-          <span>${p.name}</span>
-        </h5>
-        <p class="text-stone-500 text-[10px]">${p.category} • ${p.station || 'Near Hotel'}</p>
-      </div>
-      <a href="${p.map || '#'}" target="_blank" class="px-2.5 py-1 rounded-xl text-[10px] font-semibold bg-emerald-100 text-emerald-800 flex-shrink-0">Map ➔</a>
-    `;
-    container.appendChild(card);
-  });
+  // Tentative Snapshot (Itinerary Preview)
+  if (snapshotContainer) {
+    snapshotContainer.innerHTML = "";
+    const itin = (trip.itinerary || []).slice(0, 3);
+    if (itin.length === 0) {
+      snapshotContainer.innerHTML = `<p class="text-xs text-stone-400 py-2">No itinerary activities planned yet.</p>`;
+    } else {
+      itin.forEach(act => {
+        const item = document.createElement('div');
+        item.className = "flex justify-between items-center text-xs bg-stone-50 p-2.5 rounded-xl";
+        item.innerHTML = `
+          <div>
+            <strong style="color: var(--pond-green);" class="block font-bold">${act.title}</strong>
+            <span class="text-stone-400 text-[10px]">${act.time || 'TBD'} • ${act.location || 'N/A'}</span>
+          </div>
+        `;
+        snapshotContainer.appendChild(item);
+      });
+    }
+  }
 }
 
 function toggleStarSpot(placeId) {
@@ -225,7 +253,6 @@ function toggleStarSpot(placeId) {
   }
 }
 
-// BULK UNSTAR ALL LOCATIONS FUNCTION
 function unstarAllLocations() {
   const trip = getActiveTrip();
   if (!trip || !trip.places) return;
@@ -239,7 +266,7 @@ function unstarAllLocations() {
   }
 }
 
-// --- MASTER LOCATIONS (WITH WORKING CATEGORY FILTER & EDIT MODAL) ---
+// --- MASTER LOCATIONS DATABASE ---
 function renderMasterPlacesList() {
   const container = document.getElementById('masterPlacesContainer');
   if (!container) return;
@@ -289,8 +316,12 @@ function renderMasterPlacesList() {
 
 function openMasterSpotModal() {
   editingPlaceId = null;
+  document.getElementById('spot-form-id').value = '';
   document.getElementById('spot-form-name').value = '';
   document.getElementById('spot-form-category').value = 'Attraction';
+  document.getElementById('spot-form-station').value = '';
+  document.getElementById('spot-form-walk').value = '';
+  document.getElementById('modal-spot-title').innerText = "Add Location Spot";
   openModal('modal-master-spot');
 }
 
@@ -300,14 +331,20 @@ function openEditSpotModal(placeId) {
   if (!place) return;
 
   editingPlaceId = placeId;
+  document.getElementById('spot-form-id').value = place.id;
   document.getElementById('spot-form-name').value = place.name || '';
   document.getElementById('spot-form-category').value = place.category || 'Attraction';
+  document.getElementById('spot-form-station').value = place.station || '';
+  document.getElementById('spot-form-walk').value = place.walk || '';
+  document.getElementById('modal-spot-title').innerText = "Edit Location Spot";
   openModal('modal-master-spot');
 }
 
 function saveMasterSpotForm() {
   const name = document.getElementById('spot-form-name').value.trim();
   const category = document.getElementById('spot-form-category').value;
+  const station = document.getElementById('spot-form-station').value.trim();
+  const walk = document.getElementById('spot-form-walk').value.trim();
 
   if (!name) return alert("Please enter a spot name!");
 
@@ -319,6 +356,8 @@ function saveMasterSpotForm() {
     if (place) {
       place.name = name;
       place.category = category;
+      place.station = station || place.station;
+      place.walk = walk;
       place.map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
     }
   } else {
@@ -326,7 +365,8 @@ function saveMasterSpotForm() {
       id: "p_" + Date.now(),
       name: name,
       category: category,
-      station: "Near Hotel Area",
+      station: station || "Near Hotel Area",
+      walk: walk,
       map: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
       starred: false
     });
@@ -336,8 +376,6 @@ function saveMasterSpotForm() {
   closeModal('modal-master-spot');
   renderMasterPlacesList();
   renderWaddleView();
-
-  document.getElementById('spot-form-name').value = '';
 }
 
 // --- WADDLE WITH QUICK HUBS ---
@@ -543,7 +581,7 @@ function deleteItineraryActivity(realIdx) {
   }
 }
 
-// --- HOMEPAGE & MODALS ---
+// --- HOMEPAGE & TRIPS ---
 function renderUpcomingTripsList() {
   const container = document.getElementById('upcoming-trips-list');
   if (!container) return;
@@ -551,7 +589,7 @@ function renderUpcomingTripsList() {
 
   appData.trips.forEach(trip => {
     const card = document.createElement('div');
-    card.className = "lily-card p-4 space-y-2 cursor-pointer";
+    card.className = "lily-card p-4 space-y-2 cursor-pointer hover:border-emerald-700/30 transition-all";
     card.onclick = () => openTripDashboard(trip.id);
     card.innerHTML = `
       <div class="flex justify-between items-start">
@@ -574,7 +612,13 @@ function renderAllTripsList() {
   container.innerHTML = "";
 
   const query = (document.getElementById('tripSearchInput')?.value || '').toLowerCase();
-  const filtered = appData.trips.filter(t => t.name.toLowerCase().includes(query));
+  const catFilter = document.getElementById('tripCategoryFilter')?.value || 'ALL';
+
+  const filtered = appData.trips.filter(t => {
+    const matchesQuery = t.name.toLowerCase().includes(query);
+    const matchesCat = catFilter === 'ALL' || t.category === catFilter;
+    return matchesQuery && matchesCat;
+  });
 
   filtered.forEach(trip => {
     const card = document.createElement('div');
@@ -645,7 +689,7 @@ function saveTripForm() {
       people: document.getElementById('trip-form-people').value || "1 Pax",
       budget: document.getElementById('trip-form-budget').value || "RM 0",
       activeHotel: document.getElementById('trip-form-hotel').value || "Hotel Grand Sahid Jaya",
-      hotelStation: "Setiabudi Astra",
+      hotelStation: "Setiabudi Astra (1 min walk)",
       places: [],
       itinerary: [],
       checklists: { prep: [], packing: [] },
@@ -683,7 +727,7 @@ function switchChecklistSubTab(tab) {
     const btn = document.getElementById(`checktab-${t}`);
     if (sub) sub.classList.add('hidden');
     if (btn) {
-      btn.classList.remove('border-emerald-800');
+      btn.classList.remove('border-emerald-800', 'text-stone-800');
       btn.classList.add('text-stone-400', 'border-transparent');
     }
   });
@@ -693,7 +737,7 @@ function switchChecklistSubTab(tab) {
   if (activeSub) activeSub.classList.remove('hidden');
   if (activeBtn) {
     activeBtn.classList.remove('text-stone-400', 'border-transparent');
-    activeBtn.classList.add('border-emerald-800');
+    activeBtn.classList.add('border-emerald-800', 'text-stone-800');
   }
 }
 
