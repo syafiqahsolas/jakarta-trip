@@ -3,7 +3,7 @@
  * Fully Synchronized Cloud Backend + Local Checklists & Expenses
  */
 
-const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzkZliNgixWuA0QqUNnyT7vdhSyZX4LfDZ_rTZLp_M/dev";
+const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
 
 // Global Application State (Defaults if offline)
 let appData = {
