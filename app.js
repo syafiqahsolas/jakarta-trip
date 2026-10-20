@@ -394,3 +394,309 @@ function renderWaddleView() {
     
     if (selectedWaddleCluster === 'NEAR_HOTEL') {
       const isHotelCluster = p.station && (p.station.toLowerCase().includes(hotelStation) || p.station.toLowerCase().includes("setiabudi") || p.station.toLowerCase().includes("bundaran hi"));
+      return matchesSearch && isHotelCluster;
+    } else if (selectedWaddleCluster === 'ALL') {
+      return matchesSearch;
+    } else {
+      return matchesSearch && p.station === selectedWaddleCluster;
+    }
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots found for this cluster hub.</p>`;
+    return;
+  }
+
+  filtered.forEach(p => {
+    const div = document.createElement('div');
+    div.className = "lily-card p-3.5 text-xs flex justify-between items-center mb-2";
+    div.innerHTML = `
+      <div class="flex items-center space-x-2">
+        <button onclick="toggleStarSpot('${p.id}')" class="focus:outline-none">
+          ${p.starred ? '<span class="text-amber-400 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-base">☆</span>'}
+        </button>
+        <div>
+          <strong style="color: var(--pond-green);" class="text-sm">${p.name}</strong>
+          <p class="text-stone-500 text-[11px] mt-0.5"><i class="fa-solid fa-train-subway me-1 text-emerald-700"></i>${p.station || 'Near Station'} ${p.walk ? '• ' + p.walk : ''}</p>
+        </div>
+      </div>
+      <a href="${p.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-white border border-stone-200" style="color: var(--pond-green);">
+        Take me there ➔
+      </a>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// --- ITINERARY & DATES ---
+function getTotalTripDays(trip) {
+  if (!trip.startDate || !trip.endDate) return 5;
+  const start = new Date(trip.startDate);
+  const end = new Date(trip.endDate);
+  const diffTime = Math.abs(end - start);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  return isNaN(diffDays) || diffDays <= 0 ? 5 : diffDays;
+}
+
+function renderItinerary() {
+  const trip = getActiveTrip();
+  const dayButtonsContainer = document.getElementById('itinerary-day-buttons');
+  const timelineContainer = document.getElementById('itinerary-timeline-container');
+  if (!dayButtonsContainer || !timelineContainer) return;
+
+  dayButtonsContainer.innerHTML = "";
+  timelineContainer.innerHTML = "";
+
+  const totalDays = getTotalTripDays(trip);
+  if (activeItineraryDay > totalDays) activeItineraryDay = 1;
+
+  for (let d = 1; d <= totalDays; d++) {
+    const btn = document.createElement('button');
+    btn.className = `px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all ${activeItineraryDay === d ? 'text-white' : 'bg-white text-stone-600 border border-stone-200'}`;
+    if (activeItineraryDay === d) btn.style.backgroundColor = 'var(--pond-green)';
+    btn.innerText = `Day ${d}`;
+    btn.onclick = () => {
+      activeItineraryDay = d;
+      renderItinerary();
+    };
+    dayButtonsContainer.appendChild(btn);
+  }
+
+  const dayActivities = (trip.itinerary || []).filter(act => act.day === activeItineraryDay);
+  if (dayActivities.length === 0) {
+    timelineContainer.innerHTML = `<p class="text-xs text-stone-400 py-6 text-center">No activities planned for Day ${activeItineraryDay}. Click "+ Add Activity" to add one!</p>`;
+    return;
+  }
+
+  dayActivities.forEach((act) => {
+    const realIdx = trip.itinerary.indexOf(act);
+    const item = document.createElement('div');
+    item.className = "relative pl-8 space-y-1";
+    item.innerHTML = `
+      <div class="absolute left-2 top-1.5 w-3 h-3 rounded-full border-2 border-white shadow-xs" style="background-color: var(--pond-green);"></div>
+      <div class="lily-card p-3 text-xs space-y-1">
+        <div class="flex justify-between items-center">
+          <span class="font-bold text-stone-400 text-[10px]">${act.time || 'TBD'}</span>
+          <div class="space-x-2">
+            <button onclick="openEditItineraryModal(${realIdx})" class="text-stone-400 hover:text-emerald-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
+            <button onclick="deleteItineraryActivity(${realIdx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-[10px]"></i></button>
+          </div>
+        </div>
+        <h4 style="color: var(--pond-green);" class="font-bold text-sm">${act.title}</h4>
+        <p class="text-stone-600"><i class="fa-solid fa-location-dot me-1" style="color: var(--sage-green);"></i>${act.location || 'N/A'}</p>
+        ${act.notes ? `<p class="text-stone-400 text-[11px] bg-stone-50 p-2 rounded-xl mt-1">${act.notes}</p>` : ''}
+      </div>
+    `;
+    timelineContainer.appendChild(item);
+  });
+}
+
+function openItineraryModal() {
+  editingItineraryIndex = null;
+  document.getElementById('itin-form-title').value = '';
+  document.getElementById('itin-form-time').value = '';
+  document.getElementById('itin-form-location').value = '';
+  document.getElementById('itin-form-notes').value = '';
+  openModal('modal-itinerary');
+}
+
+function openEditItineraryModal(idx) {
+  const trip = getActiveTrip();
+  const act = trip.itinerary[idx];
+  if (!act) return;
+
+  editingItineraryIndex = idx;
+  document.getElementById('itin-form-title').value = act.title || '';
+  document.getElementById('itin-form-time').value = act.time || '';
+  document.getElementById('itin-form-location').value = act.location || '';
+  document.getElementById('itin-form-notes').value = act.notes || '';
+  openModal('modal-itinerary');
+}
+
+function saveItineraryForm() {
+  const title = document.getElementById('itin-form-title').value.trim();
+  const time = document.getElementById('itin-form-time').value.trim();
+  const location = document.getElementById('itin-form-location').value.trim();
+  const notes = document.getElementById('itin-form-notes').value.trim();
+  if (!title) return alert("Enter activity title!");
+
+  const trip = getActiveTrip();
+  if (!trip.itinerary) trip.itinerary = [];
+
+  if (editingItineraryIndex !== null && trip.itinerary[editingItineraryIndex]) {
+    trip.itinerary[editingItineraryIndex] = { day: activeItineraryDay, title, time, location, notes };
+  } else {
+    trip.itinerary.push({ day: activeItineraryDay, title, time, location, notes });
+  }
+
+  saveAppData();
+  closeModal('modal-itinerary');
+  renderItinerary();
+}
+
+function deleteItineraryActivity(realIdx) {
+  const trip = getActiveTrip();
+  if (trip.itinerary && trip.itinerary[realIdx]) {
+    trip.itinerary.splice(realIdx, 1);
+    saveAppData();
+    renderItinerary();
+  }
+}
+
+// --- HOMEPAGE & MODALS ---
+function renderUpcomingTripsList() {
+  const container = document.getElementById('upcoming-trips-list');
+  if (!container) return;
+  container.innerHTML = "";
+
+  appData.trips.forEach(trip => {
+    const card = document.createElement('div');
+    card.className = "lily-card p-4 space-y-2 cursor-pointer";
+    card.onclick = () => openTripDashboard(trip.id);
+    card.innerHTML = `
+      <div class="flex justify-between items-start">
+        <span class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full" style="background-color: var(--sage-green);">${trip.category || 'Trip'}</span>
+        <span class="text-xs text-stone-400"><i class="fa-solid fa-calendar-days me-1"></i>${trip.startDate || ''} - ${trip.endDate || ''}</span>
+      </div>
+      <h3 style="color: var(--pond-green);" class="font-bold text-lg leading-tight">${trip.name}</h3>
+      <div class="flex justify-between text-xs text-stone-500 pt-1">
+        <span><i class="fa-solid fa-hotel me-1"></i>${trip.activeHotel || 'No hotel set'}</span>
+        <span class="font-semibold" style="color: var(--pond-green);">${trip.budget || 'RM 0'}</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function renderAllTripsList() {
+  const container = document.getElementById('all-trips-list');
+  if (!container) return;
+  container.innerHTML = "";
+
+  const query = (document.getElementById('tripSearchInput')?.value || '').toLowerCase();
+  const filtered = appData.trips.filter(t => t.name.toLowerCase().includes(query));
+
+  filtered.forEach(trip => {
+    const card = document.createElement('div');
+    card.className = "lily-card p-4 flex justify-between items-center cursor-pointer";
+    card.onclick = () => openTripDashboard(trip.id);
+    card.innerHTML = `
+      <div>
+        <h4 style="color: var(--pond-green);" class="font-bold text-base">${trip.name}</h4>
+        <p class="text-xs text-stone-400">${trip.category} • ${trip.startDate || 'TBD'}</p>
+      </div>
+      <button class="text-xs px-3 py-1.5 rounded-xl font-semibold text-white" style="background-color: var(--pond-green);">Open ➔</button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function openTripModal(tripIdToEdit = null) {
+  const targetId = tripIdToEdit || activeTripId;
+  const trip = appData.trips.find(t => t.id === targetId);
+
+  if (tripIdToEdit && trip) {
+    document.getElementById('modal-trip-title').innerText = "Edit Trip";
+    document.getElementById('trip-form-id').value = trip.id;
+    document.getElementById('trip-form-title').value = trip.name || '';
+    document.getElementById('trip-form-start-date').value = trip.startDate || '';
+    document.getElementById('trip-form-end-date').value = trip.endDate || '';
+    document.getElementById('trip-form-category').value = trip.category || 'Vacation';
+    document.getElementById('trip-form-people').value = trip.people || '';
+    document.getElementById('trip-form-budget').value = trip.budget || '';
+    document.getElementById('trip-form-hotel').value = trip.activeHotel || '';
+  } else {
+    document.getElementById('modal-trip-title').innerText = "Add New Trip";
+    document.getElementById('trip-form-id').value = '';
+    document.getElementById('trip-form-title').value = '';
+    document.getElementById('trip-form-start-date').value = '';
+    document.getElementById('trip-form-end-date').value = '';
+    document.getElementById('trip-form-people').value = '';
+    document.getElementById('trip-form-budget').value = '';
+    document.getElementById('trip-form-hotel').value = '';
+  }
+  openModal('modal-trip');
+}
+
+function saveTripForm() {
+  const id = document.getElementById('trip-form-id').value;
+  const title = document.getElementById('trip-form-title').value.trim();
+  if (!title) return alert("Enter Trip Name!");
+
+  if (id) {
+    const trip = appData.trips.find(t => t.id === id);
+    if (trip) {
+      trip.name = title;
+      trip.startDate = document.getElementById('trip-form-start-date').value;
+      trip.endDate = document.getElementById('trip-form-end-date').value;
+      trip.category = document.getElementById('trip-form-category').value;
+      trip.people = document.getElementById('trip-form-people').value;
+      trip.budget = document.getElementById('trip-form-budget').value;
+      trip.activeHotel = document.getElementById('trip-form-hotel').value;
+    }
+  } else {
+    const newTripId = "trip_" + Date.now();
+    appData.trips.push({
+      id: newTripId,
+      name: title,
+      startDate: document.getElementById('trip-form-start-date').value || "2026-11-21",
+      endDate: document.getElementById('trip-form-end-date').value || "2026-11-26",
+      category: document.getElementById('trip-form-category').value || "Vacation",
+      people: document.getElementById('trip-form-people').value || "1 Pax",
+      budget: document.getElementById('trip-form-budget').value || "RM 0",
+      activeHotel: document.getElementById('trip-form-hotel').value || "Hotel Grand Sahid Jaya",
+      hotelStation: "Setiabudi Astra",
+      places: [],
+      itinerary: [],
+      checklists: { prep: [], packing: [] },
+      expenses: []
+    });
+    activeTripId = newTripId;
+  }
+
+  saveAppData();
+  closeModal('modal-trip');
+  renderUpcomingTripsList();
+  renderAllTripsList();
+  openTripDashboard(activeTripId);
+}
+
+function openHotelModal() {
+  const trip = getActiveTrip();
+  document.getElementById('hotel-form-name').value = trip.activeHotel || '';
+  document.getElementById('hotel-form-station').value = trip.hotelStation || '';
+  openModal('modal-hotel');
+}
+
+function saveHotelForm() {
+  const trip = getActiveTrip();
+  trip.activeHotel = document.getElementById('hotel-form-name').value.trim();
+  trip.hotelStation = document.getElementById('hotel-form-station').value.trim();
+  saveAppData();
+  closeModal('modal-hotel');
+  renderActiveTripDashboard();
+}
+
+function switchChecklistSubTab(tab) {
+  ['prep', 'packing', 'expenses'].forEach(t => {
+    const sub = document.getElementById(`checklist-sub-${t}`);
+    const btn = document.getElementById(`checktab-${t}`);
+    if (sub) sub.classList.add('hidden');
+    if (btn) {
+      btn.classList.remove('border-emerald-800');
+      btn.classList.add('text-stone-400', 'border-transparent');
+    }
+  });
+
+  const activeSub = document.getElementById(`checklist-sub-${tab}`);
+  const activeBtn = document.getElementById(`checktab-${tab}`);
+  if (activeSub) activeSub.classList.remove('hidden');
+  if (activeBtn) {
+    activeBtn.classList.remove('text-stone-400', 'border-transparent');
+    activeBtn.classList.add('border-emerald-800');
+  }
+}
+
+function renderChecklistsAndExpenses() {}
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
