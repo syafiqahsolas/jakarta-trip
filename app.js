@@ -195,11 +195,6 @@ function closeModal(modalId) {
 
 // --- CLOUD SYNC FEATURE ---
 async function syncFromGoogleSheet() {
-  if (!GOOGLE_SHEET_API_URL || GOOGLE_SHEET_API_URL.includes("YOUR_DEPLOYED")) {
-    console.log("Cloud sync skipped: Web App URL not configured yet.");
-    return;
-  }
-
   try {
     const res = await fetch(GOOGLE_SHEET_API_URL);
     const cloudData = await res.json();
