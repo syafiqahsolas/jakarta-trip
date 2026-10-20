@@ -1,6 +1,6 @@
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * 100% Synced with your uploaded index.html
+ * Fully Synchronized Waddle Spot Editing, Starred Itinerary Only, Clean Cards
  */
 
 const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
@@ -168,7 +168,7 @@ function openTripDashboard(tripId) {
   switchDashboardPage('summary');
 }
 
-// --- ACTIVE TRIP SUMMARY & MUST-VISITS ---
+// --- SUMMARY PAGE (STARRED ITINERARY HIGHLIGHTS ONLY & STARRED LOCATIONS) ---
 function renderActiveTripDashboard() {
   const trip = getActiveTrip();
   if (!trip) return;
@@ -193,46 +193,51 @@ function renderStarredLocationsSummary() {
   const trip = getActiveTrip();
   const container = document.getElementById('summary-starred-spots');
   const snapshotContainer = document.getElementById('summary-tentative-snapshot');
-  if (!container) return;
 
-  // Filter ONLY starred spots and cap at 5
-  const starred = (trip.places || []).filter(p => p.starred === true).slice(0, 5);
-  container.innerHTML = "";
+  // 1. STARRED LOCATIONS (MAX 5)
+  if (container) {
+    const starred = (trip.places || []).filter(p => p.starred === true).slice(0, 5);
+    container.innerHTML = "";
 
-  if (starred.length === 0) {
-    container.innerHTML = `<p class="col-span-2 text-xs text-stone-400 py-3 text-center">No starred locations yet. Tap the star ⭐ icon in Locations to feature up to 5 must-visits!</p>`;
-  } else {
-    starred.forEach(p => {
-      const card = document.createElement('div');
-      card.className = "lily-card p-3 flex justify-between items-center text-xs col-span-2 sm:col-span-1";
-      card.innerHTML = `
-        <div class="space-y-0.5 overflow-hidden">
-          <h5 style="color: var(--pond-green);" class="font-bold text-xs truncate flex items-center gap-1">
-            <span class="text-amber-400">★</span>
-            <span class="truncate">${p.name}</span>
-          </h5>
-          <p class="text-stone-500 text-[10px] truncate">${p.category} • ${p.station || 'Near Hotel'}</p>
-        </div>
-        <a href="${p.map || '#'}" target="_blank" class="px-2.5 py-1 rounded-xl text-[10px] font-semibold bg-emerald-100 text-emerald-800 flex-shrink-0 ms-2">Map ➔</a>
-      `;
-      container.appendChild(card);
-    });
+    if (starred.length === 0) {
+      container.innerHTML = `<p class="col-span-2 text-xs text-stone-400 py-3 text-center">No starred locations yet. Tap the star ⭐ icon in Locations to feature up to 5 must-visits!</p>`;
+    } else {
+      starred.forEach(p => {
+        const card = document.createElement('div');
+        card.className = "lily-card p-3 flex justify-between items-center text-xs col-span-2 sm:col-span-1";
+        card.innerHTML = `
+          <div class="space-y-0.5 overflow-hidden">
+            <h5 style="color: var(--pond-green);" class="font-bold text-xs truncate flex items-center gap-1">
+              <span class="text-amber-400">★</span>
+              <span class="truncate">${p.name}</span>
+            </h5>
+            <p class="text-stone-500 text-[10px] truncate">${p.category} • ${p.station || 'Near Hotel'}</p>
+          </div>
+          <a href="${p.map || '#'}" target="_blank" class="px-2.5 py-1 rounded-xl text-[10px] font-semibold bg-emerald-100 text-emerald-800 flex-shrink-0 ms-2">Map ➔</a>
+        `;
+        container.appendChild(card);
+      });
+    }
   }
 
-  // Tentative Snapshot (Itinerary Preview)
+  // 2. STARRED ITINERARY HIGHLIGHTS ONLY
   if (snapshotContainer) {
     snapshotContainer.innerHTML = "";
-    const itin = (trip.itinerary || []).slice(0, 3);
-    if (itin.length === 0) {
-      snapshotContainer.innerHTML = `<p class="text-xs text-stone-400 py-2">No itinerary activities planned yet.</p>`;
+    const starredItin = (trip.itinerary || []).filter(act => act.starred === true);
+    
+    if (starredItin.length === 0) {
+      snapshotContainer.innerHTML = `<p class="text-xs text-stone-400 py-2 text-center">No starred itinerary activities yet. Click star ⭐ on activities in Itinerary tab!</p>`;
     } else {
-      itin.forEach(act => {
+      starredItin.forEach(act => {
         const item = document.createElement('div');
-        item.className = "flex justify-between items-center text-xs bg-stone-50 p-2.5 rounded-xl";
+        item.className = "flex justify-between items-center text-xs bg-stone-50 p-2.5 rounded-2xl border border-stone-200/60";
         item.innerHTML = `
           <div>
-            <strong style="color: var(--pond-green);" class="block font-bold">${act.title}</strong>
-            <span class="text-stone-400 text-[10px]">${act.time || 'TBD'} • ${act.location || 'N/A'}</span>
+            <strong style="color: var(--pond-green);" class="block font-bold text-xs flex items-center gap-1">
+              <span class="text-amber-400 text-xs">★</span>
+              <span>${act.title}</span>
+            </strong>
+            <span class="text-stone-400 text-[10px]">${act.time || 'TBD'} • Day ${act.day} ${act.location ? '• ' + act.location : ''}</span>
           </div>
         `;
         snapshotContainer.appendChild(item);
@@ -253,6 +258,16 @@ function toggleStarSpot(placeId) {
   }
 }
 
+function toggleStarItineraryActivity(realIdx) {
+  const trip = getActiveTrip();
+  if (trip.itinerary && trip.itinerary[realIdx]) {
+    trip.itinerary[realIdx].starred = !trip.itinerary[realIdx].starred;
+    saveAppData();
+    renderItinerary();
+    renderStarredLocationsSummary();
+  }
+}
+
 function unstarAllLocations() {
   const trip = getActiveTrip();
   if (!trip || !trip.places) return;
@@ -266,7 +281,7 @@ function unstarAllLocations() {
   }
 }
 
-// --- MASTER LOCATIONS DATABASE ---
+// --- MASTER LOCATIONS DATABASE (NO WALK TIME HERE FOR CLEANER VIEW) ---
 function renderMasterPlacesList() {
   const container = document.getElementById('masterPlacesContainer');
   if (!container) return;
@@ -278,11 +293,9 @@ function renderMasterPlacesList() {
 
   const filtered = (trip.places || []).filter(p => {
     const matchesQuery = p.name.toLowerCase().includes(query) || (p.station && p.station.toLowerCase().includes(query));
-    
     const pCat = (p.category || '').toLowerCase();
     const filterCat = catFilter.toLowerCase();
     const matchesCat = filterCat === 'all' || pCat === filterCat || pCat.includes(filterCat);
-    
     return matchesQuery && matchesCat;
   });
 
@@ -304,7 +317,6 @@ function renderMasterPlacesList() {
           <button onclick="openEditSpotModal('${place.id}')" class="text-stone-300 hover:text-stone-600 text-xs ms-1"><i class="fa-solid fa-pen"></i></button>
         </div>
         <p class="text-stone-500">${place.category || 'General'} • Station: <strong class="text-stone-700">${place.station || 'Auto-Assigned'}</strong></p>
-        ${place.walk ? `<p class="text-[11px] text-emerald-700"><i class="fa-solid fa-person-walking me-1"></i>${place.walk}</p>` : ''}
       </div>
       <a href="${place.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px]" style="background-color: var(--pond-bg); color: var(--pond-green);">
         <i class="fa-solid fa-location-dot me-1"></i>Map
@@ -314,71 +326,7 @@ function renderMasterPlacesList() {
   });
 }
 
-function openMasterSpotModal() {
-  editingPlaceId = null;
-  document.getElementById('spot-form-id').value = '';
-  document.getElementById('spot-form-name').value = '';
-  document.getElementById('spot-form-category').value = 'Attraction';
-  document.getElementById('spot-form-station').value = '';
-  document.getElementById('spot-form-walk').value = '';
-  document.getElementById('modal-spot-title').innerText = "Add Location Spot";
-  openModal('modal-master-spot');
-}
-
-function openEditSpotModal(placeId) {
-  const trip = getActiveTrip();
-  const place = (trip.places || []).find(p => p.id === placeId);
-  if (!place) return;
-
-  editingPlaceId = placeId;
-  document.getElementById('spot-form-id').value = place.id;
-  document.getElementById('spot-form-name').value = place.name || '';
-  document.getElementById('spot-form-category').value = place.category || 'Attraction';
-  document.getElementById('spot-form-station').value = place.station || '';
-  document.getElementById('spot-form-walk').value = place.walk || '';
-  document.getElementById('modal-spot-title').innerText = "Edit Location Spot";
-  openModal('modal-master-spot');
-}
-
-function saveMasterSpotForm() {
-  const name = document.getElementById('spot-form-name').value.trim();
-  const category = document.getElementById('spot-form-category').value;
-  const station = document.getElementById('spot-form-station').value.trim();
-  const walk = document.getElementById('spot-form-walk').value.trim();
-
-  if (!name) return alert("Please enter a spot name!");
-
-  const trip = getActiveTrip();
-  if (!trip.places) trip.places = [];
-
-  if (editingPlaceId) {
-    const place = trip.places.find(p => p.id === editingPlaceId);
-    if (place) {
-      place.name = name;
-      place.category = category;
-      place.station = station || place.station;
-      place.walk = walk;
-      place.map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
-    }
-  } else {
-    trip.places.push({
-      id: "p_" + Date.now(),
-      name: name,
-      category: category,
-      station: station || "Near Hotel Area",
-      walk: walk,
-      map: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
-      starred: false
-    });
-  }
-
-  saveAppData();
-  closeModal('modal-master-spot');
-  renderMasterPlacesList();
-  renderWaddleView();
-}
-
-// --- WADDLE WITH QUICK HUBS ---
+// --- WADDLE PAGE (INCLUDES WALK TIME & EDIT BUTTON) ---
 function executeWaddleSearch() {
   renderWaddleView();
 }
@@ -454,7 +402,10 @@ function renderWaddleView() {
           ${p.starred ? '<span class="text-amber-400 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-base">☆</span>'}
         </button>
         <div>
-          <strong style="color: var(--pond-green);" class="text-sm">${p.name}</strong>
+          <div class="flex items-center space-x-1.5">
+            <strong style="color: var(--pond-green);" class="text-sm">${p.name}</strong>
+            <button onclick="openEditSpotModal('${p.id}')" class="text-stone-300 hover:text-stone-600 text-xs"><i class="fa-solid fa-pen"></i></button>
+          </div>
           <p class="text-stone-500 text-[11px] mt-0.5"><i class="fa-solid fa-train-subway me-1 text-emerald-700"></i>${p.station || 'Near Station'} ${p.walk ? '• ' + p.walk : ''}</p>
         </div>
       </div>
@@ -466,7 +417,72 @@ function renderWaddleView() {
   });
 }
 
-// --- ITINERARY & DATES ---
+function openMasterSpotModal() {
+  editingPlaceId = null;
+  document.getElementById('spot-form-id').value = '';
+  document.getElementById('spot-form-name').value = '';
+  document.getElementById('spot-form-category').value = 'Attraction';
+  document.getElementById('spot-form-station').value = '';
+  document.getElementById('spot-form-walk').value = '';
+  document.getElementById('modal-spot-title').innerText = "Add Location Spot";
+  openModal('modal-master-spot');
+}
+
+function openEditSpotModal(placeId) {
+  const trip = getActiveTrip();
+  const place = (trip.places || []).find(p => p.id === placeId);
+  if (!place) return;
+
+  editingPlaceId = placeId;
+  document.getElementById('spot-form-id').value = place.id;
+  document.getElementById('spot-form-name').value = place.name || '';
+  document.getElementById('spot-form-category').value = place.category || 'Attraction';
+  document.getElementById('spot-form-station').value = place.station || '';
+  document.getElementById('spot-form-walk').value = place.walk || '';
+  document.getElementById('modal-spot-title').innerText = "Edit Location Spot";
+  openModal('modal-master-spot');
+}
+
+function saveMasterSpotForm() {
+  const name = document.getElementById('spot-form-name').value.trim();
+  const category = document.getElementById('spot-form-category').value;
+  const station = document.getElementById('spot-form-station').value.trim();
+  const walk = document.getElementById('spot-form-walk').value.trim();
+
+  if (!name) return alert("Please enter a spot name!");
+
+  const trip = getActiveTrip();
+  if (!trip.places) trip.places = [];
+
+  if (editingPlaceId) {
+    const place = trip.places.find(p => p.id === editingPlaceId);
+    if (place) {
+      place.name = name;
+      place.category = category;
+      place.station = station || place.station;
+      place.walk = walk;
+      place.map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
+    }
+  } else {
+    trip.places.push({
+      id: "p_" + Date.now(),
+      name: name,
+      category: category,
+      station: station || "Near Hotel Area",
+      walk: walk,
+      map: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
+      starred: false
+    });
+  }
+
+  saveAppData();
+  closeModal('modal-master-spot');
+  renderMasterPlacesList();
+  renderWaddleView();
+  renderStarredLocationsSummary();
+}
+
+// --- ITINERARY TIMELINE (WITH STAR TOGGLE BUTTON) ---
 function getTotalTripDays(trip) {
   if (!trip.startDate || !trip.endDate) return 5;
   const start = new Date(trip.startDate);
@@ -514,7 +530,12 @@ function renderItinerary() {
       <div class="absolute left-2 top-1.5 w-3 h-3 rounded-full border-2 border-white shadow-xs" style="background-color: var(--pond-green);"></div>
       <div class="lily-card p-3 text-xs space-y-1">
         <div class="flex justify-between items-center">
-          <span class="font-bold text-stone-400 text-[10px]">${act.time || 'TBD'}</span>
+          <div class="flex items-center space-x-2">
+            <button onclick="toggleStarItineraryActivity(${realIdx})" class="focus:outline-none">
+              ${act.starred ? '<span class="text-amber-400 text-sm">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-sm">☆</span>'}
+            </button>
+            <span class="font-bold text-stone-400 text-[10px]">${act.time || 'TBD'}</span>
+          </div>
           <div class="space-x-2">
             <button onclick="openEditItineraryModal(${realIdx})" class="text-stone-400 hover:text-emerald-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
             <button onclick="deleteItineraryActivity(${realIdx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-[10px]"></i></button>
@@ -562,14 +583,16 @@ function saveItineraryForm() {
   if (!trip.itinerary) trip.itinerary = [];
 
   if (editingItineraryIndex !== null && trip.itinerary[editingItineraryIndex]) {
-    trip.itinerary[editingItineraryIndex] = { day: activeItineraryDay, title, time, location, notes };
+    const existingStar = trip.itinerary[editingItineraryIndex].starred || false;
+    trip.itinerary[editingItineraryIndex] = { day: activeItineraryDay, title, time, location, notes, starred: existingStar };
   } else {
-    trip.itinerary.push({ day: activeItineraryDay, title, time, location, notes });
+    trip.itinerary.push({ day: activeItineraryDay, title, time, location, notes, starred: false });
   }
 
   saveAppData();
   closeModal('modal-itinerary');
   renderItinerary();
+  renderStarredLocationsSummary();
 }
 
 function deleteItineraryActivity(realIdx) {
@@ -578,10 +601,11 @@ function deleteItineraryActivity(realIdx) {
     trip.itinerary.splice(realIdx, 1);
     saveAppData();
     renderItinerary();
+    renderStarredLocationsSummary();
   }
 }
 
-// --- HOMEPAGE & TRIPS ---
+// --- HOMEPAGE & TRIPS (CLEAN CARDS WITHOUT HOTEL SUBTITLE) ---
 function renderUpcomingTripsList() {
   const container = document.getElementById('upcoming-trips-list');
   if (!container) return;
@@ -598,7 +622,7 @@ function renderUpcomingTripsList() {
       </div>
       <h3 style="color: var(--pond-green);" class="font-bold text-lg leading-tight">${trip.name}</h3>
       <div class="flex justify-between text-xs text-stone-500 pt-1">
-        <span><i class="fa-solid fa-hotel me-1"></i>${trip.activeHotel || 'No hotel set'}</span>
+        <span><i class="fa-solid fa-users me-1"></i>${trip.people || '1 Pax'}</span>
         <span class="font-semibold" style="color: var(--pond-green);">${trip.budget || 'RM 0'}</span>
       </div>
     `;
@@ -648,7 +672,6 @@ function openTripModal(tripIdToEdit = null) {
     document.getElementById('trip-form-category').value = trip.category || 'Vacation';
     document.getElementById('trip-form-people').value = trip.people || '';
     document.getElementById('trip-form-budget').value = trip.budget || '';
-    document.getElementById('trip-form-hotel').value = trip.activeHotel || '';
   } else {
     document.getElementById('modal-trip-title').innerText = "Add New Trip";
     document.getElementById('trip-form-id').value = '';
@@ -657,7 +680,6 @@ function openTripModal(tripIdToEdit = null) {
     document.getElementById('trip-form-end-date').value = '';
     document.getElementById('trip-form-people').value = '';
     document.getElementById('trip-form-budget').value = '';
-    document.getElementById('trip-form-hotel').value = '';
   }
   openModal('modal-trip');
 }
@@ -676,7 +698,6 @@ function saveTripForm() {
       trip.category = document.getElementById('trip-form-category').value;
       trip.people = document.getElementById('trip-form-people').value;
       trip.budget = document.getElementById('trip-form-budget').value;
-      trip.activeHotel = document.getElementById('trip-form-hotel').value;
     }
   } else {
     const newTripId = "trip_" + Date.now();
@@ -688,7 +709,7 @@ function saveTripForm() {
       category: document.getElementById('trip-form-category').value || "Vacation",
       people: document.getElementById('trip-form-people').value || "1 Pax",
       budget: document.getElementById('trip-form-budget').value || "RM 0",
-      activeHotel: document.getElementById('trip-form-hotel').value || "Hotel Grand Sahid Jaya",
+      activeHotel: "Hotel Grand Sahid Jaya",
       hotelStation: "Setiabudi Astra (1 min walk)",
       places: [],
       itinerary: [],
