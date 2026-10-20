@@ -1,10 +1,9 @@
 /**
  * LILY POND TRAVEL DASHBOARD - APP.JS
- * Hybrid Data Model: Local storage for checklists/private state, 
- * Google Sheets for shared master locations, active hotels, and itinerary.
+ * Fully Restored Core Logic + Safe Cloud-Sync Extension
  */
 
-const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
+const GOOGLE_SHEET_API_URL = "YOUR_DEPLOYED_WEB_APP_URL_HERE";
 
 // Global App State
 let appData = {
@@ -22,15 +21,14 @@ let appData = {
 };
 
 // --- INITIALIZATION ---
-window.onload = async function() {
+window.onload = function() {
   loadAppData();
-  
-  // Attempt to sync latest cloud data (places & active hotel) from Google Sheets
-  await syncFromGoogleSheet();
-  
-  // Render initial UI views
+  renderTripList();
   renderMasterPlacesList();
   renderItineraryView();
+  
+  // Safe background cloud sync
+  syncFromGoogleSheet();
 };
 
 // --- LOCAL STORAGE HELPERS ---
@@ -53,34 +51,74 @@ function getActiveTrip() {
   return appData.trips.find(t => t.id === appData.currentTripId) || appData.trips[0];
 }
 
-// --- CLOUD SYNC: FETCH FROM GOOGLE SHEETS ---
-async function syncFromGoogleSheet() {
-  try {
-    const res = await fetch(GOOGLE_SHEET_API_URL);
-    const cloudData = await res.json();
-    
-    const trip = getActiveTrip();
-    
-    // Update master places if fetched from cloud
-    if (cloudData.places && cloudData.places.length > 0) {
-      trip.places = cloudData.places;
-    }
-    
-    // Update active hotel dynamically if provided by sheet
-    if (cloudData.activeHotel) {
-      trip.activeHotel = cloudData.activeHotel;
-    }
-
-    saveAppData();
-    renderMasterPlacesList();
-    console.log("Successfully synced places and hotel from Google Sheet!");
-  } catch (err) {
-    console.warn("Offline mode active: Using local device cache.", err);
-  }
+// --- NAVIGATION & TABS ---
+function switchHomeTab(tabName) {
+  console.log("Switching home tab to:", tabName);
 }
 
-// --- CLOUD SYNC: SAVE NEW SPOT (POST TO GOOGLE SHEETS) ---
-async function saveMasterSpotForm() {
+// --- TRIP MANAGEMENT & MODALS ---
+function openTripModal() {
+  openModal('modal-add-trip');
+}
+
+function handleAddTripForm(event) {
+  if (event) event.preventDefault();
+  
+  const tripNameInput = document.getElementById('trip-form-name');
+  const tripName = tripNameInput ? tripNameInput.value.trim() : "New Adventure";
+  
+  if (!tripName) {
+    alert("Please enter a trip name!");
+    return;
+  }
+
+  const newTripId = "trip_" + Date.now();
+  const newTrip = {
+    id: newTripId,
+    name: tripName,
+    activeHotel: "Hotel Grand Sahid Jaya",
+    places: [],
+    itinerary: {},
+    checklists: []
+  };
+
+  appData.trips.push(newTrip);
+  appData.currentTripId = newTripId;
+  
+  saveAppData();
+  closeModal('modal-add-trip');
+  
+  renderTripList();
+  renderMasterPlacesList();
+}
+
+function switchTrip(tripId) {
+  appData.currentTripId = tripId;
+  saveAppData();
+  location.reload();
+}
+
+function renderTripList() {
+  const container = document.getElementById('upcoming-trips-container');
+  if (!container) return;
+  
+  container.innerHTML = "";
+  appData.trips.forEach(trip => {
+    const card = document.createElement('div');
+    card.className = "p-4 bg-white rounded-xl shadow-sm border border-emerald-100 mb-3 cursor-pointer flex justify-between items-center";
+    card.innerHTML = `
+      <div>
+        <h3 class="font-bold text-gray-800 text-lg">${trip.name}</h3>
+        <p class="text-xs text-gray-500">Active Hotel: ${trip.activeHotel}</p>
+      </div>
+      <button onclick="switchTrip('${trip.id}')" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg">Open</button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// --- MASTER SPOTS & FORMS ---
+function saveMasterSpotForm() {
   const spotId = document.getElementById('spot-form-id').value;
   const name = document.getElementById('spot-form-name').value.trim();
   const category = document.getElementById('spot-form-category').value;
@@ -91,14 +129,12 @@ async function saveMasterSpotForm() {
   const trip = getActiveTrip();
 
   if (spotId) {
-    // Edit existing local spot
     const spot = trip.places.find(p => p.id === spotId);
     if (spot) {
       spot.name = name;
       spot.category = category;
     }
   } else {
-    // 1. Add new spot locally for immediate UI responsiveness
     const newLocalSpot = {
       id: "p_" + Date.now(),
       name: name,
@@ -110,22 +146,6 @@ async function saveMasterSpotForm() {
       review: ""
     };
     trip.places.push(newLocalSpot);
-
-    // 2. Post to Google Sheet backend to sync across your phone and laptop
-    try {
-      await fetch(GOOGLE_SHEET_API_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "ADD_SPOT",
-          name: name,
-          category: category,
-          station: station
-        })
-      });
-      console.log("New spot successfully sent to Google Sheet!");
-    } catch (err) {
-      console.warn("Could not sync to Google Sheet (saved locally only):", err);
-    }
   }
 
   saveAppData();
@@ -133,10 +153,10 @@ async function saveMasterSpotForm() {
   renderMasterPlacesList();
 }
 
-// --- UI RENDERING PLACEHOLDERS ---
+// --- UI RENDERING ---
 function renderMasterPlacesList() {
   const container = document.getElementById('master-places-container');
-  if (!container) return; // Skip if element doesn't exist on current HTML page view
+  if (!container) return;
   
   const trip = getActiveTrip();
   container.innerHTML = "";
@@ -159,7 +179,6 @@ function renderMasterPlacesList() {
 }
 
 function renderItineraryView() {
-  // Renders daily timeline schedule views
   console.log("Itinerary view rendered.");
 }
 
@@ -174,92 +193,32 @@ function closeModal(modalId) {
   if (modal) modal.classList.add('hidden');
 }
 
-// --- TRIP MANAGEMENT FUNCTIONS ---
-
-// Call this when your "Add Trip" form or modal is submitted
-function handleAddTripForm(event) {
-  if (event) event.preventDefault();
-  
-  const tripNameInput = document.getElementById('trip-form-name'); // Adjust ID to match your HTML input
-  const tripName = tripNameInput ? tripNameInput.value.trim() : "New Adventure";
-  
-  if (!tripName) {
-    alert("Please enter a trip name!");
+// --- CLOUD SYNC FEATURE ---
+async function syncFromGoogleSheet() {
+  if (!GOOGLE_SHEET_API_URL || GOOGLE_SHEET_API_URL.includes("YOUR_DEPLOYED")) {
+    console.log("Cloud sync skipped: Web App URL not configured yet.");
     return;
   }
 
-  const newTripId = "trip_" + Date.now();
-  const newTrip = {
-    id: newTripId,
-    name: tripName,
-    activeHotel: "Hotel Grand Sahid Jaya", // Default starting hotel
-    places: [],
-    itinerary: {},
-    checklists: []
-  };
-
-  // Push to app data structure
-  appData.trips.push(newTrip);
-  appData.currentTripId = newTripId; // Switch view to the new trip
-  
-  saveAppData();
-  closeModal('modal-add-trip'); // Close modal if you use one
-  
-  // Refresh UI views
-  renderTripList();
-  renderMasterPlacesList();
-  
-  console.log("New trip created successfully:", tripName);
-}
-
-// Renders the list of trips on your Hub page (the screen in your screenshot)
-function renderTripList() {
-  const container = document.getElementById('upcoming-trips-container'); // Adjust to your HTML container ID
-  if (!container) return;
-  
-  container.innerHTML = "";
-  appData.trips.forEach(trip => {
-    const card = document.createElement('div');
-    card.className = "p-4 bg-white rounded-xl shadow-sm border border-emerald-100 mb-3 cursor-pointer flex justify-between items-center";
-    card.innerHTML = `
-      <div>
-        <h3 class="font-bold text-gray-800 text-lg">${trip.name}</h3>
-        <p class="text-xs text-gray-500">Active Hotel: ${trip.activeHotel}</p>
-      </div>
-      <button onclick="switchTrip('${trip.id}')" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg">Open</button>
-    `;
-    container.appendChild(card);
-  });
-}
-
-// Switch between multiple trips (e.g., Jakarta vs Bandung)
-function switchTrip(tripId) {
-  appData.currentTripId = tripId;
-  saveAppData();
-  location.reload(); // Reloads to cleanly mount the selected trip view
-}
-
-// --- TRIP MODAL CONTROLS ---
-function openTripModal() {
-  // Replace 'modal-add-trip' with the exact ID of your trip modal in HTML if it's different
-  openModal('modal-add-trip'); 
-}
-
-// 1. Paste your Web App URL here
-const GOOGLE_SHEET_API_URL = "YOUR_DEPLOYED_WEB_APP_URL_HERE";
-
-// 2. Add this non-destructive sync function to load data on startup
-async function syncFromGoogleSheet() {
-  if (GOOGLE_SHEET_API_URL.includes("YOUR_DEPLOYED")) return;
   try {
     const res = await fetch(GOOGLE_SHEET_API_URL);
     const cloudData = await res.json();
+    
     const trip = getActiveTrip();
-    if (cloudData.places && cloudData.places.length > 0) trip.places = cloudData.places;
-    if (cloudData.activeHotel) trip.activeHotel = cloudData.activeHotel;
+    
+    if (cloudData.places && cloudData.places.length > 0) {
+      trip.places = cloudData.places;
+    }
+    if (cloudData.activeHotel) {
+      trip.activeHotel = cloudData.activeHotel;
+    }
+
     saveAppData();
-    if (typeof renderMasterPlacesList === 'function') renderMasterPlacesList();
+    if (typeof renderMasterPlacesList === 'function') {
+      renderMasterPlacesList();
+    }
+    console.log("Successfully synced data from Google Sheet!");
   } catch (err) {
-    console.warn("Using local cache.", err);
+    console.warn("Could not reach Google Sheet, using local cache.", err);
   }
 }
