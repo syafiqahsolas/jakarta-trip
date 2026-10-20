@@ -3,7 +3,7 @@
  * Fully Restored Core Logic + Safe Cloud-Sync Extension
  */
 
-const GOOGLE_SHEET_API_URL = "YOUR_DEPLOYED_WEB_APP_URL_HERE";
+const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
 
 // Global App State
 let appData = {
