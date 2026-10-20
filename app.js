@@ -1,6 +1,6 @@
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * Auto Clusters, Starred Must-Visits, & Excel Station Auto-Calculations
+ * Isolated Summary Must-Visits (Max 5) + Interactive Waddle Cluster Tags
  */
 
 const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
@@ -28,6 +28,7 @@ let appData = {
 
 let activeTripId = "trip_jakarta_bandung";
 let activeItineraryDay = 1;
+let selectedWaddleCluster = "NEAR_HOTEL";
 let editingItineraryIndex = null;
 
 // --- INITIALIZATION ---
@@ -40,7 +41,6 @@ window.onload = async function() {
   await syncFromGoogleSheet();
 };
 
-// --- STORAGE & CLOUD SYNC ---
 function loadAppData() {
   const saved = localStorage.getItem("lily_pond_cloud_data");
   if (saved) {
@@ -87,7 +87,7 @@ async function syncFromGoogleSheet() {
       renderUpcomingTripsList();
       renderAllTripsList();
       renderActiveTripDashboard();
-      console.log("Synced all data & clusters across devices!");
+      console.log("Synced latest cloud data & clusters!");
     }
   } catch (err) {
     console.warn("Using offline local cache.", err);
@@ -114,26 +114,17 @@ function openHomePage(subTab = 'upcoming') {
   document.getElementById('section-home').classList.remove('hidden');
   document.getElementById('section-trip-dashboard').classList.add('hidden');
   switchHomeTab(subTab);
-  renderUpcomingTripsList();
-  renderAllTripsList();
 }
 
 function switchHomeTab(tabName) {
   const upcomingView = document.getElementById('home-view-upcoming');
   const allView = document.getElementById('home-view-all');
-  const tabUpcomingBtn = document.getElementById('home-tab-upcoming');
-  const tabAllBtn = document.getElementById('home-tab-all');
-
   if (tabName === 'upcoming') {
     if (upcomingView) upcomingView.classList.remove('hidden');
     if (allView) allView.classList.add('hidden');
-    if (tabUpcomingBtn) tabUpcomingBtn.classList.add('text-stone-800');
-    if (tabAllBtn) tabAllBtn.classList.remove('text-stone-800');
   } else {
     if (upcomingView) upcomingView.classList.add('hidden');
     if (allView) allView.classList.remove('hidden');
-    if (tabAllBtn) tabAllBtn.classList.add('text-stone-800');
-    if (tabUpcomingBtn) tabUpcomingBtn.classList.remove('text-stone-800');
     renderAllTripsList();
   }
 }
@@ -169,7 +160,7 @@ function openTripDashboard(tripId) {
   switchDashboardPage('summary');
 }
 
-// --- SUMMARY DASHBOARD & STARRED LOCATIONS ---
+// --- SUMMARY DASHBOARD & MUST-VISITS (MAX 5) ---
 function renderActiveTripDashboard() {
   const trip = getActiveTrip();
   if (!trip) return;
@@ -183,7 +174,7 @@ function renderActiveTripDashboard() {
   const hotelTitle = document.getElementById('waddle-hotel-title');
   const hotelStation = document.getElementById('waddle-hotel-station');
   if (hotelTitle) hotelTitle.innerText = trip.activeHotel || 'Hotel Base Not Set';
-  if (hotelStation) hotelStation.innerHTML = `<strong>Nearest Station:</strong> ${trip.hotelStation || 'Not Set'}`;
+  if (hotelStation) hotelStation.innerHTML = `<strong>Nearest Station:</strong> ${trip.hotelStation || 'Setiabudi Astra'}`;
 
   renderStarredLocationsSummary();
   renderMasterPlacesList();
@@ -195,11 +186,12 @@ function renderStarredLocationsSummary() {
   const container = document.getElementById('summary-starred-container');
   if (!container) return;
 
-  const starred = (trip.places || []).filter(p => p.starred);
+  // Filter starred spots and cap at 5 items strictly
+  const starred = (trip.places || []).filter(p => p.starred).slice(0, 5);
   container.innerHTML = "";
 
   if (starred.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 py-3 text-center">No starred locations yet. Click the star ⭐ icon in Locations to mark must-visits!</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 py-3 text-center">No starred locations yet. Click the star ⭐ icon in Locations to mark up to 5 must-visits!</p>`;
     return;
   }
 
@@ -209,7 +201,7 @@ function renderStarredLocationsSummary() {
     card.innerHTML = `
       <div>
         <h5 style="color: var(--pond-green);" class="font-bold text-sm">⭐ ${p.name}</h5>
-        <p class="text-stone-500 text-[11px]">${p.category} • Station: ${p.station || 'Auto-Assigned'}</p>
+        <p class="text-stone-500 text-[11px]">${p.category} • Station: ${p.station || 'Near Hotel'}</p>
       </div>
       <a href="${p.map || '#'}" target="_blank" class="px-2.5 py-1 rounded-xl text-[10px] font-semibold bg-emerald-100 text-emerald-800">Map ➔</a>
     `;
@@ -229,7 +221,7 @@ function toggleStarSpot(placeId) {
   }
 }
 
-// --- MASTER LOCATIONS (NO MANUAL STATION INPUT NEEDED) ---
+// --- MASTER LOCATIONS DATABASE ---
 function renderMasterPlacesList() {
   const container = document.getElementById('masterPlacesContainer');
   if (!container) return;
@@ -240,7 +232,7 @@ function renderMasterPlacesList() {
   const filtered = (trip.places || []).filter(p => p.name.toLowerCase().includes(query) || (p.station && p.station.toLowerCase().includes(query)));
 
   if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No locations found. Click "+ Add Spot" to create one!</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No locations found. Click "+ Add Spot" to add one!</p>`;
     return;
   }
 
@@ -250,7 +242,7 @@ function renderMasterPlacesList() {
     card.innerHTML = `
       <div class="space-y-0.5">
         <div class="flex items-center space-x-2">
-          <button onclick="toggleStarSpot('${place.id}')" class="text-amber-400 text-sm focus:outline-none">
+          <button onclick="toggleStarSpot('${place.id}')" class="text-amber-400 text-base focus:outline-none">
             ${place.starred ? '★' : '☆'}
           </button>
           <h4 style="color: var(--pond-green);" class="font-bold text-sm">${place.name}</h4>
@@ -283,7 +275,7 @@ function saveMasterSpotForm() {
     id: "p_" + Date.now(),
     name: name,
     category: category,
-    station: "Auto-Assigning via Excel...",
+    station: "Near Hotel Area",
     map: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
     starred: false
   });
@@ -296,58 +288,94 @@ function saveMasterSpotForm() {
   document.getElementById('spot-form-name').value = '';
 }
 
-// --- WADDLE WITH AUTO CLUSTER TAGS ---
+// --- WADDLE WITH INTERACTIVE CLUSTER TAGS ---
 function renderWaddleView() {
   const container = document.getElementById('waddleSearchResults');
+  const tagsContainer = document.getElementById('waddle-cluster-tags-container');
   if (!container) return;
+  
   const trip = getActiveTrip();
   container.innerHTML = "";
 
-  const query = (document.getElementById('waddleSearchInput')?.value || '').toLowerCase();
-  const filtered = (trip.places || []).filter(p => p.name.toLowerCase().includes(query) || (p.station && p.station.toLowerCase().includes(query)) || p.category.toLowerCase().includes(query));
+  const hotelStation = (trip.hotelStation || 'Setiabudi Astra').toLowerCase();
+  const places = trip.places || [];
+
+  // Extract unique stations to generate Cluster Tags
+  const stationSet = new Set();
+  places.forEach(p => {
+    if (p.station && p.station !== 'N/A' && p.station !== 'No station nearby') {
+      stationSet.add(p.station);
+    }
+  });
+
+  // Render Cluster Tag Chips below search bar
+  if (tagsContainer) {
+    tagsContainer.innerHTML = "";
+    
+    // "Near Hotel" Default Tag
+    const hotelChip = document.createElement('button');
+    hotelChip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${selectedWaddleCluster === 'NEAR_HOTEL' ? 'bg-emerald-800 text-white border-emerald-800' : 'bg-white text-stone-600 border-stone-200'}`;
+    hotelChip.innerHTML = `<i class="fa-solid fa-hotel me-1"></i>Near Hotel`;
+    hotelChip.onclick = () => { selectedWaddleCluster = 'NEAR_HOTEL'; renderWaddleView(); };
+    tagsContainer.appendChild(hotelChip);
+
+    // "All Spots" Tag
+    const allChip = document.createElement('button');
+    allChip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${selectedWaddleCluster === 'ALL' ? 'bg-emerald-800 text-white border-emerald-800' : 'bg-white text-stone-600 border-stone-200'}`;
+    allChip.innerText = `All Clusters`;
+    allChip.onclick = () => { selectedWaddleCluster = 'ALL'; renderWaddleView(); };
+    tagsContainer.appendChild(allChip);
+
+    // Station Chips (e.g. Setiabudi Astra, Blok M, etc.)
+    stationSet.forEach(stationName => {
+      const chip = document.createElement('button');
+      chip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${selectedWaddleCluster === stationName ? 'bg-emerald-800 text-white border-emerald-800' : 'bg-white text-stone-600 border-stone-200'}`;
+      chip.innerText = `🚆 ${stationName}`;
+      chip.onclick = () => { selectedWaddleCluster = stationName; renderWaddleView(); };
+      tagsContainer.appendChild(chip);
+    });
+  }
+
+  // Filter Places according to selected Cluster Tag or Search query
+  const searchQuery = (document.getElementById('waddleSearchInput')?.value || '').toLowerCase();
+  
+  let filtered = places.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.station && p.station.toLowerCase().includes(searchQuery)) || p.category.toLowerCase().includes(searchQuery);
+    
+    if (selectedWaddleCluster === 'NEAR_HOTEL') {
+      const isHotelCluster = p.station && (p.station.toLowerCase().includes(hotelStation) || p.station.toLowerCase().includes("setiabudi") || p.station.toLowerCase().includes("bundaran hi"));
+      return matchesSearch && isHotelCluster;
+    } else if (selectedWaddleCluster === 'ALL') {
+      return matchesSearch;
+    } else {
+      return matchesSearch && p.station === selectedWaddleCluster;
+    }
+  });
 
   if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No nearby waddle spots found.</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots found for this cluster tag.</p>`;
     return;
   }
 
-  // Group into Clusters by Station/Category
-  const clusters = {};
   filtered.forEach(p => {
-    const tag = p.station && p.station !== 'N/A' ? `${p.station} Cluster` : `${p.category} Cluster`;
-    if (!clusters[tag]) clusters[tag] = [];
-    clusters[tag].push(p);
-  });
-
-  for (const clusterName in clusters) {
-    const clusterHeader = document.createElement('div');
-    clusterHeader.className = "pt-2 pb-1 text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center space-x-2";
-    clusterHeader.innerHTML = `
-      <span class="px-2 py-0.5 rounded-md text-[10px] text-white font-semibold" style="background-color: var(--sage-green);">CLUSTER</span>
-      <span>${clusterName}</span>
-    `;
-    container.appendChild(clusterHeader);
-
-    clusters[clusterName].forEach(p => {
-      const div = document.createElement('div');
-      div.className = "lily-card p-3 text-xs flex justify-between items-center mb-2";
-      div.innerHTML = `
-        <div class="flex items-center space-x-2">
-          <button onclick="toggleStarSpot('${p.id}')" class="text-amber-400 text-sm">
-            ${p.starred ? '★' : '☆'}
-          </button>
-          <div>
-            <strong style="color: var(--pond-green);" class="text-sm">${p.name}</strong>
-            <p class="text-stone-500 text-[11px] mt-0.5"><i class="fa-solid fa-train-subway me-1 text-emerald-700"></i>${p.station || 'Near Station'} ${p.walk ? '• ' + p.walk : ''}</p>
-          </div>
+    const div = document.createElement('div');
+    div.className = "lily-card p-3.5 text-xs flex justify-between items-center mb-2";
+    div.innerHTML = `
+      <div class="flex items-center space-x-2">
+        <button onclick="toggleStarSpot('${p.id}')" class="text-amber-400 text-base focus:outline-none">
+          ${p.starred ? '★' : '☆'}
+        </button>
+        <div>
+          <strong style="color: var(--pond-green);" class="text-sm">${p.name}</strong>
+          <p class="text-stone-500 text-[11px] mt-0.5"><i class="fa-solid fa-train-subway me-1 text-emerald-700"></i>${p.station || 'Near Station'} ${p.walk ? '• ' + p.walk : ''}</p>
         </div>
-        <a href="${p.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-white border border-stone-200" style="color: var(--pond-green);">
-          Take me there ➔
-        </a>
-      `;
-      container.appendChild(div);
-    });
-  }
+      </div>
+      <a href="${p.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-white border border-stone-200" style="color: var(--pond-green);">
+        Take me there ➔
+      </a>
+    `;
+    container.appendChild(div);
+  });
 }
 
 // --- ITINERARY & DATES ---
@@ -386,7 +414,7 @@ function renderItinerary() {
 
   const dayActivities = (trip.itinerary || []).filter(act => act.day === activeItineraryDay);
   if (dayActivities.length === 0) {
-    timelineContainer.innerHTML = `<p class="text-xs text-stone-400 py-6 text-center">No activities planned for Day ${activeItineraryDay}. Click "+ Add Activity" to add one!</p>`;
+    timelineContainer.innerHTML = `<p class="text-xs text-stone-400 py-6 text-center">No activities planned for Day ${activeItineraryDay}. Click "+ Add Activity" to create one!</p>`;
     return;
   }
 
