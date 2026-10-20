@@ -1,3 +1,4 @@
+
 /**
  * LILY POND TRAVEL HUB - APP.JS
  * Fully Synchronized Waddle Spot Editing, Starred Itinerary Only, Clean Cards
