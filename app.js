@@ -1,6 +1,6 @@
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * Fully Synchronized Cloud Backend + Local Checklists & Expenses + All Modals
+ * Fully Synchronized Cloud Backend + Dynamic Day Calculation & Modals
  */
 
 const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
@@ -16,10 +16,10 @@ const defaultTripData = {
   budget: "RM 2,000 / pax",
   activeHotel: "Hotel Grand Sahid Jaya",
   hotelStation: "Setiabudi Astra (1 min walk)",
-  activeDay: 1,
   places: [
     { id: "p1", name: "Grand Indonesia Mall", category: "Shopping Mall", station: "Bundaran HI", map: "https://maps.google.com" },
-    { id: "p2", name: "Monas (National Monument)", category: "Attraction", station: "Gambir", map: "https://maps.google.com" }
+    { id: "p2", name: "Monas (National Monument)", category: "Attraction", station: "Gambir", map: "https://maps.google.com" },
+    { id: "p3", name: "Tanamera Coffee", category: "Coffee", station: "Setiabudi", map: "https://maps.google.com" }
   ],
   itinerary: [
     { day: 1, title: "Arrival & Check-in", time: "14:00", location: "Hotel Grand Sahid Jaya", notes: "Unpack and relax after arrival." },
@@ -134,8 +134,8 @@ function getActiveTrip() {
     if (trip) activeTripId = trip.id;
   }
   if (trip) {
-    if (!trip.places) trip.places = [...defaultTripData.places];
-    if (!trip.itinerary) trip.itinerary = [...defaultTripData.itinerary];
+    if (!trip.places || trip.places.length === 0) trip.places = [...defaultTripData.places];
+    if (!trip.itinerary || trip.itinerary.length === 0) trip.itinerary = [...defaultTripData.itinerary];
     if (!trip.checklists) trip.checklists = JSON.parse(JSON.stringify(defaultTripData.checklists));
     if (!trip.expenses) trip.expenses = [...defaultTripData.expenses];
   }
@@ -220,7 +220,16 @@ function renderActiveTripDashboard() {
   renderChecklistsAndExpenses();
 }
 
-// --- ITINERARY MODULE & MODAL ---
+// --- DYNAMIC ITINERARY BASED ON DATES ---
+function getTotalTripDays(trip) {
+  if (!trip.startDate || !trip.endDate) return 5; // default fallback
+  const start = new Date(trip.startDate);
+  const end = new Date(trip.endDate);
+  const diffTime = Math.abs(end - start);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  return isNaN(diffDays) || diffDays <= 0 ? 5 : diffDays;
+}
+
 function renderItinerary() {
   const trip = getActiveTrip();
   const dayButtonsContainer = document.getElementById('itinerary-day-buttons');
@@ -230,7 +239,10 @@ function renderItinerary() {
   dayButtonsContainer.innerHTML = "";
   timelineContainer.innerHTML = "";
 
-  for (let d = 1; d <= 5; d++) {
+  const totalDays = getTotalTripDays(trip);
+  if (activeItineraryDay > totalDays) activeItineraryDay = 1;
+
+  for (let d = 1; d <= totalDays; d++) {
     const btn = document.createElement('button');
     btn.className = `px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all ${activeItineraryDay === d ? 'text-white' : 'bg-white text-stone-600 border border-stone-200'}`;
     if (activeItineraryDay === d) btn.style.backgroundColor = 'var(--pond-green)';
@@ -312,6 +324,89 @@ function deleteItineraryActivity(idx) {
       renderItinerary();
     }
   }
+}
+
+// --- TRIP EDIT MODAL ---
+function openTripModal(tripIdToEdit = null) {
+  const modal = document.getElementById('modal-trip');
+  const titleEl = document.getElementById('modal-trip-title');
+  
+  const targetId = tripIdToEdit || activeTripId;
+  const trip = appData.trips.find(t => t.id === targetId);
+
+  if (trip) {
+    if (titleEl) titleEl.innerText = "Edit Trip";
+    document.getElementById('trip-form-id').value = trip.id;
+    document.getElementById('trip-form-title').value = trip.name || '';
+    document.getElementById('trip-form-start-date').value = trip.startDate || '';
+    document.getElementById('trip-form-end-date').value = trip.endDate || '';
+    document.getElementById('trip-form-category').value = trip.category || 'Vacation';
+    document.getElementById('trip-form-people').value = trip.people || '';
+    document.getElementById('trip-form-budget').value = trip.budget || '';
+    document.getElementById('trip-form-hotel').value = trip.activeHotel || '';
+  } else {
+    if (titleEl) titleEl.innerText = "Add New Trip";
+    document.getElementById('trip-form-id').value = '';
+    document.getElementById('trip-form-title').value = '';
+    document.getElementById('trip-form-start-date').value = '';
+    document.getElementById('trip-form-end-date').value = '';
+    document.getElementById('trip-form-people').value = '';
+    document.getElementById('trip-form-budget').value = '';
+    document.getElementById('trip-form-hotel').value = '';
+  }
+  
+  openModal('modal-trip');
+}
+
+function saveTripForm() {
+  const id = document.getElementById('trip-form-id').value;
+  const title = document.getElementById('trip-form-title').value.trim();
+  const startDate = document.getElementById('trip-form-start-date').value;
+  const endDate = document.getElementById('trip-form-end-date').value;
+  const category = document.getElementById('trip-form-category').value;
+  const people = document.getElementById('trip-form-people').value.trim();
+  const budget = document.getElementById('trip-form-budget').value.trim();
+  const hotel = document.getElementById('trip-form-hotel').value.trim();
+
+  if (!title) return alert("Please enter a Trip Destination Name!");
+
+  if (id) {
+    const trip = appData.trips.find(t => t.id === id);
+    if (trip) {
+      trip.name = title;
+      trip.startDate = startDate;
+      trip.endDate = endDate;
+      trip.category = category;
+      trip.people = people;
+      trip.budget = budget;
+      if (hotel) trip.activeHotel = hotel;
+    }
+  } else {
+    const newTripId = "trip_" + Date.now();
+    const newTrip = {
+      id: newTripId,
+      name: title,
+      startDate: startDate || "2026-11-21",
+      endDate: endDate || "2026-11-26",
+      category: category || "Vacation",
+      people: people || "1 Pax",
+      budget: budget || "RM 0",
+      activeHotel: hotel || "Not Selected",
+      hotelStation: "",
+      places: [...defaultTripData.places],
+      itinerary: [],
+      checklists: { prep: [], packing: [] },
+      expenses: []
+    };
+    appData.trips.push(newTrip);
+    activeTripId = newTripId;
+  }
+
+  saveAppData();
+  closeModal('modal-trip');
+  renderUpcomingTripsList();
+  renderAllTripsList();
+  openTripDashboard(activeTripId);
 }
 
 // --- HOTEL MODAL ---
