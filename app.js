@@ -1,6 +1,6 @@
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * Isolated Summary Must-Visits (Max 5) + Interactive Waddle Cluster Tags
+ * Fully Integrated with index.html (#waddle-quick-hubs & Summary Must Visit max 5)
  */
 
 const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
@@ -109,7 +109,7 @@ function getActiveTrip() {
   return trip;
 }
 
-// --- NAVIGATION & TABS ---
+// --- NAVIGATION ---
 function openHomePage(subTab = 'upcoming') {
   document.getElementById('section-home').classList.remove('hidden');
   document.getElementById('section-trip-dashboard').classList.add('hidden');
@@ -160,7 +160,7 @@ function openTripDashboard(tripId) {
   switchDashboardPage('summary');
 }
 
-// --- SUMMARY DASHBOARD & MUST-VISITS (MAX 5) ---
+// --- SUMMARY DASHBOARD & MUST-VISITS (MAX 5 STRICTLY ON SUMMARY) ---
 function renderActiveTripDashboard() {
   const trip = getActiveTrip();
   if (!trip) return;
@@ -186,7 +186,7 @@ function renderStarredLocationsSummary() {
   const container = document.getElementById('summary-starred-container');
   if (!container) return;
 
-  // Filter starred spots and cap at 5 items strictly
+  // Capped at 5 items strictly
   const starred = (trip.places || []).filter(p => p.starred).slice(0, 5);
   container.innerHTML = "";
 
@@ -221,7 +221,7 @@ function toggleStarSpot(placeId) {
   }
 }
 
-// --- MASTER LOCATIONS DATABASE ---
+// --- MASTER LOCATIONS ---
 function renderMasterPlacesList() {
   const container = document.getElementById('masterPlacesContainer');
   if (!container) return;
@@ -288,10 +288,14 @@ function saveMasterSpotForm() {
   document.getElementById('spot-form-name').value = '';
 }
 
-// --- WADDLE WITH INTERACTIVE CLUSTER TAGS ---
+// --- WADDLE WITH INTERACTIVE QUICK HUBS ---
+function executeWaddleSearch() {
+  renderWaddleView();
+}
+
 function renderWaddleView() {
   const container = document.getElementById('waddleSearchResults');
-  const tagsContainer = document.getElementById('waddle-cluster-tags-container');
+  const quickHubsContainer = document.getElementById('waddle-quick-hubs'); // Matches your HTML ID!
   if (!container) return;
   
   const trip = getActiveTrip();
@@ -300,7 +304,7 @@ function renderWaddleView() {
   const hotelStation = (trip.hotelStation || 'Setiabudi Astra').toLowerCase();
   const places = trip.places || [];
 
-  // Extract unique stations to generate Cluster Tags
+  // Extract unique stations to generate Cluster Hub Tags
   const stationSet = new Set();
   places.forEach(p => {
     if (p.station && p.station !== 'N/A' && p.station !== 'No station nearby') {
@@ -308,35 +312,35 @@ function renderWaddleView() {
     }
   });
 
-  // Render Cluster Tag Chips below search bar
-  if (tagsContainer) {
-    tagsContainer.innerHTML = "";
+  // Render Hub Chips inside #waddle-quick-hubs
+  if (quickHubsContainer) {
+    quickHubsContainer.innerHTML = "";
     
     // "Near Hotel" Default Tag
     const hotelChip = document.createElement('button');
-    hotelChip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${selectedWaddleCluster === 'NEAR_HOTEL' ? 'bg-emerald-800 text-white border-emerald-800' : 'bg-white text-stone-600 border-stone-200'}`;
+    hotelChip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${selectedWaddleCluster === 'NEAR_HOTEL' ? 'bg-emerald-800 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
     hotelChip.innerHTML = `<i class="fa-solid fa-hotel me-1"></i>Near Hotel`;
     hotelChip.onclick = () => { selectedWaddleCluster = 'NEAR_HOTEL'; renderWaddleView(); };
-    tagsContainer.appendChild(hotelChip);
+    quickHubsContainer.appendChild(hotelChip);
 
-    // "All Spots" Tag
+    // "All Clusters" Tag
     const allChip = document.createElement('button');
-    allChip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${selectedWaddleCluster === 'ALL' ? 'bg-emerald-800 text-white border-emerald-800' : 'bg-white text-stone-600 border-stone-200'}`;
+    allChip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${selectedWaddleCluster === 'ALL' ? 'bg-emerald-800 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
     allChip.innerText = `All Clusters`;
     allChip.onclick = () => { selectedWaddleCluster = 'ALL'; renderWaddleView(); };
-    tagsContainer.appendChild(allChip);
+    quickHubsContainer.appendChild(allChip);
 
-    // Station Chips (e.g. Setiabudi Astra, Blok M, etc.)
+    // Dynamic Station Chips
     stationSet.forEach(stationName => {
       const chip = document.createElement('button');
-      chip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${selectedWaddleCluster === stationName ? 'bg-emerald-800 text-white border-emerald-800' : 'bg-white text-stone-600 border-stone-200'}`;
+      chip.className = `px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${selectedWaddleCluster === stationName ? 'bg-emerald-800 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
       chip.innerText = `🚆 ${stationName}`;
       chip.onclick = () => { selectedWaddleCluster = stationName; renderWaddleView(); };
-      tagsContainer.appendChild(chip);
+      quickHubsContainer.appendChild(chip);
     });
   }
 
-  // Filter Places according to selected Cluster Tag or Search query
+  // Filter Places based on selected hub pill or search input
   const searchQuery = (document.getElementById('waddleSearchInput')?.value || '').toLowerCase();
   
   let filtered = places.filter(p => {
@@ -353,7 +357,7 @@ function renderWaddleView() {
   });
 
   if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots found for this cluster tag.</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots found for this cluster hub.</p>`;
     return;
   }
 
@@ -414,7 +418,7 @@ function renderItinerary() {
 
   const dayActivities = (trip.itinerary || []).filter(act => act.day === activeItineraryDay);
   if (dayActivities.length === 0) {
-    timelineContainer.innerHTML = `<p class="text-xs text-stone-400 py-6 text-center">No activities planned for Day ${activeItineraryDay}. Click "+ Add Activity" to create one!</p>`;
+    timelineContainer.innerHTML = `<p class="text-xs text-stone-400 py-6 text-center">No activities planned for Day ${activeItineraryDay}. Click "+ Add Activity" to add one!</p>`;
     return;
   }
 
