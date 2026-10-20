@@ -238,3 +238,9 @@ function switchTrip(tripId) {
   saveAppData();
   location.reload(); // Reloads to cleanly mount the selected trip view
 }
+
+// --- TRIP MODAL CONTROLS ---
+function openTripModal() {
+  // Replace 'modal-add-trip' with the exact ID of your trip modal in HTML if it's different
+  openModal('modal-add-trip'); 
+}
