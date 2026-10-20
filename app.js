@@ -1,3 +1,4 @@
+
 /**
  * LILY POND TRAVEL HUB - APP.JS
  * Fixed Category Filter, Summary-Only Must-Visits, Edit Location Modal
