@@ -244,3 +244,22 @@ function openTripModal() {
   // Replace 'modal-add-trip' with the exact ID of your trip modal in HTML if it's different
   openModal('modal-add-trip'); 
 }
+
+// 1. Paste your Web App URL here
+const GOOGLE_SHEET_API_URL = "YOUR_DEPLOYED_WEB_APP_URL_HERE";
+
+// 2. Add this non-destructive sync function to load data on startup
+async function syncFromGoogleSheet() {
+  if (GOOGLE_SHEET_API_URL.includes("YOUR_DEPLOYED")) return;
+  try {
+    const res = await fetch(GOOGLE_SHEET_API_URL);
+    const cloudData = await res.json();
+    const trip = getActiveTrip();
+    if (cloudData.places && cloudData.places.length > 0) trip.places = cloudData.places;
+    if (cloudData.activeHotel) trip.activeHotel = cloudData.activeHotel;
+    saveAppData();
+    if (typeof renderMasterPlacesList === 'function') renderMasterPlacesList();
+  } catch (err) {
+    console.warn("Using local cache.", err);
+  }
+}
