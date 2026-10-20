@@ -1,7 +1,6 @@
-
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * Fully Synchronized Waddle Spot Editing, Starred Itinerary Only, Clean Cards
+ * Fully Synchronized Cross-Device Sync & Waddle Spot Editing
  */
 
 const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
@@ -169,7 +168,7 @@ function openTripDashboard(tripId) {
   switchDashboardPage('summary');
 }
 
-// --- SUMMARY PAGE (STARRED ITINERARY HIGHLIGHTS ONLY & STARRED LOCATIONS) ---
+// --- SUMMARY PAGE ---
 function renderActiveTripDashboard() {
   const trip = getActiveTrip();
   if (!trip) return;
@@ -195,7 +194,6 @@ function renderStarredLocationsSummary() {
   const container = document.getElementById('summary-starred-spots');
   const snapshotContainer = document.getElementById('summary-tentative-snapshot');
 
-  // 1. STARRED LOCATIONS (MAX 5)
   if (container) {
     const starred = (trip.places || []).filter(p => p.starred === true).slice(0, 5);
     container.innerHTML = "";
@@ -221,7 +219,6 @@ function renderStarredLocationsSummary() {
     }
   }
 
-  // 2. STARRED ITINERARY HIGHLIGHTS ONLY
   if (snapshotContainer) {
     snapshotContainer.innerHTML = "";
     const starredItin = (trip.itinerary || []).filter(act => act.starred === true);
@@ -282,7 +279,7 @@ function unstarAllLocations() {
   }
 }
 
-// --- MASTER LOCATIONS DATABASE (NO WALK TIME HERE FOR CLEANER VIEW) ---
+// --- MASTER LOCATIONS DATABASE ---
 function renderMasterPlacesList() {
   const container = document.getElementById('masterPlacesContainer');
   if (!container) return;
@@ -327,7 +324,7 @@ function renderMasterPlacesList() {
   });
 }
 
-// --- WADDLE PAGE (INCLUDES WALK TIME & EDIT BUTTON) ---
+// --- WADDLE PAGE ---
 function executeWaddleSearch() {
   renderWaddleView();
 }
@@ -483,7 +480,7 @@ function saveMasterSpotForm() {
   renderStarredLocationsSummary();
 }
 
-// --- ITINERARY TIMELINE (WITH STAR TOGGLE BUTTON) ---
+// --- ITINERARY TIMELINE ---
 function getTotalTripDays(trip) {
   if (!trip.startDate || !trip.endDate) return 5;
   const start = new Date(trip.startDate);
@@ -606,7 +603,7 @@ function deleteItineraryActivity(realIdx) {
   }
 }
 
-// --- HOMEPAGE & TRIPS (CLEAN CARDS WITHOUT HOTEL SUBTITLE) ---
+// --- HOMEPAGE & TRIPS ---
 function renderUpcomingTripsList() {
   const container = document.getElementById('upcoming-trips-list');
   if (!container) return;
