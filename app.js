@@ -173,3 +173,68 @@ function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.classList.add('hidden');
 }
+
+// --- TRIP MANAGEMENT FUNCTIONS ---
+
+// Call this when your "Add Trip" form or modal is submitted
+function handleAddTripForm(event) {
+  if (event) event.preventDefault();
+  
+  const tripNameInput = document.getElementById('trip-form-name'); // Adjust ID to match your HTML input
+  const tripName = tripNameInput ? tripNameInput.value.trim() : "New Adventure";
+  
+  if (!tripName) {
+    alert("Please enter a trip name!");
+    return;
+  }
+
+  const newTripId = "trip_" + Date.now();
+  const newTrip = {
+    id: newTripId,
+    name: tripName,
+    activeHotel: "Hotel Grand Sahid Jaya", // Default starting hotel
+    places: [],
+    itinerary: {},
+    checklists: []
+  };
+
+  // Push to app data structure
+  appData.trips.push(newTrip);
+  appData.currentTripId = newTripId; // Switch view to the new trip
+  
+  saveAppData();
+  closeModal('modal-add-trip'); // Close modal if you use one
+  
+  // Refresh UI views
+  renderTripList();
+  renderMasterPlacesList();
+  
+  console.log("New trip created successfully:", tripName);
+}
+
+// Renders the list of trips on your Hub page (the screen in your screenshot)
+function renderTripList() {
+  const container = document.getElementById('upcoming-trips-container'); // Adjust to your HTML container ID
+  if (!container) return;
+  
+  container.innerHTML = "";
+  appData.trips.forEach(trip => {
+    const card = document.createElement('div');
+    card.className = "p-4 bg-white rounded-xl shadow-sm border border-emerald-100 mb-3 cursor-pointer flex justify-between items-center";
+    card.innerHTML = `
+      <div>
+        <h3 class="font-bold text-gray-800 text-lg">${trip.name}</h3>
+        <p class="text-xs text-gray-500">Active Hotel: ${trip.activeHotel}</p>
+      </div>
+      <button onclick="switchTrip('${trip.id}')" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg">Open</button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// Switch between multiple trips (e.g., Jakarta vs Bandung)
+function switchTrip(tripId) {
+  appData.currentTripId = tripId;
+  saveAppData();
+  location.reload(); // Reloads to cleanly mount the selected trip view
+}
