@@ -1,9 +1,22 @@
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * Fully Synchronized Cross-Device Sync & Waddle Spot Editing
+ * Powered by Firebase Firestore Real-time Sync & PWA Mobile Architecture
  */
 
-const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxAiZgIqhw21qxNeePEJC_ic4NVJes8np1f0QucxV88jooXcFoWU5l8dnmy8qpInQ54/exec";
+// Your exact Firebase Project Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyD66lgTr64OmKbJVSFW0FqkU-hl-Cxj-Ko",
+  authDomain: "lilypondhub.firebaseapp.com",
+  projectId: "lilypondhub",
+  storageBucket: "lilypondhub.firebasestorage.app",
+  messagingSenderId: "506164833633",
+  appId: "1:506164833633:web:48175dbea8051317472920",
+  measurementId: "G-RZC21KJMJS"
+};
+
+// Initialize Firebase & Firestore
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
 let appData = {
   currentTripId: "trip_jakarta_bandung",
@@ -32,67 +45,55 @@ let selectedWaddleCluster = "NEAR_HOTEL";
 let editingItineraryIndex = null;
 let editingPlaceId = null;
 
-// --- INITIALIZATION ---
-window.onload = async function() {
-  loadAppData();
-  renderUpcomingTripsList();
-  renderAllTripsList();
-  renderActiveTripDashboard();
-  
-  await syncFromGoogleSheet();
+// --- INITIALIZATION & REAL-TIME CLOUD LISTENER ---
+window.onload = function() {
+  listenToCloudChanges();
 };
 
-function loadAppData() {
-  const saved = localStorage.getItem("lily_pond_cloud_data");
-  if (saved) {
-    try {
-      appData = JSON.parse(saved);
+// Real-time listener: Changes on Desktop or Mobile update all devices instantly!
+function listenToCloudChanges() {
+  const docRef = db.collection("travelHub").doc("sharedTripData");
+
+  docRef.onSnapshot((doc) => {
+    if (doc.exists) {
+      appData = doc.data();
       if (appData.currentTripId) activeTripId = appData.currentTripId;
-    } catch(e) {}
-  }
+
+      localStorage.setItem("lily_pond_cloud_data", JSON.stringify(appData));
+      
+      renderUpcomingTripsList();
+      renderAllTripsList();
+      renderActiveTripDashboard();
+      console.log("⚡ Live update received from Firebase Cloud!");
+    } else {
+      // First-time fallback initialization if cloud document is empty
+      const saved = localStorage.getItem("lily_pond_cloud_data");
+      if (saved) {
+        try { appData = JSON.parse(saved); } catch(e){}
+      }
+      saveAppData();
+    }
+  }, (error) => {
+    console.warn("Firestore error, falling back to local cache:", error);
+    const saved = localStorage.getItem("lily_pond_cloud_data");
+    if (saved) appData = JSON.parse(saved);
+    renderUpcomingTripsList();
+    renderAllTripsList();
+    renderActiveTripDashboard();
+  });
 }
 
 function saveAppData() {
   appData.currentTripId = activeTripId;
   localStorage.setItem("lily_pond_cloud_data", JSON.stringify(appData));
-  pushToGoogleSheet();
-}
 
-async function pushToGoogleSheet() {
-  if (!GOOGLE_SHEET_API_URL || GOOGLE_SHEET_API_URL.includes("YOUR_DEPLOYED")) return;
-  try {
-    await fetch(GOOGLE_SHEET_API_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(appData)
+  db.collection("travelHub").doc("sharedTripData").set(appData)
+    .then(() => {
+      console.log("Successfully pushed update to Firebase Cloud.");
+    })
+    .catch((error) => {
+      console.error("Error saving to Firebase Cloud:", error);
     });
-    console.log("Changes pushed to Google Sheet cloud.");
-  } catch (err) {
-    console.warn("Cloud push failed, saved locally.", err);
-  }
-}
-
-async function syncFromGoogleSheet() {
-  if (!GOOGLE_SHEET_API_URL || GOOGLE_SHEET_API_URL.includes("YOUR_DEPLOYED")) return;
-
-  try {
-    const res = await fetch(GOOGLE_SHEET_API_URL);
-    const cloudData = await res.json();
-    
-    if (cloudData && cloudData.trips && cloudData.trips.length > 0) {
-      appData = cloudData;
-      if (cloudData.currentTripId) activeTripId = cloudData.currentTripId;
-      
-      localStorage.setItem("lily_pond_cloud_data", JSON.stringify(appData));
-      renderUpcomingTripsList();
-      renderAllTripsList();
-      renderActiveTripDashboard();
-      console.log("Synced latest cloud data & places!");
-    }
-  } catch (err) {
-    console.warn("Using offline local cache.", err);
-  }
 }
 
 function getActiveTrip() {
