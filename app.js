@@ -1,9 +1,8 @@
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * Powered by Firebase Firestore Real-time Sync & PWA Mobile Architecture
+ * Chronological Itinerary Sorting, Dropdown Hotel Base, Firebase Sync
  */
 
-// Your exact Firebase Project Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyD66lgTr64OmKbJVSFW0FqkU-hl-Cxj-Ko",
   authDomain: "lilypondhub.firebaseapp.com",
@@ -45,12 +44,11 @@ let selectedWaddleCluster = "NEAR_HOTEL";
 let editingItineraryIndex = null;
 let editingPlaceId = null;
 
-// --- INITIALIZATION & REAL-TIME CLOUD LISTENER ---
+// --- INITIALIZATION & REAL-TIME LISTENER ---
 window.onload = function() {
   listenToCloudChanges();
 };
 
-// Real-time listener: Changes on Desktop or Mobile update all devices instantly!
 function listenToCloudChanges() {
   const docRef = db.collection("travelHub").doc("sharedTripData");
 
@@ -59,6 +57,12 @@ function listenToCloudChanges() {
       appData = doc.data();
       if (appData.currentTripId) activeTripId = appData.currentTripId;
 
+      let trip = getActiveTrip();
+      if ((!trip.places || trip.places.length === 0) && typeof getAllMasterLocations === 'function') {
+        trip.places = getAllMasterLocations();
+        saveAppData();
+      }
+
       localStorage.setItem("lily_pond_cloud_data", JSON.stringify(appData));
       
       renderUpcomingTripsList();
@@ -66,10 +70,9 @@ function listenToCloudChanges() {
       renderActiveTripDashboard();
       console.log("⚡ Live update received from Firebase Cloud!");
     } else {
-      // First-time fallback initialization if cloud document is empty
-      const saved = localStorage.getItem("lily_pond_cloud_data");
-      if (saved) {
-        try { appData = JSON.parse(saved); } catch(e){}
+      const trip = getActiveTrip();
+      if (typeof getAllMasterLocations === 'function' && (!trip.places || trip.places.length === 0)) {
+        trip.places = getAllMasterLocations();
       }
       saveAppData();
     }
@@ -211,7 +214,7 @@ function renderStarredLocationsSummary() {
               <span class="text-amber-400">★</span>
               <span class="truncate">${p.name}</span>
             </h5>
-            <p class="text-stone-500 text-[10px] truncate">${p.category} • ${p.station || 'Near Hotel'}</p>
+            <p class="text-stone-500 text-[10px] truncate">${p.city ? p.city + ' • ' : ''}${p.category} • ${p.station || 'Near Hotel'}</p>
           </div>
           <a href="${p.map || '#'}" target="_blank" class="px-2.5 py-1 rounded-xl text-[10px] font-semibold bg-emerald-100 text-emerald-800 flex-shrink-0 ms-2">Map ➔</a>
         `;
@@ -222,7 +225,8 @@ function renderStarredLocationsSummary() {
 
   if (snapshotContainer) {
     snapshotContainer.innerHTML = "";
-    const starredItin = (trip.itinerary || []).filter(act => act.starred === true);
+    // Sort starred itinerary chronologically
+    const starredItin = (trip.itinerary || []).filter(act => act.starred === true).sort((a, b) => (a.time || "00:00").localeCompare(b.time || "00:00"));
     
     if (starredItin.length === 0) {
       snapshotContainer.innerHTML = `<p class="text-xs text-stone-400 py-2 text-center">No starred itinerary activities yet. Click star ⭐ on activities in Itinerary tab!</p>`;
@@ -291,7 +295,7 @@ function renderMasterPlacesList() {
   const catFilter = document.getElementById('masterCategoryFilter')?.value || 'ALL';
 
   const filtered = (trip.places || []).filter(p => {
-    const matchesQuery = p.name.toLowerCase().includes(query) || (p.station && p.station.toLowerCase().includes(query));
+    const matchesQuery = p.name.toLowerCase().includes(query) || (p.station && p.station.toLowerCase().includes(query)) || (p.city && p.city.toLowerCase().includes(query));
     const pCat = (p.category || '').toLowerCase();
     const filterCat = catFilter.toLowerCase();
     const matchesCat = filterCat === 'all' || pCat === filterCat || pCat.includes(filterCat);
@@ -315,7 +319,7 @@ function renderMasterPlacesList() {
           <h4 style="color: var(--pond-green);" class="font-bold text-sm">${place.name}</h4>
           <button onclick="openEditSpotModal('${place.id}')" class="text-stone-300 hover:text-stone-600 text-xs ms-1"><i class="fa-solid fa-pen"></i></button>
         </div>
-        <p class="text-stone-500">${place.category || 'General'} • Station: <strong class="text-stone-700">${place.station || 'Auto-Assigned'}</strong></p>
+        <p class="text-stone-500">${place.city ? '📍 ' + place.city + ' • ' : ''}${place.category || 'General'} • Station: <strong class="text-stone-700">${place.station || 'Auto-Assigned'}</strong></p>
       </div>
       <a href="${place.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px]" style="background-color: var(--pond-bg); color: var(--pond-green);">
         <i class="fa-solid fa-location-dot me-1"></i>Map
@@ -375,7 +379,7 @@ function renderWaddleView() {
   const searchQuery = (document.getElementById('waddleSearchInput')?.value || '').toLowerCase();
   
   let filtered = places.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.station && p.station.toLowerCase().includes(searchQuery)) || p.category.toLowerCase().includes(searchQuery);
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.station && p.station.toLowerCase().includes(searchQuery)) || p.category.toLowerCase().includes(searchQuery) || (p.city && p.city.toLowerCase().includes(searchQuery));
     
     if (selectedWaddleCluster === 'NEAR_HOTEL') {
       const isHotelCluster = p.station && (p.station.toLowerCase().includes(hotelStation) || p.station.toLowerCase().includes("setiabudi") || p.station.toLowerCase().includes("bundaran hi"));
@@ -405,7 +409,7 @@ function renderWaddleView() {
             <strong style="color: var(--pond-green);" class="text-sm">${p.name}</strong>
             <button onclick="openEditSpotModal('${p.id}')" class="text-stone-300 hover:text-stone-600 text-xs"><i class="fa-solid fa-pen"></i></button>
           </div>
-          <p class="text-stone-500 text-[11px] mt-0.5"><i class="fa-solid fa-train-subway me-1 text-emerald-700"></i>${p.station || 'Near Station'} ${p.walk ? '• ' + p.walk : ''}</p>
+          <p class="text-stone-500 text-[11px] mt-0.5"><span class="font-medium text-emerald-900">${p.city ? p.city + ' • ' : ''}</span><i class="fa-solid fa-train-subway me-1 text-emerald-700"></i>${p.station || 'Near Station'} ${p.walk ? '• ' + p.walk : ''}</p>
         </div>
       </div>
       <a href="${p.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-white border border-stone-200" style="color: var(--pond-green);">
@@ -466,6 +470,7 @@ function saveMasterSpotForm() {
     trip.places.push({
       id: "p_" + Date.now(),
       name: name,
+      city: "Jakarta",
       category: category,
       station: station || "Near Hotel Area",
       walk: walk,
@@ -481,89 +486,7 @@ function saveMasterSpotForm() {
   renderStarredLocationsSummary();
 }
 
-// Populate the hotel dropdown list from hotelDatabase (supports multiple cities)
-function populateHotelDropdown(selectedHotelName = "") {
-  const dropdown = document.getElementById('hotel-form-dropdown');
-  if (!dropdown) return;
-  dropdown.innerHTML = "";
-
-  // Combine hotels across all cities in hotelDatabase
-  let allHotels = [];
-  if (typeof hotelDatabase !== 'undefined') {
-    Object.values(hotelDatabase).forEach(cityHotels => {
-      allHotels.push(...cityHotels);
-    });
-  }
-
-  if (allHotels.length === 0) {
-    dropdown.innerHTML = `<option value="">No hotels found in database</option>`;
-    return;
-  }
-
-  allHotels.forEach(h => {
-    const opt = document.createElement('option');
-    opt.value = h.name;
-    opt.text = h.name;
-    if (h.name === selectedHotelName) opt.selected = true;
-    dropdown.appendChild(opt);
-  });
-
-  onHotelDropdownChange();
-}
-
-// Triggered when user changes the hotel dropdown selection
-function onHotelDropdownChange() {
-  const dropdown = document.getElementById('hotel-form-dropdown');
-  const previewLabel = document.getElementById('hotel-form-preview-station');
-  if (!dropdown || !previewLabel) return;
-
-  const chosenHotelName = dropdown.value;
-  let foundHotel = null;
-
-  if (typeof hotelDatabase !== 'undefined') {
-    Object.values(hotelDatabase).forEach(cityHotels => {
-      const match = cityHotels.find(h => h.name === chosenHotelName);
-      if (match) foundHotel = match;
-    });
-  }
-
-  if (foundHotel) {
-    // Determine city key based on hotel lat/lng or default to jakarta
-    const cityKey = (foundHotel.lat < -6.5 && foundHotel.lat > -7.0) ? "bandung" : "jakarta";
-    
-    // Auto-calculate nearest station using transit_data.js function
-    const autoStation = typeof findNearestStation === 'function' 
-      ? findNearestStation(foundHotel.lat, foundHotel.lng, cityKey) 
-      : (foundHotel.nearestStation || "Near Hotel Area");
-
-    previewLabel.innerText = autoStation;
-    foundHotel.calculatedStation = autoStation; // Cache it
-  } else {
-    previewLabel.innerText = "Select a hotel to calculate station";
-  }
-}
-
-function openHotelModal() {
-  const trip = getActiveTrip();
-  populateHotelDropdown(trip.activeHotel || "Hotel Grand Sahid Jaya");
-  openModal('modal-hotel');
-}
-
-function saveHotelForm() {
-  const dropdown = document.getElementById('hotel-form-dropdown');
-  const previewLabel = document.getElementById('hotel-form-preview-station');
-  if (!dropdown) return;
-
-  const trip = getActiveTrip();
-  trip.activeHotel = dropdown.value;
-  trip.hotelStation = previewLabel ? previewLabel.innerText : "Setiabudi Astra (1 min walk)";
-
-  saveAppData();
-  closeModal('modal-hotel');
-  renderActiveTripDashboard();
-}
-
-// --- ITINERARY TIMELINE ---
+// --- ITINERARY TIMELINE (CHRONOLOGICAL SORTING) ---
 function getTotalTripDays(trip) {
   if (!trip.startDate || !trip.endDate) return 5;
   const start = new Date(trip.startDate);
@@ -597,7 +520,11 @@ function renderItinerary() {
     dayButtonsContainer.appendChild(btn);
   }
 
-  const dayActivities = (trip.itinerary || []).filter(act => act.day === activeItineraryDay);
+  // Filter activities for this day and sort chronologically by time
+  const dayActivities = (trip.itinerary || [])
+    .filter(act => act.day === activeItineraryDay)
+    .sort((a, b) => (a.time || "00:00").localeCompare(b.time || "00:00"));
+
   if (dayActivities.length === 0) {
     timelineContainer.innerHTML = `<p class="text-xs text-stone-400 py-6 text-center">No activities planned for Day ${activeItineraryDay}. Click "+ Add Activity" to add one!</p>`;
     return;
@@ -615,7 +542,7 @@ function renderItinerary() {
             <button onclick="toggleStarItineraryActivity(${realIdx})" class="focus:outline-none">
               ${act.starred ? '<span class="text-amber-400 text-sm">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-sm">☆</span>'}
             </button>
-            <span class="font-bold text-stone-400 text-[10px]">${act.time || 'TBD'}</span>
+            <span class="font-bold text-stone-400 text-[10px]"><i class="fa-regular fa-clock me-1"></i>${act.time || 'TBD'}</span>
           </div>
           <div class="space-x-2">
             <button onclick="openEditItineraryModal(${realIdx})" class="text-stone-400 hover:text-emerald-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
@@ -684,6 +611,83 @@ function deleteItineraryActivity(realIdx) {
     renderItinerary();
     renderStarredLocationsSummary();
   }
+}
+
+// --- HOTEL DROPDOWN & AUTO STATION SELECTION ---
+function populateHotelDropdown(selectedHotelName = "") {
+  const dropdown = document.getElementById('hotel-form-dropdown');
+  if (!dropdown) return;
+  dropdown.innerHTML = "";
+
+  let allHotels = [];
+  if (typeof hotelDatabase !== 'undefined') {
+    Object.values(hotelDatabase).forEach(cityHotels => {
+      allHotels.push(...cityHotels);
+    });
+  }
+
+  if (allHotels.length === 0) {
+    dropdown.innerHTML = `<option value="">No hotels found in database</option>`;
+    return;
+  }
+
+  allHotels.forEach(h => {
+    const opt = document.createElement('option');
+    opt.value = h.name;
+    opt.text = h.name;
+    if (h.name === selectedHotelName) opt.selected = true;
+    dropdown.appendChild(opt);
+  });
+
+  onHotelDropdownChange();
+}
+
+function onHotelDropdownChange() {
+  const dropdown = document.getElementById('hotel-form-dropdown');
+  const previewLabel = document.getElementById('hotel-form-preview-station');
+  if (!dropdown || !previewLabel) return;
+
+  const chosenHotelName = dropdown.value;
+  let foundHotel = null;
+
+  if (typeof hotelDatabase !== 'undefined') {
+    Object.values(hotelDatabase).forEach(cityHotels => {
+      const match = cityHotels.find(h => h.name === chosenHotelName);
+      if (match) foundHotel = match;
+    });
+  }
+
+  if (foundHotel) {
+    const cityKey = (foundHotel.lat < -6.5 && foundHotel.lat > -7.0) ? "bandung" : "jakarta";
+    const autoStation = typeof findNearestStation === 'function' 
+      ? findNearestStation(foundHotel.lat, foundHotel.lng, cityKey) 
+      : (foundHotel.nearestStation || "Near Hotel Area");
+
+    previewLabel.innerText = autoStation;
+    foundHotel.calculatedStation = autoStation;
+  } else {
+    previewLabel.innerText = "Select a hotel to calculate station";
+  }
+}
+
+function openHotelModal() {
+  const trip = getActiveTrip();
+  populateHotelDropdown(trip.activeHotel || "Hotel Grand Sahid Jaya");
+  openModal('modal-hotel');
+}
+
+function saveHotelForm() {
+  const dropdown = document.getElementById('hotel-form-dropdown');
+  const previewLabel = document.getElementById('hotel-form-preview-station');
+  if (!dropdown) return;
+
+  const trip = getActiveTrip();
+  trip.activeHotel = dropdown.value;
+  trip.hotelStation = previewLabel ? previewLabel.innerText : "Setiabudi Astra (1 min walk)";
+
+  saveAppData();
+  closeModal('modal-hotel');
+  renderActiveTripDashboard();
 }
 
 // --- HOMEPAGE & TRIPS ---
@@ -792,7 +796,7 @@ function saveTripForm() {
       budget: document.getElementById('trip-form-budget').value || "RM 0",
       activeHotel: "Hotel Grand Sahid Jaya",
       hotelStation: "Setiabudi Astra (1 min walk)",
-      places: [],
+      places: typeof getAllMasterLocations === 'function' ? getAllMasterLocations() : [],
       itinerary: [],
       checklists: { prep: [], packing: [] },
       expenses: []
@@ -805,22 +809,6 @@ function saveTripForm() {
   renderUpcomingTripsList();
   renderAllTripsList();
   openTripDashboard(activeTripId);
-}
-
-function openHotelModal() {
-  const trip = getActiveTrip();
-  document.getElementById('hotel-form-name').value = trip.activeHotel || '';
-  document.getElementById('hotel-form-station').value = trip.hotelStation || '';
-  openModal('modal-hotel');
-}
-
-function saveHotelForm() {
-  const trip = getActiveTrip();
-  trip.activeHotel = document.getElementById('hotel-form-name').value.trim();
-  trip.hotelStation = document.getElementById('hotel-form-station').value.trim();
-  saveAppData();
-  closeModal('modal-hotel');
-  renderActiveTripDashboard();
 }
 
 function switchChecklistSubTab(tab) {
