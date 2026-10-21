@@ -481,6 +481,88 @@ function saveMasterSpotForm() {
   renderStarredLocationsSummary();
 }
 
+// Populate the hotel dropdown list from hotelDatabase (supports multiple cities)
+function populateHotelDropdown(selectedHotelName = "") {
+  const dropdown = document.getElementById('hotel-form-dropdown');
+  if (!dropdown) return;
+  dropdown.innerHTML = "";
+
+  // Combine hotels across all cities in hotelDatabase
+  let allHotels = [];
+  if (typeof hotelDatabase !== 'undefined') {
+    Object.values(hotelDatabase).forEach(cityHotels => {
+      allHotels.push(...cityHotels);
+    });
+  }
+
+  if (allHotels.length === 0) {
+    dropdown.innerHTML = `<option value="">No hotels found in database</option>`;
+    return;
+  }
+
+  allHotels.forEach(h => {
+    const opt = document.createElement('option');
+    opt.value = h.name;
+    opt.text = h.name;
+    if (h.name === selectedHotelName) opt.selected = true;
+    dropdown.appendChild(opt);
+  });
+
+  onHotelDropdownChange();
+}
+
+// Triggered when user changes the hotel dropdown selection
+function onHotelDropdownChange() {
+  const dropdown = document.getElementById('hotel-form-dropdown');
+  const previewLabel = document.getElementById('hotel-form-preview-station');
+  if (!dropdown || !previewLabel) return;
+
+  const chosenHotelName = dropdown.value;
+  let foundHotel = null;
+
+  if (typeof hotelDatabase !== 'undefined') {
+    Object.values(hotelDatabase).forEach(cityHotels => {
+      const match = cityHotels.find(h => h.name === chosenHotelName);
+      if (match) foundHotel = match;
+    });
+  }
+
+  if (foundHotel) {
+    // Determine city key based on hotel lat/lng or default to jakarta
+    const cityKey = (foundHotel.lat < -6.5 && foundHotel.lat > -7.0) ? "bandung" : "jakarta";
+    
+    // Auto-calculate nearest station using transit_data.js function
+    const autoStation = typeof findNearestStation === 'function' 
+      ? findNearestStation(foundHotel.lat, foundHotel.lng, cityKey) 
+      : (foundHotel.nearestStation || "Near Hotel Area");
+
+    previewLabel.innerText = autoStation;
+    foundHotel.calculatedStation = autoStation; // Cache it
+  } else {
+    previewLabel.innerText = "Select a hotel to calculate station";
+  }
+}
+
+function openHotelModal() {
+  const trip = getActiveTrip();
+  populateHotelDropdown(trip.activeHotel || "Hotel Grand Sahid Jaya");
+  openModal('modal-hotel');
+}
+
+function saveHotelForm() {
+  const dropdown = document.getElementById('hotel-form-dropdown');
+  const previewLabel = document.getElementById('hotel-form-preview-station');
+  if (!dropdown) return;
+
+  const trip = getActiveTrip();
+  trip.activeHotel = dropdown.value;
+  trip.hotelStation = previewLabel ? previewLabel.innerText : "Setiabudi Astra (1 min walk)";
+
+  saveAppData();
+  closeModal('modal-hotel');
+  renderActiveTripDashboard();
+}
+
 // --- ITINERARY TIMELINE ---
 function getTotalTripDays(trip) {
   if (!trip.startDate || !trip.endDate) return 5;
