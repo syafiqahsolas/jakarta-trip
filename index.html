@@ -315,44 +315,44 @@
   </div>
 
   <!-- MODALS -->
-  <!-- MODAL 1: ADD / EDIT TRIP (HOTEL BASE REMOVED FROM HERE) -->
-  <div id="modal-trip" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
-    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border-2 border-stone-200">
-      <div class="flex justify-between items-center border-b border-stone-100 pb-2.5">
-        <h3 id="modal-trip-title" style="color: var(--pond-green);" class="font-bold text-base">Add New Trip</h3>
-        <button onclick="closeModal('modal-trip')" class="text-stone-400 hover:text-stone-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-      <input type="hidden" id="trip-form-id" />
-      <div class="space-y-3 text-xs">
-        <div><label class="block text-stone-500 mb-1 font-medium">Trip Destination Name</label><input type="text" id="trip-form-title" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"></div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-stone-500 mb-1 font-medium">Start Date</label>
-            <input type="date" id="trip-form-start-date" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800">
-          </div>
-          <div>
-            <label class="block text-stone-500 mb-1 font-medium">End Date</label>
-            <input type="date" id="trip-form-end-date" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800">
-          </div>
+ <!-- MODAL 1: ADD / EDIT TRIP -->
+<div id="modal-trip" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+  <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border-2 border-stone-200">
+    <div class="flex justify-between items-center border-b border-stone-100 pb-2.5">
+      <h3 id="modal-trip-title" style="color: var(--pond-green);" class="font-bold text-base">Add New Trip</h3>
+      <button onclick="closeModal('modal-trip')" class="text-stone-400 hover:text-stone-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+    <input type="hidden" id="trip-form-id" />
+    <div class="space-y-3 text-xs">
+      <div><label class="block text-stone-500 mb-1 font-medium">Trip Destination Name</label><input type="text" id="trip-form-title" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"></div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-stone-500 mb-1 font-medium">Start Date</label>
+          <input type="date" id="trip-form-start-date" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800">
         </div>
         <div>
-          <label class="block text-stone-500 mb-1 font-medium">Trip Category</label>
-          <select id="trip-form-category" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800">
-            <option value="Vacation">Vacation</option>
-            <option value="Business">Business</option>
-            <option value="Backpacking">Backpacking</option>
-            <option value="Weekend Getaway">Weekend Getaway</option>
-          </select>
+          <label class="block text-stone-500 mb-1 font-medium">End Date</label>
+          <input type="date" id="trip-form-end-date" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800">
         </div>
-        <div><label class="block text-stone-500 mb-1 font-medium">Travelers</label><input type="text" id="trip-form-people" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"></div>
-        <div><label class="block text-stone-500 mb-1 font-medium">Target Budget</label><input type="text" id="trip-form-budget" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"></div>
       </div>
-      <div class="flex justify-end space-x-2 pt-2">
-        <button onclick="closeModal('modal-trip')" class="px-3.5 py-2 bg-stone-100 text-stone-600 rounded-2xl text-xs font-medium">Cancel</button>
-        <button onclick="saveTripForm()" style="background-color: var(--pond-green);" class="px-4 py-2 text-white rounded-2xl text-xs font-semibold">Save Trip</button>
+      <div>
+        <label class="block text-stone-500 mb-1 font-medium">Trip Category</label>
+        <select id="trip-form-category" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800">
+          <option value="Vacation">Vacation</option>
+          <option value="Business">Business</option>
+          <option value="Backpacking">Backpacking</option>
+          <option value="Weekend Getaway">Weekend Getaway</option>
+        </select>
       </div>
+      <div><label class="block text-stone-500 mb-1 font-medium">Travelers</label><input type="text" id="trip-form-people" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"></div>
+      <div><label class="block text-stone-500 mb-1 font-medium">Target Budget</label><input type="text" id="trip-form-budget" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"></div>
+    </div>
+    <div class="flex justify-end space-x-2 pt-2">
+      <button onclick="closeModal('modal-trip')" class="px-3.5 py-2 bg-stone-100 text-stone-600 rounded-2xl text-xs font-medium">Cancel</button>
+      <button onclick="saveTripForm()" style="background-color: var(--pond-green);" class="px-4 py-2 text-white rounded-2xl text-xs font-semibold">Save Trip</button>
     </div>
   </div>
+</div>
 
   <!-- MODAL 2: ITINERARY ACTIVITY -->
   <div id="modal-itinerary" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
@@ -462,16 +462,24 @@
   <div id="modal-hotel" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border-2 border-stone-200">
       <div class="flex justify-between items-center border-b border-stone-100 pb-2.5">
-        <h3 style="color: var(--pond-green);" class="font-bold text-base">Hotel Base</h3>
+        <h3 style="color: var(--pond-green);" class="font-bold text-base">Select Hotel Base</h3>
         <button onclick="closeModal('modal-hotel')" class="text-stone-400 hover:text-stone-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="space-y-3 text-xs">
-        <div><label class="block text-stone-500 mb-1 font-medium">Hotel Name</label><input type="text" id="hotel-form-name" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"></div>
-        <div><label class="block text-stone-500 mb-1 font-medium">Nearest Station & Walk</label><input type="text" id="hotel-form-station" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"></div>
+        <div>
+          <label class="block text-stone-500 mb-1 font-medium">Choose Hotel</label>
+          <select id="hotel-form-dropdown" onchange="onHotelDropdownChange()" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800 font-semibold">
+            <!-- Populated dynamically from hotelDatabase -->
+          </select>
+        </div>
+        <div class="bg-stone-50 p-3 rounded-2xl border border-stone-200/60 space-y-1">
+          <span class="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Auto-Calculated Nearest Station</span>
+          <p id="hotel-form-preview-station" style="color: var(--pond-green);" class="font-bold text-xs">Setiabudi Astra (1 min walk)</p>
+        </div>
       </div>
       <div class="flex justify-end space-x-2 pt-2">
         <button onclick="closeModal('modal-hotel')" class="px-3.5 py-2 bg-stone-100 text-stone-600 rounded-2xl text-xs font-medium">Cancel</button>
-        <button onclick="saveHotelForm()" style="background-color: var(--pond-green);" class="px-4 py-2 text-white rounded-2xl text-xs font-semibold">Save</button>
+        <button onclick="saveHotelForm()" style="background-color: var(--pond-green);" class="px-4 py-2 text-white rounded-2xl text-xs font-semibold">Save Hotel</button>
       </div>
     </div>
   </div>
