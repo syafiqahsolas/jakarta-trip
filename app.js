@@ -128,12 +128,20 @@ function initHotelDatabase() {
   }
 }
 
+function checklistStorageKey(tripId) { return `lily_pond_device_checklists_${tripId}`; }
+function saveDeviceChecklists() {
+  try { appData.trips.forEach(t => localStorage.setItem(checklistStorageKey(t.id), JSON.stringify(t.checklists || { packing: [] }))); } catch (e) { console.warn('Device checklist storage unavailable', e); }
+}
+function hydrateDeviceChecklists() {
+  try { appData.trips.forEach(t => { const raw = localStorage.getItem(checklistStorageKey(t.id)); if (raw) t.checklists = JSON.parse(raw); else localStorage.setItem(checklistStorageKey(t.id), JSON.stringify(t.checklists || { packing: [] })); }); } catch (e) { console.warn('Device checklist storage unavailable', e); }
+}
 function listenToCloudChanges() {
   const docRef = db.collection("travelHub").doc("sharedTripData");
 
   docRef.onSnapshot((doc) => {
     if (doc.exists) {
       appData = doc.data();
+      hydrateDeviceChecklists();
       if (appData.currentTripId) activeTripId = appData.currentTripId;
 
       let trip = getActiveTrip();
@@ -200,10 +208,12 @@ function renderMiniMap(id, pts, opts = {}) {
 
 function saveAppData() {
   appData.currentTripId = activeTripId;
+  saveDeviceChecklists();
   localStorage.setItem("lily_pond_image2_data", JSON.stringify(appData));
-  db.collection("travelHub").doc("sharedTripData").set(appData).catch((err) => {
-    console.error("Cloud sync error:", err);
-  });
+  // Shared trip content syncs across devices; packing/checklist data stays device-local.
+  const sharedData = JSON.parse(JSON.stringify(appData));
+  (sharedData.trips || []).forEach(t => { delete t.checklists; });
+  db.collection("travelHub").doc("sharedTripData").set(sharedData).catch((err) => console.error("Cloud sync error:", err));
 }
 
 function getActiveTrip() {
@@ -278,6 +288,8 @@ function switchDashboardPage(pageName) {
     activeNav.classList.remove('text-stone-400');
   }
 
+  const globalTripName = document.getElementById('global-trip-name');
+  if (globalTripName) globalTripName.textContent = getActiveTrip()?.name || 'Your trip';
   if (pageName === 'summary') renderSummaryPage();
   if (pageName === 'itinerary') renderItinerary();
   if (pageName === 'master') renderLocationsPage();
@@ -294,6 +306,7 @@ function openTripDashboard(tripId) {
   // Show bottom navbar inside trip dashboard
   document.getElementById('floating-bottom-nav')?.classList.remove('hidden');
 
+  const globalTripName = document.getElementById('global-trip-name'); if (globalTripName) globalTripName.textContent = getActiveTrip()?.name || 'Your trip';
   renderActiveTripDashboard();
   switchDashboardPage('summary');
 }
@@ -539,11 +552,18 @@ function renderWaddleView() {
   }
 
   const searchQuery = (document.getElementById('waddleSearchInput')?.value || '').toLowerCase();
-  
+  const categoryBox = document.getElementById('waddle-category-filters');
+  const categories = [...new Set(places.map(p => p.category || 'Other'))].sort();
+  if (categoryBox) {
+    const current = window.waddleCategoryFilter || 'ALL';
+    categoryBox.innerHTML = '';
+    ['ALL', ...categories].forEach(cat => { const b = document.createElement('button'); b.className = `px-3 py-1.5 rounded-full text-[11px] font-bold border ${current === cat ? 'text-white border-transparent' : 'bg-white text-stone-600 border-stone-200'}`; if (current === cat) b.style.backgroundColor = 'var(--midnight-blue)'; b.textContent = cat === 'ALL' ? 'All categories' : cat; b.onclick = () => { window.waddleCategoryFilter = cat; renderWaddleView(); }; categoryBox.appendChild(b); });
+  }
   let filtered = places.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.station && p.station.toLowerCase().includes(searchQuery)) || p.category.toLowerCase().includes(searchQuery);
-    if (selectedWaddleCluster === 'NEAR_HOTEL') return matchesSearch && (!hotel || !p.lat || walkMins(hotel.lat, hotel.lng, p.lat, p.lng) <= 30);
-    return matchesSearch && p.station === selectedWaddleCluster;
+    const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery) || (p.station || '').toLowerCase().includes(searchQuery) || (p.category || '').toLowerCase().includes(searchQuery) || (p.city || '').toLowerCase().includes(searchQuery);
+    const matchesCategory = !window.waddleCategoryFilter || window.waddleCategoryFilter === 'ALL' || (p.category || 'Other') === window.waddleCategoryFilter;
+    const matchesCluster = selectedWaddleCluster === 'NEAR_HOTEL' ? (!hotel || !p.lat || walkMins(hotel.lat, hotel.lng, p.lat, p.lng) <= 30) : p.station === selectedWaddleCluster;
+    return matchesSearch && matchesCategory && matchesCluster;
   });
 
   renderMiniMap('waddle-map', [...(hotel ? [{ lat: hotel.lat, lng: hotel.lng, label: 'Hotel', kind: 'hotel' }] : []), ...filtered.filter(p => p.lat).slice(0, 12).map(p => ({ lat: p.lat, lng: p.lng, label: p.name, kind: 'spot' }))], { caption: `Around ${trip.activeHotel || 'your hotel'}`, empty: 'No mapped spots within 30 min of the hotel yet' });
@@ -761,12 +781,11 @@ function renderMasterPlacesList() {
 
   const query = (document.getElementById('masterSearchInput')?.value || '').toLowerCase();
   const catFilter = document.getElementById('masterCategoryFilter')?.value || 'ALL';
-
   const filtered = (trip.places || []).filter(p => {
     const matchesQuery = p.name.toLowerCase().includes(query) || (p.city && p.city.toLowerCase().includes(query));
     const pCat = (p.category || '').toLowerCase();
     const filterCat = catFilter.toLowerCase();
-    const matchesCat = filterCat === 'all' || pCat === filterCat;
+    const matchesCat = filterCat === 'all' || pCat === filterCat.toLowerCase();
     return matchesQuery && matchesCat;
   });
 
@@ -923,19 +942,68 @@ function toggleStarItineraryActivity(realIdx) {
 
 function fillItinSelects(selPlace, selDoc) {
   const trip = getActiveTrip(), h = getHotelObj(trip);
-  document.getElementById('itin-form-place').innerHTML = '<option value="">None</option>'
-    + (h ? `<option value="hotel" ${selPlace === 'hotel' ? 'selected' : ''}>Hotel: ${h.name}</option>` : '')
-    + trip.places.filter(p => p.lat).map(p => `<option value="${p.id}" ${p.id === selPlace ? 'selected' : ''}>${p.name} (${p.city || ''})</option>`).join('');
+  const options = [];
+  if (h) options.push({ id: 'hotel', name: h.name, extra: 'Hotel' });
+  (trip.places || []).forEach(p => options.push({ id: p.id, name: p.name, extra: p.city || p.category || 'Spot' }));
+  (typeof stationDatabase !== 'undefined' ? Object.values(stationDatabase).flat() : []).forEach(s => options.push({ id: '', name: s.name, extra: 'Station' }));
+  window.itinLocationOptions = options.filter(o => o.name).filter((o, i, arr) => arr.findIndex(x => x.name.toLowerCase() === o.name.toLowerCase()) === i);
+  const placeInput = document.getElementById('itin-form-location');
+  const hidden = document.getElementById('itin-form-place');
+  const selected = options.find(o => o.id && o.id === selPlace);
+  if (placeInput && selected) placeInput.value = selected.name;
+  if (hidden) hidden.value = selPlace || '';
   document.getElementById('itin-form-doc').innerHTML = '<option value="">None</option>'
-    + trip.checklists.packing.filter(i => i.category === 'documents').map(i => `<option value="${i.id}" ${i.id === selDoc ? 'selected' : ''}>${i.text}${i.fileData ? ' 📷' : ''}</option>`).join('');
+    + (trip.checklists?.packing || []).filter(i => i.category === 'documents').map(i => `<option value="${i.id}" ${i.id === selDoc ? 'selected' : ''}>${i.text}${i.fileData ? ' 📷' : ''}</option>`).join('');
   document.getElementById('itin-form-docfile').value = '';
 }
 
 function onItinPlacePick() {
-  const v = document.getElementById('itin-form-place').value, trip = getActiveTrip();
-  const o = v === 'hotel' ? getHotelObj(trip) : trip.places.find(p => p.id === v);
   const loc = document.getElementById('itin-form-location');
-  if (o && !loc.value) loc.value = o.name;
+  const hidden = document.getElementById('itin-form-place');
+  if (!loc || !hidden) return;
+  const text = loc.value.trim().toLowerCase();
+  const match = (window.itinLocationOptions || []).find(o => (o.name || '').toLowerCase() === text && o.id);
+  hidden.value = match ? match.id : '';
+}
+
+function escapeHtml(value) { return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'); }
+
+function renderItinLocationPopup() {
+  const input = document.getElementById('itin-form-location');
+  const popup = document.getElementById('itin-location-popup');
+  if (!input || !popup) return;
+  const query = input.value.trim().toLowerCase();
+  const all = window.itinLocationOptions || [];
+  const matches = all.filter(o => !query || `${o.name} ${o.extra || ''}`.toLowerCase().includes(query)).slice(0, 8);
+  if (!matches.length) {
+    popup.innerHTML = `<div class="location-suggestion-empty">No saved matches — your custom location is fine</div>`;
+  } else {
+    popup.innerHTML = matches.map((o, i) => `<button type="button" role="option" class="location-suggestion-item" data-location-index="${i}" onmousedown="event.preventDefault(); chooseItinLocation(${i}, this)"><span class="location-suggestion-pin"><i class="fa-solid ${o.extra === 'Hotel' ? 'fa-bed' : o.extra === 'Station' ? 'fa-train' : 'fa-location-dot'}"></i></span><span class="location-suggestion-copy"><span class="location-suggestion-name">${escapeHtml(o.name)}</span><span class="location-suggestion-meta">${escapeHtml(o.extra || 'Saved place')}</span></span><i class="fa-solid fa-arrow-up-left-from-circle location-suggestion-arrow"></i></button>`).join('');
+    popup.dataset.count = String(matches.length);
+    popup._matches = matches;
+  }
+  popup.classList.remove('hidden');
+}
+
+function chooseItinLocation(index, button) {
+  const popup = document.getElementById('itin-location-popup');
+  const input = document.getElementById('itin-form-location');
+  const hidden = document.getElementById('itin-form-place');
+  const item = popup?._matches?.[index];
+  if (!item || !input || !hidden) return;
+  input.value = item.name;
+  hidden.value = item.id || '';
+  popup.classList.add('hidden');
+}
+
+function handleItinLocationKeydown(event) {
+  if (event.key === 'Escape') document.getElementById('itin-location-popup')?.classList.add('hidden');
+  if (event.key === 'Enter') {
+    const popup = document.getElementById('itin-location-popup');
+    if (popup && !popup.classList.contains('hidden') && popup._matches?.length) {
+      event.preventDefault(); chooseItinLocation(0);
+    }
+  }
 }
 
 function openItineraryModal(day) {
@@ -970,7 +1038,7 @@ function saveItineraryForm() {
       trip.checklists.packing.push({ id: docId, text: v('title') + ' (ticket)', category: 'documents', done: false, important: false, fileData: data });
     }
     const act = { day: activeItineraryDay, title: v('title'), time: v('time'), location: v('location'), notes: v('notes'),
-      starred: false, placeId: document.getElementById('itin-form-place').value || null, docId };
+      starred: false, placeId: (document.getElementById('itin-form-place').value || null), docId };
     if (editingItineraryIndex !== null && trip.itinerary[editingItineraryIndex]) {
       act.starred = trip.itinerary[editingItineraryIndex].starred || false;
       trip.itinerary[editingItineraryIndex] = act;
@@ -1015,13 +1083,14 @@ function renderCategorizedPackingList() {
   const trip = getActiveTrip();
   container.innerHTML = "";
 
-  const items = (trip.checklists.packing || []).filter(item => (item.category || 'clothes') === activePackingCategory);
+  const packingQuery = (document.getElementById('packingSearchInput')?.value || '').trim().toLowerCase();
+  const items = (trip.checklists.packing || []).filter(item => (item.category || 'clothes') === activePackingCategory && (item.text || '').toLowerCase().includes(packingQuery));
 
   // Pin / Starred items always on top
   items.sort((a, b) => (b.important ? 1 : 0) - (a.important ? 1 : 0));
 
   if (items.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No items in this category yet. Tap "+ Add Item" above!</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">${packingQuery ? 'No matching items. Try another search.' : 'No items in this category yet. Tap “Add” to create one.'}</p>`;
     return;
   }
 
@@ -1090,7 +1159,7 @@ function savePackingItemForm() {
       it.text = text; it.category = category;
       if (fileData) it.fileData = fileData;
     } else {
-      list.push({ text, category, done: false, important: false, fileData: fileData || null });
+      list.push({ id: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), text, category, done: false, important: false, fileData: fileData || null });
     }
     saveAppData(); closeModal('modal-packing'); selectPackingCategory(category); renderSummaryPage();
   };
@@ -1483,3 +1552,123 @@ function renderActiveTripDashboard() {
 
 function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
+
+
+// Rounded, theme-matched dropdowns with custom option popups.
+// The original <select> remains the source of truth so existing app logic keeps working.
+(function initRoundedDropdowns() {
+  const SELECTOR = 'select:not([data-custom-dropdown-ready])';
+
+  function setup(select) {
+    if (!select || select.dataset.customDropdownReady === 'true') return;
+    select.dataset.customDropdownReady = 'true';
+    const wrap = document.createElement('div');
+    wrap.className = 'custom-select-wrap';
+    if (select.id === 'masterCategoryFilter') wrap.classList.add('custom-select-master-filter');
+    select.parentNode.insertBefore(wrap, select);
+    wrap.appendChild(select);
+    select.classList.add('custom-select-native');
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'custom-select-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    const label = document.createElement('span');
+    label.className = 'custom-select-current';
+    const chevron = document.createElement('span');
+    chevron.className = 'custom-select-chevron';
+    chevron.innerHTML = '<i class="fa-solid fa-chevron-down" aria-hidden="true"></i>';
+    trigger.append(label, chevron);
+    wrap.appendChild(trigger);
+
+    const menu = document.createElement('div');
+    menu.className = 'custom-select-menu hidden';
+    menu.setAttribute('role', 'listbox');
+    wrap.appendChild(menu);
+
+    function syncLabel() {
+      const option = select.options[select.selectedIndex];
+      label.textContent = option ? option.textContent.trim() : 'Choose an option';
+      trigger.disabled = select.disabled;
+      trigger.setAttribute('aria-label', label.textContent);
+      wrap.classList.toggle('is-disabled', select.disabled);
+    }
+    function close() {
+      menu.classList.add('hidden');
+      trigger.setAttribute('aria-expanded', 'false');
+      wrap.classList.remove('is-open');
+    }
+    function renderOptions() {
+      menu.innerHTML = '';
+      Array.from(select.options).forEach((option, index) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'custom-select-option';
+        item.setAttribute('role', 'option');
+        item.setAttribute('aria-selected', String(index === select.selectedIndex));
+        item.disabled = option.disabled || (option.parentElement && option.parentElement.disabled);
+        item.textContent = option.textContent.trim();
+        if (index === select.selectedIndex) item.classList.add('is-selected');
+        item.addEventListener('click', () => {
+          if (item.disabled) return;
+          select.selectedIndex = index;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          syncLabel();
+          close();
+          trigger.focus();
+        });
+        menu.appendChild(item);
+      });
+      if (!select.options.length) {
+        const empty = document.createElement('div');
+        empty.className = 'custom-select-empty';
+        empty.textContent = 'No options available';
+        menu.appendChild(empty);
+      }
+    }
+    trigger.addEventListener('click', () => {
+      if (select.disabled) return;
+      const opening = menu.classList.contains('hidden');
+      document.querySelectorAll('.custom-select-menu:not(.hidden)').forEach(other => {
+        other.classList.add('hidden');
+        const otherWrap = other.closest('.custom-select-wrap');
+        otherWrap?.classList.remove('is-open');
+        otherWrap?.querySelector('.custom-select-trigger')?.setAttribute('aria-expanded', 'false');
+      });
+      if (opening) {
+        renderOptions();
+        menu.classList.remove('hidden');
+        trigger.setAttribute('aria-expanded', 'true');
+        wrap.classList.add('is-open');
+        const selected = menu.querySelector('.is-selected');
+        if (selected) selected.scrollIntoView({ block: 'nearest' });
+      } else close();
+    });
+    trigger.addEventListener('keydown', event => {
+      if (event.key === 'Escape') close();
+      if (event.key === 'ArrowDown' && menu.classList.contains('hidden')) {
+        event.preventDefault(); trigger.click();
+      }
+    });
+    select.addEventListener('change', syncLabel);
+    syncLabel();
+  }
+
+  function init() {
+    document.querySelectorAll(SELECTOR).forEach(setup);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+  else init();
+  // A few dropdowns receive options after startup; the menu is rebuilt whenever opened.
+  new MutationObserver(() => init()).observe(document.body, { childList: true, subtree: true });
+  document.addEventListener('click', event => {
+    if (event.target.closest('.custom-select-wrap')) return;
+    document.querySelectorAll('.custom-select-menu:not(.hidden)').forEach(menu => {
+      menu.classList.add('hidden');
+      const wrap = menu.closest('.custom-select-wrap');
+      wrap?.classList.remove('is-open');
+      wrap?.querySelector('.custom-select-trigger')?.setAttribute('aria-expanded', 'false');
+    });
+  });
+})();
