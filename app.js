@@ -1,7 +1,7 @@
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * Floating Curved Bottom Nav, Billing Reports Expenses with Edit/Delete,
- * City-Strict Hotel & Station Matching, Two-Page Location Views (Master & Nearby <40m)
+ * Complete Logic with Packing Categories, Ticket Uploads, Timeline Itinerary,
+ * Transport Modes (Walk vs Car), and City-Strict Hotel Base Handling.
  */
 
 const firebaseConfig = {
@@ -32,14 +32,23 @@ let appData = {
       activeHotel: "Hotel Grand Sahid Jaya",
       hotelStation: "Setiabudi Astra (1 min walk)",
       places: [],
-      itinerary: [],
-      checklists: { 
-        prep: [{ text: "Book airport transfer", done: false }, { text: "Check passport validity", done: true }], 
-        packing: [{ text: "Universal adapter", done: false }, { text: "Comfortable walking shoes", done: false }] 
+      itinerary: [
+        { day: 1, title: "Hotel Check-in", time: "14:00", location: "Hotel Grand Sahid Jaya", notes: "Leave bags at lobby", starred: true },
+        { day: 1, title: "Dinner & Waddle Around", time: "18:30", location: "Chillax Sudirman", notes: "Try local coffee", starred: false }
+      ],
+      checklists: {
+        packing: [
+          { text: "Passport & IC", category: "documents", done: true, important: true },
+          { text: "Universal Adapter", category: "electronics", done: false, important: true },
+          { text: "Flight Boarding Pass", category: "documents", done: false, important: true },
+          { text: "T-Shirts (5x)", category: "clothes", done: false, important: false },
+          { text: "Toothbrush & Paste", category: "toiletries", done: false, important: false }
+        ]
       },
+      tickets: [],
       expenses: [
         { title: "Hotel Deposit", amount: "300", category: "Hotel & Stay" },
-        { title: "Train Tickets", amount: "120", category: "Transport" }
+        { title: "Whoosh Train Ticket", amount: "150", category: "Transport" }
       ]
     }
   ]
@@ -49,15 +58,14 @@ let activeTripId = "trip_jakarta_bandung";
 let activeItineraryDay = 1;
 let selectedWaddleCluster = "NEAR_HOTEL";
 let activeLocationSubTab = "master";
+let activePackingCategory = "clothes";
+let activeTransportMode = "walk";
+
 let editingItineraryIndex = null;
 let editingPlaceId = null;
 let editingExpenseIndex = null;
 
-// GPS State
-let userCurrentLat = null;
-let userCurrentLng = null;
-
-// --- INITIALIZATION & CLOUD SYNC ---
+// --- INITIALIZATION & REALTIME CLOUD LISTENER ---
 window.onload = function() {
   listenToCloudChanges();
 };
@@ -88,6 +96,7 @@ function listenToCloudChanges() {
       saveAppData();
     }
   }, (error) => {
+    console.warn("Offline fallback activated:", error);
     const saved = localStorage.getItem("lily_pond_cloud_data");
     if (saved) appData = JSON.parse(saved);
     renderUpcomingTripsList();
@@ -100,8 +109,8 @@ function saveAppData() {
   appData.currentTripId = activeTripId;
   localStorage.setItem("lily_pond_cloud_data", JSON.stringify(appData));
 
-  db.collection("travelHub").doc("sharedTripData").set(appData).catch((error) => {
-    console.error("Cloud sync error:", error);
+  db.collection("travelHub").doc("sharedTripData").set(appData).catch((err) => {
+    console.error("Firebase sync error (Saved locally):", err);
   });
 }
 
@@ -114,13 +123,14 @@ function getActiveTrip() {
   if (trip) {
     if (!trip.places) trip.places = [];
     if (!trip.itinerary) trip.itinerary = [];
-    if (!trip.checklists) trip.checklists = { prep: [], packing: [] };
+    if (!trip.checklists) trip.checklists = { packing: [] };
+    if (!trip.tickets) trip.tickets = [];
     if (!trip.expenses) trip.expenses = [];
   }
   return trip;
 }
 
-// --- NAVIGATION & BOTTOM FLOATING BAR ---
+// --- NAVIGATION & FLOATING BOTTOM NAVBAR ---
 function openHomePage(subTab = 'upcoming') {
   document.getElementById('section-home')?.classList.remove('hidden');
   document.getElementById('section-trip-dashboard')?.classList.add('hidden');
@@ -185,7 +195,7 @@ function openTripDashboard(tripId) {
   switchDashboardPage('summary');
 }
 
-// --- DASHBOARD SUMMARY ---
+// --- DASHBOARD & SUMMARY ---
 function renderActiveTripDashboard() {
   const trip = getActiveTrip();
   if (!trip) return;
@@ -200,7 +210,7 @@ function renderActiveTripDashboard() {
   const hotelStation = document.getElementById('waddle-hotel-station');
   if (hotelTitle) hotelTitle.innerText = trip.activeHotel || 'Hotel Grand Sahid Jaya';
   if (hotelStation) {
-    hotelStation.innerHTML = trip.hotelStation && trip.hotelStation !== 'No station nearby'
+    hotelStation.innerHTML = (trip.hotelStation && trip.hotelStation !== 'No station nearby')
       ? `<strong>Nearest Station:</strong> ${trip.hotelStation}`
       : `<strong>Nearest Station:</strong> No train station nearby`;
   }
@@ -219,14 +229,14 @@ function renderStarredLocationsSummary() {
     const starred = (trip.places || []).filter(p => p.starred === true).slice(0, 4);
     container.innerHTML = "";
     if (starred.length === 0) {
-      container.innerHTML = `<p class="col-span-2 text-xs text-stone-400 py-3 text-center">No starred locations yet. Tap ⭐ in Locations!</p>`;
+      container.innerHTML = `<p class="col-span-2 text-xs text-stone-400 py-3 text-center">No starred locations yet. Tap ⭐ in Spots!</p>`;
     } else {
       starred.forEach(p => {
         const card = document.createElement('div');
-        card.className = "lily-card p-3 flex justify-between items-center text-xs col-span-2 sm:col-span-1 bg-white/60";
+        card.className = "lily-card p-3 flex justify-between items-center text-xs col-span-2 sm:col-span-1 bg-white/80";
         card.innerHTML = `
           <div class="space-y-0.5 overflow-hidden">
-            <h5 style="color: var(--pond-green);" class="font-bold text-xs truncate flex items-center gap-1">
+            <h5 style="color: var(--dark-green);" class="font-bold text-xs truncate flex items-center gap-1">
               <span class="text-amber-400">★</span>
               <span class="truncate">${p.name}</span>
             </h5>
@@ -250,7 +260,7 @@ function renderStarredLocationsSummary() {
         item.className = "flex justify-between items-center text-xs bg-white/80 p-2.5 rounded-2xl border border-stone-200/60";
         item.innerHTML = `
           <div>
-            <strong style="color: var(--pond-green);" class="block font-bold text-xs flex items-center gap-1">
+            <strong style="color: var(--dark-green);" class="block font-bold text-xs flex items-center gap-1">
               <span class="text-amber-400 text-xs">★</span>
               <span>${act.title}</span>
             </strong>
@@ -355,7 +365,7 @@ function renderWaddleView() {
   });
 
   if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots found for ${activeCity.toUpperCase()}.</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots found in ${activeCity.toUpperCase()}.</p>`;
     return;
   }
 
@@ -373,11 +383,11 @@ function renderWaddleView() {
           ${p.starred ? '<span class="text-amber-400 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-base">☆</span>'}
         </button>
         <div>
-          <strong style="color: var(--pond-green);" class="text-sm font-bold block">${p.name}</strong>
+          <strong style="color: var(--dark-green);" class="text-sm font-bold block">${p.name}</strong>
           <p class="text-stone-500 text-[11px] mt-0.5">${stationTag}</p>
         </div>
       </div>
-      <a href="${p.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-emerald-50 border border-emerald-100" style="color: var(--pond-green);">
+      <a href="${p.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-emerald-50 border border-emerald-100" style="color: var(--dark-green);">
         Go ➔
       </a>
     `;
@@ -385,7 +395,7 @@ function renderWaddleView() {
   });
 }
 
-// --- TWO-PAGE LOCATIONS SECTION (MASTER VS NEARBY <40M) ---
+// --- TWO-PAGE LOCATIONS & TRANSPORT MODES ---
 function switchLocationSubTab(tab) {
   activeLocationSubTab = tab;
   const masterSub = document.getElementById('loc-sub-master');
@@ -410,6 +420,25 @@ function switchLocationSubTab(tab) {
     btnMaster?.classList.add('text-stone-500', 'font-semibold');
     renderNearbyPlacesList();
   }
+}
+
+function setTransportMode(mode) {
+  activeTransportMode = mode;
+  const btnWalk = document.getElementById('transport-btn-walk');
+  const btnCar = document.getElementById('transport-btn-car');
+
+  if (mode === 'walk') {
+    btnWalk?.classList.add('bg-emerald-100', 'text-emerald-900', 'font-bold');
+    btnWalk?.classList.remove('text-stone-500', 'font-semibold');
+    btnCar?.classList.remove('bg-emerald-100', 'text-emerald-900', 'font-bold');
+    btnCar?.classList.add('text-stone-500', 'font-semibold');
+  } else {
+    btnCar?.classList.add('bg-emerald-100', 'text-emerald-900', 'font-bold');
+    btnCar?.classList.remove('text-stone-500', 'font-semibold');
+    btnWalk?.classList.remove('bg-emerald-100', 'text-emerald-900', 'font-bold');
+    btnWalk?.classList.add('text-stone-500', 'font-semibold');
+  }
+  renderNearbyPlacesList();
 }
 
 function renderLocationsPage() {
@@ -447,12 +476,12 @@ function renderMasterPlacesList() {
           <button onclick="toggleStarSpot('${place.id}')" class="focus:outline-none">
             ${place.starred ? '<span class="text-amber-400 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-base">☆</span>'}
           </button>
-          <h4 style="color: var(--pond-green);" class="font-bold text-sm">${place.name}</h4>
+          <h4 style="color: var(--dark-green);" class="font-bold text-sm">${place.name}</h4>
           <button onclick="openEditSpotModal('${place.id}')" class="text-stone-300 hover:text-stone-600 text-xs ms-1"><i class="fa-solid fa-pen"></i></button>
         </div>
-        <p class="text-stone-500"><span class="font-semibold text-emerald-900">${place.city || 'Jakarta'}</span> • ${place.category || 'General'}</p>
+        <p class="text-stone-500"><span class="font-bold text-emerald-900">${place.city || 'Jakarta'}</span> • ${place.category || 'General'}</p>
       </div>
-      <a href="${place.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px]" style="background-color: var(--pond-bg); color: var(--pond-green);">
+      <a href="${place.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px]" style="background-color: var(--pond-bg); color: var(--dark-green);">
         <i class="fa-solid fa-location-dot me-1"></i>Map
       </a>
     `;
@@ -468,30 +497,39 @@ function renderNearbyPlacesList() {
 
   const activeCity = getActiveHotelCity(trip);
   
-  // Filter spots in active city with walk time <= 40 mins
   let filtered = (trip.places || []).filter(p => {
     const isSameCity = (p.city || 'jakarta').toLowerCase() === activeCity;
-    const walkMins = parseInt(p.walk) || 15; // default 15 min walk if not specified
-    return isSameCity && walkMins <= 40;
+    const walkMins = parseInt(p.walk) || 15;
+
+    if (activeTransportMode === 'walk') {
+      return isSameCity && walkMins <= 40;
+    } else {
+      return isSameCity; // Car / Taxi includes all spots in city
+    }
   });
 
   if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots within 40 min walk in ${activeCity.toUpperCase()}.</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots found for ${activeTransportMode.toUpperCase()} mode in ${activeCity.toUpperCase()}.</p>`;
     return;
   }
 
   filtered.forEach(place => {
     const card = document.createElement('div');
     card.className = "lily-card p-3.5 flex justify-between items-center text-xs bg-white/80";
+    
+    const modeBadge = activeTransportMode === 'walk' 
+      ? `<i class="fa-solid fa-person-walking text-emerald-700 me-1"></i>${place.walk || '15 min walk'}`
+      : `<i class="fa-solid fa-car text-teal-700 me-1"></i>10-25 min drive`;
+
     card.innerHTML = `
       <div class="space-y-0.5">
         <div class="flex items-center space-x-2">
           <button onclick="toggleStarSpot('${place.id}')" class="focus:outline-none">
             ${place.starred ? '<span class="text-amber-400 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-base">☆</span>'}
           </button>
-          <h4 style="color: var(--pond-green);" class="font-bold text-sm">${place.name}</h4>
+          <h4 style="color: var(--dark-green);" class="font-bold text-sm">${place.name}</h4>
         </div>
-        <p class="text-stone-500"><i class="fa-solid fa-person-walking me-1 text-emerald-700"></i>${place.walk || '15 min walk'} • ${place.category}</p>
+        <p class="text-stone-500">${modeBadge} • ${place.category}</p>
       </div>
       <a href="${place.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-emerald-50 text-emerald-800">Map ➔</a>
     `;
@@ -499,7 +537,7 @@ function renderNearbyPlacesList() {
   });
 }
 
-// --- ITINERARY ---
+// --- TIMELINE ITINERARY (Matching Image 3 Style) ---
 function getTotalTripDays(trip) {
   if (!trip.startDate || !trip.endDate) return 5;
   const start = new Date(trip.startDate);
@@ -524,7 +562,7 @@ function renderItinerary() {
   for (let d = 1; d <= totalDays; d++) {
     const btn = document.createElement('button');
     btn.className = `px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all ${activeItineraryDay === d ? 'text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
-    if (activeItineraryDay === d) btn.style.backgroundColor = 'var(--pond-green)';
+    if (activeItineraryDay === d) btn.style.backgroundColor = 'var(--dark-green)';
     btn.innerText = `Day ${d}`;
     btn.onclick = () => { activeItineraryDay = d; renderItinerary(); };
     dayButtonsContainer.appendChild(btn);
@@ -544,7 +582,7 @@ function renderItinerary() {
     const item = document.createElement('div');
     item.className = "relative pl-8 space-y-1";
     item.innerHTML = `
-      <div class="absolute left-2 top-1.5 w-3 h-3 rounded-full border-2 border-white shadow-xs" style="background-color: var(--pond-green);"></div>
+      <div class="absolute left-2 top-2.5 w-3 h-3 rounded-full border-2 border-white shadow-xs" style="background-color: var(--dark-green);"></div>
       <div class="lily-card p-3.5 text-xs space-y-1 bg-white/80">
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-2">
@@ -558,13 +596,23 @@ function renderItinerary() {
             <button onclick="deleteItineraryActivity(${realIdx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-[10px]"></i></button>
           </div>
         </div>
-        <h4 style="color: var(--pond-green);" class="font-bold text-sm">${act.title}</h4>
-        <p class="text-stone-600"><i class="fa-solid fa-location-dot me-1" style="color: var(--sage-green);"></i>${act.location || 'N/A'}</p>
+        <h4 style="color: var(--dark-green);" class="font-bold text-sm">${act.title}</h4>
+        <p class="text-stone-600"><i class="fa-solid fa-location-dot me-1" style="color: var(--moss-green);"></i>${act.location || 'N/A'}</p>
         ${act.notes ? `<p class="text-stone-400 text-[11px] bg-stone-50 p-2 rounded-xl mt-1">${act.notes}</p>` : ''}
       </div>
     `;
     timelineContainer.appendChild(item);
   });
+}
+
+function toggleStarItineraryActivity(realIdx) {
+  const trip = getActiveTrip();
+  if (trip.itinerary && trip.itinerary[realIdx]) {
+    trip.itinerary[realIdx].starred = !trip.itinerary[realIdx].starred;
+    saveAppData();
+    renderItinerary();
+    renderStarredLocationsSummary();
+  }
 }
 
 function openItineraryModal() {
@@ -621,72 +669,196 @@ function deleteItineraryActivity(realIdx) {
   }
 }
 
-// --- CHECKLISTS & BILLING REPORTS EXPENSE TRACKER ---
+// --- CHECKLISTS, CATEGORIZED PACKING & TICKETS ---
+function selectPackingCategory(cat) {
+  activePackingCategory = cat;
+  const categories = ['clothes', 'toiletries', 'electronics', 'documents'];
+  categories.forEach(c => {
+    const btn = document.getElementById(`pack-cat-${c}`);
+    if (btn) {
+      if (c === cat) {
+        btn.classList.add('bg-emerald-800', 'text-white', 'shadow-xs');
+        btn.classList.remove('text-stone-400');
+      } else {
+        btn.classList.remove('bg-emerald-800', 'text-white', 'shadow-xs');
+        btn.classList.add('text-stone-400');
+      }
+    }
+  });
+  renderCategorizedPackingList();
+}
+
+function renderCategorizedPackingList() {
+  const container = document.getElementById('packing-items-container');
+  if (!container) return;
+  const trip = getActiveTrip();
+  container.innerHTML = "";
+
+  const items = (trip.checklists.packing || []).filter(item => (item.category || 'clothes') === activePackingCategory);
+
+  // Sort important/pinned items to top
+  items.sort((a, b) => (b.important ? 1 : 0) - (a.important ? 1 : 0));
+
+  if (items.length === 0) {
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-4">No items in this category yet.</p>`;
+    return;
+  }
+
+  items.forEach((item) => {
+    const realIdx = trip.checklists.packing.indexOf(item);
+    const div = document.createElement('div');
+    div.className = "flex justify-between items-center bg-white/80 p-3 rounded-2xl border border-stone-200/60";
+    div.innerHTML = `
+      <label class="flex items-center space-x-2.5 cursor-pointer">
+        <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePackingDone(${realIdx})" class="rounded text-emerald-800">
+        <span class="${item.done ? 'line-through text-stone-400' : 'text-stone-800 font-medium'}">${item.text}</span>
+      </label>
+      <div class="flex items-center space-x-2">
+        <button onclick="togglePackingImportant(${realIdx})" class="focus:outline-none">
+          <i class="fa-solid fa-thumbtack ${item.important ? 'text-amber-500' : 'text-stone-300 hover:text-amber-400'} text-xs"></i>
+        </button>
+        <button onclick="deletePackingItem(${realIdx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-xs"></i></button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function addPackingItem() {
+  const input = document.getElementById('new-pack-input');
+  const val = input?.value.trim();
+  if (!val) return;
+
+  const trip = getActiveTrip();
+  if (!trip.checklists.packing) trip.checklists.packing = [];
+
+  trip.checklists.packing.push({ text: val, category: activePackingCategory, done: false, important: false });
+  saveAppData();
+  input.value = "";
+  renderCategorizedPackingList();
+}
+
+function togglePackingDone(idx) {
+  const trip = getActiveTrip();
+  if (trip.checklists.packing[idx]) {
+    trip.checklists.packing[idx].done = !trip.checklists.packing[idx].done;
+    saveAppData();
+    renderCategorizedPackingList();
+  }
+}
+
+function togglePackingImportant(idx) {
+  const trip = getActiveTrip();
+  if (trip.checklists.packing[idx]) {
+    trip.checklists.packing[idx].important = !trip.checklists.packing[idx].important;
+    saveAppData();
+    renderCategorizedPackingList();
+  }
+}
+
+function deletePackingItem(idx) {
+  const trip = getActiveTrip();
+  trip.checklists.packing.splice(idx, 1);
+  saveAppData();
+  renderCategorizedPackingList();
+}
+
+// --- TICKETS & DOCUMENTS ---
+function renderTicketsList() {
+  const container = document.getElementById('tickets-list-container');
+  if (!container) return;
+  const trip = getActiveTrip();
+  container.innerHTML = "";
+
+  if (!trip.tickets || trip.tickets.length === 0) {
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No tickets uploaded yet. Tap "Upload Ticket" above!</p>`;
+    return;
+  }
+
+  trip.tickets.forEach((ticket, idx) => {
+    const card = document.createElement('div');
+    card.className = "lily-card p-3.5 space-y-2 bg-white";
+    card.innerHTML = `
+      <div class="flex justify-between items-center">
+        <div>
+          <strong style="color: var(--dark-green);" class="font-bold text-xs block">${ticket.title}</strong>
+          <span class="text-[10px] text-stone-400">${ticket.type} Document</span>
+        </div>
+        <button onclick="deleteTicket(${idx})" class="text-stone-300 hover:text-red-500 text-xs"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      ${ticket.fileData ? `<img src="${ticket.fileData}" class="w-full h-36 object-cover rounded-xl border border-stone-100" />` : ''}
+    `;
+    container.appendChild(card);
+  });
+}
+
+function openTicketModal() {
+  document.getElementById('ticket-form-title').value = "";
+  document.getElementById('ticket-form-file').value = "";
+  openModal('modal-ticket');
+}
+
+function saveTicketForm() {
+  const title = document.getElementById('ticket-form-title').value.trim();
+  const type = document.getElementById('ticket-form-type').value;
+  const fileInput = document.getElementById('ticket-form-file');
+
+  if (!title) return alert("Enter ticket title!");
+
+  const trip = getActiveTrip();
+  if (!trip.tickets) trip.tickets = [];
+
+  if (fileInput.files && fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      trip.tickets.push({ title, type, fileData: e.target.result });
+      saveAppData();
+      closeModal('modal-ticket');
+      renderTicketsList();
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    trip.tickets.push({ title, type, fileData: null });
+    saveAppData();
+    closeModal('modal-ticket');
+    renderTicketsList();
+  }
+}
+
+function deleteTicket(idx) {
+  const trip = getActiveTrip();
+  if (confirm("Delete this ticket document?")) {
+    trip.tickets.splice(idx, 1);
+    saveAppData();
+    renderTicketsList();
+  }
+}
+
+// --- BILLING REPORTS EXPENSE TRACKER ---
 function renderChecklistsAndExpenses() {
   const trip = getActiveTrip();
-  if (!trip.checklists) trip.checklists = { prep: [], packing: [] };
-  if (!trip.expenses) trip.expenses = [];
 
-  // 1. Prep List
-  const prepContainer = document.getElementById('checklist-sub-prep');
-  if (prepContainer) {
-    prepContainer.innerHTML = `
-      <div class="space-y-2">
-        <div class="flex gap-2 mb-3">
-          <input type="text" id="new-prep-input" placeholder="Add prep item..." class="w-full bg-white border border-stone-200 rounded-2xl p-2.5 text-xs">
-          <button onclick="addChecklistItem('prep')" style="background-color: var(--pond-green);" class="px-3.5 py-2 text-white rounded-2xl font-semibold flex-shrink-0">Add</button>
-        </div>
-        ${trip.checklists.prep.map((item, idx) => `
-          <div class="flex justify-between items-center bg-white/80 p-3 rounded-2xl border border-stone-200/60">
-            <label class="flex items-center space-x-2.5 cursor-pointer">
-              <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleChecklistItem('prep', ${idx})" class="rounded text-emerald-800">
-              <span class="${item.done ? 'line-through text-stone-400' : 'text-stone-700'}">${item.text}</span>
-            </label>
-            <button onclick="deleteChecklistItem('prep', ${idx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-xs"></i></button>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }
+  // Render Sub-Tabs
+  renderCategorizedPackingList();
+  renderTicketsList();
 
-  // 2. Packing List
-  const packContainer = document.getElementById('checklist-sub-packing');
-  if (packContainer) {
-    packContainer.innerHTML = `
-      <div class="space-y-2">
-        <div class="flex gap-2 mb-3">
-          <input type="text" id="new-pack-input" placeholder="Add packing item..." class="w-full bg-white border border-stone-200 rounded-2xl p-2.5 text-xs">
-          <button onclick="addChecklistItem('packing')" style="background-color: var(--pond-green);" class="px-3.5 py-2 text-white rounded-2xl font-semibold flex-shrink-0">Add</button>
-        </div>
-        ${trip.checklists.packing.map((item, idx) => `
-          <div class="flex justify-between items-center bg-white/80 p-3 rounded-2xl border border-stone-200/60">
-            <label class="flex items-center space-x-2.5 cursor-pointer">
-              <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleChecklistItem('packing', ${idx})" class="rounded text-emerald-800">
-              <span class="${item.done ? 'line-through text-stone-400' : 'text-stone-700'}">${item.text}</span>
-            </label>
-            <button onclick="deleteChecklistItem('packing', ${idx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-xs"></i></button>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }
-
-  // 3. Billing Reports Expenses
   let totalSum = 0;
   const categories = { "Hotel & Stay": 0, "Food & Cafe": 0, "Transport": 0, "Other": 0 };
 
-  trip.expenses.forEach(exp => {
+  (trip.expenses || []).forEach(exp => {
     const amt = parseFloat(exp.amount) || 0;
     totalSum += amt;
     const cat = exp.category || "Other";
     categories[cat] = (categories[cat] || 0) + amt;
   });
 
-  document.getElementById('expense-total-display').innerText = `RM ${totalSum.toLocaleString()}`;
-  document.getElementById('cat-amount-stay').innerText = `RM ${categories["Hotel & Stay"]}`;
-  document.getElementById('cat-amount-food').innerText = `RM ${categories["Food & Cafe"]}`;
-  document.getElementById('cat-amount-transport').innerText = `RM ${categories["Transport"]}`;
-  document.getElementById('cat-amount-other').innerText = `RM ${categories["Other"]}`;
+  const totalDisplay = document.getElementById('expense-total-display');
+  if (totalDisplay) totalDisplay.innerText = `RM ${totalSum.toLocaleString()}`;
+
+  if (document.getElementById('cat-amount-stay')) document.getElementById('cat-amount-stay').innerText = `RM ${categories["Hotel & Stay"]}`;
+  if (document.getElementById('cat-amount-food')) document.getElementById('cat-amount-food').innerText = `RM ${categories["Food & Cafe"]}`;
+  if (document.getElementById('cat-amount-transport')) document.getElementById('cat-amount-transport').innerText = `RM ${categories["Transport"]}`;
+  if (document.getElementById('cat-amount-other')) document.getElementById('cat-amount-other').innerText = `RM ${categories["Other"]}`;
 
   const expListContainer = document.getElementById('expenses-list-container');
   if (expListContainer) {
@@ -715,7 +887,7 @@ function renderChecklistsAndExpenses() {
           </div>
         </div>
         <div class="flex items-center space-x-3">
-          <strong style="color: var(--pond-green);" class="font-extrabold text-xs">RM ${exp.amount}</strong>
+          <strong style="color: var(--dark-green);" class="font-extrabold text-xs">RM ${exp.amount}</strong>
           <button onclick="openEditExpenseModal(${idx})" class="text-stone-300 hover:text-stone-600"><i class="fa-solid fa-pen text-[10px]"></i></button>
           <button onclick="deleteExpenseItem(${idx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-[10px]"></i></button>
         </div>
@@ -778,32 +950,8 @@ function deleteExpenseItem(idx) {
   }
 }
 
-function addChecklistItem(type) {
-  const inputId = type === 'prep' ? 'new-prep-input' : 'new-pack-input';
-  const val = document.getElementById(inputId)?.value.trim();
-  if (!val) return;
-  const trip = getActiveTrip();
-  trip.checklists[type].push({ text: val, done: false });
-  saveAppData();
-  renderChecklistsAndExpenses();
-}
-
-function toggleChecklistItem(type, idx) {
-  const trip = getActiveTrip();
-  trip.checklists[type][idx].done = !trip.checklists[type][idx].done;
-  saveAppData();
-  renderChecklistsAndExpenses();
-}
-
-function deleteChecklistItem(type, idx) {
-  const trip = getActiveTrip();
-  trip.checklists[type].splice(idx, 1);
-  saveAppData();
-  renderChecklistsAndExpenses();
-}
-
 function switchChecklistSubTab(tab) {
-  ['prep', 'packing', 'expenses'].forEach(t => {
+  ['packing', 'tickets', 'expenses'].forEach(t => {
     document.getElementById(`checklist-sub-${t}`)?.classList.add('hidden');
     const btn = document.getElementById(`checktab-${t}`);
     if (btn) {
@@ -842,10 +990,10 @@ function populateHotelNameDropdown(selectedHotelName = "") {
   const hotelSelect = document.getElementById('hotel-name-dropdown');
   if (!citySelect || !hotelSelect) return;
 
-  const selectedCity = citySelect.value;
+  const selectedCity = citySelect.value.toLowerCase();
   hotelSelect.innerHTML = "";
 
-  const hotels = hotelDatabase[selectedCity] || [];
+  const hotels = (typeof hotelDatabase !== 'undefined' && hotelDatabase[selectedCity]) ? hotelDatabase[selectedCity] : [];
   hotels.forEach(h => {
     const opt = document.createElement('option');
     opt.value = h.name;
@@ -907,13 +1055,13 @@ function renderUpcomingTripsList() {
     card.onclick = () => openTripDashboard(trip.id);
     card.innerHTML = `
       <div class="flex justify-between items-start">
-        <span class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full" style="background-color: var(--sage-green);">${trip.category || 'Trip'}</span>
+        <span class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full" style="background-color: var(--moss-green); color: var(--beige);">${trip.category || 'Trip'}</span>
         <span class="text-xs text-stone-400"><i class="fa-solid fa-calendar-days me-1"></i>${trip.startDate || ''} - ${trip.endDate || ''}</span>
       </div>
-      <h3 style="color: var(--pond-green);" class="font-bold text-lg leading-tight">${trip.name}</h3>
+      <h3 style="color: var(--dark-green);" class="font-bold text-lg leading-tight">${trip.name}</h3>
       <div class="flex justify-between text-xs text-stone-500 pt-1">
         <span><i class="fa-solid fa-users me-1"></i>${trip.people || '1 Pax'}</span>
-        <span class="font-semibold" style="color: var(--pond-green);">${trip.budget || 'RM 0'}</span>
+        <span class="font-semibold" style="color: var(--dark-green);">${trip.budget || 'RM 0'}</span>
       </div>
     `;
     container.appendChild(card);
@@ -940,10 +1088,10 @@ function renderAllTripsList() {
     card.onclick = () => openTripDashboard(trip.id);
     card.innerHTML = `
       <div>
-        <h4 style="color: var(--pond-green);" class="font-bold text-base">${trip.name}</h4>
+        <h4 style="color: var(--dark-green);" class="font-bold text-base">${trip.name}</h4>
         <p class="text-xs text-stone-400">${trip.category} • ${trip.startDate || 'TBD'}</p>
       </div>
-      <button class="text-xs px-3 py-1.5 rounded-xl font-semibold text-white" style="background-color: var(--pond-green);">Open ➔</button>
+      <button class="text-xs px-3 py-1.5 rounded-xl font-semibold" style="background-color: var(--dark-green); color: var(--beige);">Open ➔</button>
     `;
     container.appendChild(card);
   });
@@ -1003,7 +1151,8 @@ function saveTripForm() {
       hotelStation: "Setiabudi Astra (1 min walk)",
       places: typeof getAllMasterLocations === 'function' ? getAllMasterLocations() : [],
       itinerary: [],
-      checklists: { prep: [], packing: [] },
+      checklists: { packing: [] },
+      tickets: [],
       expenses: []
     });
     activeTripId = newTripId;
