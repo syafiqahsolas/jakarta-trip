@@ -1,7 +1,8 @@
 /**
  * LILY POND & CARNIVAL TRAVEL HUB - APP.JS
- * Features: Popup item creation, star-pinning, ticket uploads, image-style spot drilldowns,
- * rubber-duck waddle icon, clean navbar labels, trip readiness progress tracking.
+ * Complete Logic with Image 2 Palette, Hidden Nav on Home,
+ * Fixed Hotel Base Loading, Merged Docs Upload in Packing,
+ * Spots Map + Gallery Detail View, & Timeline Itinerary.
  */
 
 const firebaseConfig = {
@@ -14,6 +15,7 @@ const firebaseConfig = {
   measurementId: "G-RZC21KJMJS"
 };
 
+// Initialize Firebase & Firestore
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -28,23 +30,22 @@ let appData = {
       category: "Vacation",
       people: "5 Pax",
       budget: "RM 2,000 / pax",
-      activeHotel: "Hotel Grand Sahid Jaya",
-      hotelStation: "Setiabudi Astra (1 min walk)",
+      activeHotel: "The Papandayan Hotel",
+      hotelCity: "bandung",
+      hotelStation: "Bandung Station (23 min walk)",
       places: [],
       itinerary: [
-        { day: 1, title: "Airport Arrival & Transfer", time: "09:00", location: "CGK Airport", notes: "Private car transfer booked", starred: true, type: "Transport" },
-        { day: 1, title: "Hotel Check-in", time: "14:00", location: "Hotel Grand Sahid Jaya", notes: "Leave bags at lobby", starred: true, type: "Stay" }
+        { day: 1, title: "Airport Arrival & Whoosh Transfer", time: "09:00", location: "CGK / Halim Station", notes: "High speed train to Bandung", starred: true },
+        { day: 1, title: "Hotel Check-in & Relaxation", time: "14:00", location: "The Papandayan Hotel", notes: "Unpack and rest", starred: true }
       ],
       checklists: {
         packing: [
-          { text: "Passport & ID", category: "documents", done: true, important: true },
+          { text: "Passport & ID", category: "documents", done: true, important: true, fileData: null },
+          { text: "Whoosh Train Ticket", category: "documents", done: false, important: true, fileData: null },
           { text: "Universal Adapter", category: "electronics", done: false, important: true },
           { text: "T-Shirts (5x)", category: "clothes", done: false, important: false }
         ]
       },
-      tickets: [
-        { title: "Flight Boarding Pass (KLIA - CGK)", type: "Flight", fileData: null }
-      ],
       expenses: [
         { title: "Hotel Deposit", amount: "300", category: "Hotel & Stay" },
         { title: "Whoosh Train Ticket", amount: "150", category: "Transport" }
@@ -56,7 +57,7 @@ let appData = {
 let activeTripId = "trip_jakarta_bandung";
 let activeItineraryDay = 1;
 let selectedWaddleCluster = "NEAR_HOTEL";
-let activeLocationSubTab = "nearby"; // Default to Nearby first as requested
+let activeLocationSubTab = "nearby";
 let activePackingCategory = "clothes";
 let activeTransportMode = "walk";
 
@@ -64,9 +65,26 @@ let editingItineraryIndex = null;
 let editingPlaceId = null;
 let editingExpenseIndex = null;
 
+// --- INITIALIZATION ---
 window.onload = function() {
+  initHotelDatabase();
   listenToCloudChanges();
 };
+
+function initHotelDatabase() {
+  if (typeof hotelDatabase === 'undefined' || !hotelDatabase) {
+    window.hotelDatabase = {
+      jakarta: [
+        { name: "Hotel Grand Sahid Jaya", city: "Jakarta", lat: -6.210709476, lng: 106.8200146, nearestStation: "Setiabudi Astra (1 min walk)" },
+        { name: "Park Hyatt Jakarta", city: "Jakarta", lat: -6.1845858, lng: 106.8313233, nearestStation: "Gondangdia (3 min walk)" }
+      ],
+      bandung: [
+        { name: "The Papandayan Hotel", city: "Bandung", lat: -6.9242, lng: 107.6231, nearestStation: "Bandung Station (23 min walk)" },
+        { name: "Padma Hotel Bandung", city: "Bandung", lat: -6.8488, lng: 107.6105, nearestStation: "No station nearby" }
+      ]
+    };
+  }
+}
 
 function listenToCloudChanges() {
   const docRef = db.collection("travelHub").doc("sharedTripData");
@@ -82,7 +100,7 @@ function listenToCloudChanges() {
         saveAppData();
       }
 
-      localStorage.setItem("lily_carnival_cloud_data", JSON.stringify(appData));
+      localStorage.setItem("lily_pond_image2_data", JSON.stringify(appData));
       renderHomeViews();
       renderActiveTripDashboard();
     } else {
@@ -93,7 +111,7 @@ function listenToCloudChanges() {
       saveAppData();
     }
   }, (error) => {
-    const saved = localStorage.getItem("lily_carnival_cloud_data");
+    const saved = localStorage.getItem("lily_pond_image2_data");
     if (saved) appData = JSON.parse(saved);
     renderHomeViews();
     renderActiveTripDashboard();
@@ -102,7 +120,7 @@ function listenToCloudChanges() {
 
 function saveAppData() {
   appData.currentTripId = activeTripId;
-  localStorage.setItem("lily_carnival_cloud_data", JSON.stringify(appData));
+  localStorage.setItem("lily_pond_image2_data", JSON.stringify(appData));
   db.collection("travelHub").doc("sharedTripData").set(appData).catch((err) => {
     console.error("Cloud sync error:", err);
   });
@@ -118,16 +136,19 @@ function getActiveTrip() {
     if (!trip.places) trip.places = [];
     if (!trip.itinerary) trip.itinerary = [];
     if (!trip.checklists) trip.checklists = { packing: [] };
-    if (!trip.tickets) trip.tickets = [];
     if (!trip.expenses) trip.expenses = [];
   }
   return trip;
 }
 
-// --- NAVIGATION & HOME VIEW ---
+// --- NAVIGATION & BOTTOM NAVBAR TOGGLE ---
 function openHomePage(subTab = 'upcoming') {
   document.getElementById('section-home')?.classList.remove('hidden');
   document.getElementById('section-trip-dashboard')?.classList.add('hidden');
+  
+  // Hide bottom navbar on Home Screen
+  document.getElementById('floating-bottom-nav')?.classList.add('hidden');
+  
   switchHomeTab(subTab);
 }
 
@@ -185,6 +206,10 @@ function openTripDashboard(tripId) {
   saveAppData();
   document.getElementById('section-home')?.classList.add('hidden');
   document.getElementById('section-trip-dashboard')?.classList.remove('hidden');
+  
+  // Show bottom navbar inside trip dashboard
+  document.getElementById('floating-bottom-nav')?.classList.remove('hidden');
+
   renderActiveTripDashboard();
   switchDashboardPage('summary');
 }
@@ -201,17 +226,17 @@ function renderUpcomingTripsList() {
 
   appData.trips.forEach(trip => {
     const card = document.createElement('div');
-    card.className = "lily-card p-4 space-y-3 cursor-pointer hover:border-amber-500/30 transition-all bg-white/90";
+    card.className = "lily-card p-4 space-y-3 cursor-pointer hover:border-emerald-700/30 transition-all bg-white/90";
     card.onclick = () => openTripDashboard(trip.id);
     card.innerHTML = `
       <div class="flex justify-between items-start">
-        <span class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full" style="background-color: var(--carnival-red);">${trip.category || 'Trip'}</span>
+        <span class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full" style="background-color: var(--olive-green);">${trip.category || 'Trip'}</span>
         <span class="text-xs text-stone-400"><i class="fa-solid fa-calendar-days me-1"></i>${trip.startDate || ''} - ${trip.endDate || ''}</span>
       </div>
-      <h3 style="color: var(--midnight-blue);" class="font-bold text-lg leading-tight">${trip.name}</h3>
+      <h3 style="color: var(--olive-green);" class="font-bold text-lg leading-tight">${trip.name}</h3>
       <div class="flex justify-between text-xs text-stone-500 pt-1">
         <span><i class="fa-solid fa-users me-1"></i>${trip.people || '1 Pax'}</span>
-        <span class="font-semibold" style="color: var(--carnival-red);">${trip.budget || 'RM 0'}</span>
+        <span class="font-semibold" style="color: var(--rose-pink);">${trip.budget || 'RM 0'}</span>
       </div>
     `;
     container.appendChild(card);
@@ -238,16 +263,16 @@ function renderAllTripsList() {
     card.onclick = () => openTripDashboard(trip.id);
     card.innerHTML = `
       <div>
-        <h4 style="color: var(--midnight-blue);" class="font-bold text-base">${trip.name}</h4>
+        <h4 style="color: var(--olive-green);" class="font-bold text-base">${trip.name}</h4>
         <p class="text-xs text-stone-400">${trip.category} • ${trip.startDate || 'TBD'}</p>
       </div>
-      <button class="text-xs px-3 py-1.5 rounded-xl font-semibold text-white" style="background-color: var(--carnival-red);">Open ➔</button>
+      <button class="text-xs px-3 py-1.5 rounded-xl font-semibold text-white" style="background-color: var(--rose-pink);">Open ➔</button>
     `;
     container.appendChild(card);
   });
 }
 
-// --- SUMMARY PAGE (Image 7 Style) ---
+// --- SUMMARY DASHBOARD PAGE ---
 function renderSummaryPage() {
   const trip = getActiveTrip();
   if (!trip) return;
@@ -255,34 +280,34 @@ function renderSummaryPage() {
   document.getElementById('sum-trip-title').innerText = trip.name;
   document.getElementById('sum-trip-dates').innerText = `${trip.startDate || 'TBD'} – ${trip.endDate || 'TBD'}`;
 
-  // Calculate readiness percentage
+  // Trip readiness calculation
   const packingCount = (trip.checklists?.packing || []).length;
   const packedDone = (trip.checklists?.packing || []).filter(i => i.done).length;
   const packPercent = packingCount > 0 ? Math.round((packedDone / packingCount) * 100) : 100;
   
-  document.getElementById('readiness-percent').innerText = `${packPercent}%`;
+  const percentEl = document.getElementById('readiness-percent');
+  if (percentEl) percentEl.innerText = `${packPercent}%`;
+  
   const bar = document.getElementById('readiness-bar-fill');
   if (bar) bar.style.width = `${packPercent}%`;
 
-  // Render E-Ticket preview if any ticket exists
-  const ticketPreview = document.getElementById('summary-ticket-preview');
-  if (ticketPreview) {
-    if (trip.tickets && trip.tickets.length > 0) {
-      const t = trip.tickets[0];
-      ticketPreview.innerHTML = `
-        <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-stone-200/80 shadow-xs">
+  // Render Uploaded Document Preview inside Summary
+  const docPreview = document.getElementById('summary-doc-preview');
+  if (docPreview) {
+    const docItems = (trip.checklists?.packing || []).filter(i => i.category === 'documents' && i.fileData);
+    if (docItems.length > 0) {
+      const topDoc = docItems[0];
+      docPreview.innerHTML = `
+        <div class="flex justify-between items-center bg-white p-3.5 rounded-2xl border border-stone-200/80 shadow-xs">
           <div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Confirmed E-Ticket</span>
-            <h4 style="color: var(--midnight-blue);" class="font-extrabold text-sm mt-1">${t.title}</h4>
-            <p class="text-[11px] text-stone-500">Type: ${t.type}</p>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Uploaded Document</span>
+            <h4 style="color: var(--olive-green);" class="font-bold text-xs mt-1">${topDoc.text}</h4>
           </div>
-          <div class="w-12 h-12 bg-stone-100 rounded-xl flex items-center justify-center text-stone-600">
-            <i class="fa-solid fa-qrcode text-xl"></i>
-          </div>
+          <img src="${topDoc.fileData}" class="w-12 h-12 object-cover rounded-xl border border-stone-200" />
         </div>
       `;
     } else {
-      ticketPreview.innerHTML = `<p class="text-xs text-stone-400 text-center py-2">No tickets uploaded yet.</p>`;
+      docPreview.innerHTML = `<p class="text-xs text-stone-400 text-center py-2">No document photos attached yet. Add in Checklist $\\rightarrow$ Docs!</p>`;
     }
   }
 
@@ -305,7 +330,7 @@ function renderStarredLocationsSummary() {
         card.className = "lily-card p-3 flex justify-between items-center text-xs col-span-2 sm:col-span-1 bg-white/80";
         card.innerHTML = `
           <div class="space-y-0.5 overflow-hidden">
-            <h5 style="color: var(--midnight-blue);" class="font-bold text-xs truncate flex items-center gap-1">
+            <h5 style="color: var(--olive-green);" class="font-bold text-xs truncate flex items-center gap-1">
               <span class="text-amber-500">★</span>
               <span class="truncate">${p.name}</span>
             </h5>
@@ -329,7 +354,7 @@ function renderStarredLocationsSummary() {
         item.className = "flex justify-between items-center text-xs bg-white/80 p-2.5 rounded-2xl border border-stone-200/60";
         item.innerHTML = `
           <div>
-            <strong style="color: var(--midnight-blue);" class="block font-bold text-xs flex items-center gap-1">
+            <strong style="color: var(--olive-green);" class="block font-bold text-xs flex items-center gap-1">
               <span class="text-amber-500 text-xs">★</span>
               <span>${act.title}</span>
             </strong>
@@ -342,7 +367,7 @@ function renderStarredLocationsSummary() {
   }
 }
 
-// --- WADDLE VIEW (Image 3 Concept: Tap Spot for Drilldown Page) ---
+// --- WADDLE EXPLORATION ---
 function getActiveHotelCity(trip) {
   const hotelName = trip.activeHotel || "";
   if (typeof hotelDatabase !== 'undefined' && hotelDatabase) {
@@ -352,7 +377,7 @@ function getActiveHotelCity(trip) {
       }
     }
   }
-  return trip.name.toLowerCase().includes("bandung") ? "bandung" : "jakarta";
+  return (trip.hotelCity || "bandung").toLowerCase();
 }
 
 function executeWaddleSearch() {
@@ -422,10 +447,10 @@ function renderWaddleView() {
     div.innerHTML = `
       <div class="flex items-center space-x-2.5">
         <div class="w-9 h-9 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-700 flex-shrink-0">
-          <i class="fa-solid fa-duck text-sm"></i>
+          <i class="fa-solid fa-dove text-sm"></i>
         </div>
         <div>
-          <strong style="color: var(--midnight-blue);" class="text-sm font-bold block">${p.name}</strong>
+          <strong style="color: var(--olive-green);" class="text-sm font-bold block">${p.name}</strong>
           <p class="text-stone-500 text-[11px] mt-0.5">${stationTag} • ${p.category}</p>
         </div>
       </div>
@@ -435,34 +460,65 @@ function renderWaddleView() {
   });
 }
 
-// --- SPOT DRILLDOWN PAGE (Image 3 Right Side Concept) ---
+// --- SPOTS DETAIL VIEW (Image 7 & 8 Concept: Back Button, Edit, Star & Gallery) ---
 function openSpotDetailView(place) {
-  const container = document.getElementById('page-master'); // Or a dedicated detail wrapper
+  const container = document.getElementById('page-master');
   if (!container) return;
+
+  const galleryImages = place.gallery || [
+    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80"
+  ];
 
   container.innerHTML = `
     <div class="space-y-4 animate-fadeIn">
-      <button onclick="renderLocationsPage()" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-stone-200 text-stone-700 flex items-center gap-1 w-fit">
+      <!-- Fixed Working Go Back Button -->
+      <button onclick="renderLocationsPage()" class="text-xs font-semibold px-3.5 py-2 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 flex items-center gap-1.5 w-fit shadow-xs">
         <i class="fa-solid fa-arrow-left"></i> Back to Spots
       </button>
 
       <div class="lily-card overflow-hidden bg-white">
-        <div class="h-48 bg-stone-200 relative flex items-center justify-center">
-          <i class="fa-solid fa-image text-4xl text-stone-400"></i>
+        <!-- Photo Gallery Header -->
+        <div class="h-48 bg-stone-200 relative overflow-hidden flex items-center justify-center">
+          <img id="spot-detail-main-img" src="${galleryImages[0]}" class="w-full h-full object-cover" />
           <span class="absolute bottom-3 left-3 bg-white/90 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-bold text-stone-800">${place.category}</span>
+          <button onclick="triggerSpotPhotoUpload('${place.id}')" class="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white px-2.5 py-1 rounded-xl text-[10px] font-semibold">
+            <i class="fa-solid fa-camera me-1"></i>Add Photo
+          </button>
         </div>
-        <div class="p-5 space-y-3">
+
+        <!-- Detail Content -->
+        <div class="p-5 space-y-4">
           <div class="flex justify-between items-start">
             <div>
-              <h2 style="color: var(--midnight-blue);" class="font-extrabold text-xl">${place.name}</h2>
+              <h2 style="color: var(--olive-green);" class="font-extrabold text-xl">${place.name}</h2>
               <p class="text-xs text-stone-500 mt-0.5"><i class="fa-solid fa-location-dot text-rose-600 me-1"></i>${place.city || 'Jakarta'} • ${place.station || 'Near Hotel'}</p>
             </div>
-            <button onclick="toggleStarSpot('${place.id}'); openSpotDetailView(getActiveTrip().places.find(p => p.id === '${place.id}'));" class="text-xl">
-              ${place.starred ? '<span class="text-amber-500">★</span>' : '<span class="text-stone-300">☆</span>'}
-            </button>
+            
+            <!-- Actions: Edit & Star/Unstar -->
+            <div class="flex items-center space-x-2">
+              <button onclick="openEditSpotModal('${place.id}')" class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200">
+                <i class="fa-solid fa-pen text-xs"></i>
+              </button>
+              <button onclick="toggleStarSpot('${place.id}'); openSpotDetailView(getActiveTrip().places.find(p => p.id === '${place.id}'));" class="text-xl">
+                ${place.starred ? '<span class="text-amber-500">★</span>' : '<span class="text-stone-300">☆</span>'}
+              </button>
+            </div>
           </div>
-          <p class="text-xs text-stone-600 leading-relaxed">This spot is located within easy reach of your accommodation base. Enjoy exploring local cafes, scenic views, and cultural landmarks.</p>
-          <a href="${place.map || '#'}" target="_blank" class="w-full py-3 rounded-2xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm" style="background-color: var(--carnival-red);">
+
+          <p class="text-xs text-stone-600 leading-relaxed">This spot is located within easy reach of your accommodation base. Enjoy local delicacies, cultural points, and scenic views.</p>
+
+          <!-- Gallery Thumbnails -->
+          <div class="space-y-1.5">
+            <span class="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Spot Gallery</span>
+            <div id="spot-gallery-thumbs" class="flex space-x-2 overflow-x-auto pb-1">
+              ${galleryImages.map((imgUrl, i) => `
+                <img src="${imgUrl}" onclick="document.getElementById('spot-detail-main-img').src='${imgUrl}'" class="w-14 h-14 object-cover rounded-xl border border-stone-200 cursor-pointer hover:scale-105 transition-all" />
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Get Directions Map Button -->
+          <a href="${place.map || 'https://maps.google.com/?q=' + encodeURIComponent(place.name)}" target="_blank" class="w-full py-3 rounded-2xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm" style="background-color: var(--rose-pink);">
             <i class="fa-solid fa-diamond-turn-right"></i> Get Directions
           </a>
         </div>
@@ -471,7 +527,30 @@ function openSpotDetailView(place) {
   `;
 }
 
-// --- LOCATIONS SECTION (Nearby First by Default) ---
+function triggerSpotPhotoUpload(placeId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const trip = getActiveTrip();
+        const place = trip.places.find(p => p.id === placeId);
+        if (place) {
+          if (!place.gallery) place.gallery = [];
+          place.gallery.unshift(evt.target.result);
+          saveAppData();
+          openSpotDetailView(place);
+        }
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+  input.click();
+}
+
+// --- LOCATIONS PAGE (Nearby First) ---
 function switchLocationSubTab(tab) {
   activeLocationSubTab = tab;
   const masterSub = document.getElementById('loc-sub-master');
@@ -559,7 +638,7 @@ function renderNearbyPlacesList() {
           <button onclick="event.stopPropagation(); toggleStarSpot('${place.id}')" class="focus:outline-none">
             ${place.starred ? '<span class="text-amber-500 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-500 text-base">☆</span>'}
           </button>
-          <h4 style="color: var(--midnight-blue);" class="font-bold text-sm">${place.name}</h4>
+          <h4 style="color: var(--olive-green);" class="font-bold text-sm">${place.name}</h4>
         </div>
         <p class="text-stone-500">${modeBadge} • ${place.category}</p>
       </div>
@@ -601,7 +680,7 @@ function renderMasterPlacesList() {
           <button onclick="event.stopPropagation(); toggleStarSpot('${place.id}')" class="focus:outline-none">
             ${place.starred ? '<span class="text-amber-500 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-500 text-base">☆</span>'}
           </button>
-          <h4 style="color: var(--midnight-blue);" class="font-bold text-sm">${place.name}</h4>
+          <h4 style="color: var(--olive-green);" class="font-bold text-sm">${place.name}</h4>
           <button onclick="event.stopPropagation(); openEditSpotModal('${place.id}')" class="text-stone-300 hover:text-stone-600 text-xs ms-1"><i class="fa-solid fa-pen"></i></button>
         </div>
         <p class="text-stone-500"><span class="font-bold text-amber-800">${place.city || 'Jakarta'}</span> • ${place.category || 'General'}</p>
@@ -612,7 +691,31 @@ function renderMasterPlacesList() {
   });
 }
 
-// --- ITINERARY (Image 4 Style with Swipe / Day Tabs & Star Favorites) ---
+function toggleStarSpot(placeId) {
+  const trip = getActiveTrip();
+  const place = (trip.places || []).find(p => p.id === placeId);
+  if (place) {
+    place.starred = !place.starred;
+    saveAppData();
+    renderLocationsPage();
+    renderWaddleView();
+    renderSummaryPage();
+  }
+}
+
+function unstarAllLocations() {
+  const trip = getActiveTrip();
+  if (!trip || !trip.places) return;
+  if (confirm("Unstar all locations?")) {
+    trip.places.forEach(p => p.starred = false);
+    saveAppData();
+    renderLocationsPage();
+    renderWaddleView();
+    renderSummaryPage();
+  }
+}
+
+// --- TIMELINE ITINERARY (Image 9 & 10 Concept) ---
 function getTotalTripDays(trip) {
   if (!trip.startDate || !trip.endDate) return 5;
   const start = new Date(trip.startDate);
@@ -637,7 +740,7 @@ function renderItinerary() {
   for (let d = 1; d <= totalDays; d++) {
     const btn = document.createElement('button');
     btn.className = `px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all ${activeItineraryDay === d ? 'text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
-    if (activeItineraryDay === d) btn.style.backgroundColor = 'var(--midnight-blue)';
+    if (activeItineraryDay === d) btn.style.backgroundColor = 'var(--olive-green)';
     btn.innerText = `Day ${d}`;
     btn.onclick = () => { activeItineraryDay = d; renderItinerary(); };
     dayButtonsContainer.appendChild(btn);
@@ -657,7 +760,7 @@ function renderItinerary() {
     const item = document.createElement('div');
     item.className = "relative pl-8 space-y-1";
     item.innerHTML = `
-      <div class="absolute left-2 top-2.5 w-3 h-3 rounded-full border-2 border-white shadow-xs" style="background-color: var(--carnival-red);"></div>
+      <div class="absolute left-2 top-3.5 w-3 h-3 rounded-full border-2 border-white shadow-xs" style="background-color: var(--rose-pink);"></div>
       <div class="lily-card p-4 text-xs space-y-2 bg-white/90">
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-2">
@@ -671,7 +774,7 @@ function renderItinerary() {
             <button onclick="deleteItineraryActivity(${realIdx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-[10px]"></i></button>
           </div>
         </div>
-        <h4 style="color: var(--midnight-blue);" class="font-bold text-sm">${act.title}</h4>
+        <h4 style="color: var(--olive-green);" class="font-bold text-sm">${act.title}</h4>
         <p class="text-stone-600"><i class="fa-solid fa-location-dot me-1 text-rose-600"></i>${act.location || 'N/A'}</p>
         ${act.notes ? `<p class="text-stone-500 text-[11px] bg-stone-50 p-2.5 rounded-xl mt-1">${act.notes}</p>` : ''}
       </div>
@@ -686,7 +789,7 @@ function toggleStarItineraryActivity(realIdx) {
     trip.itinerary[realIdx].starred = !trip.itinerary[realIdx].starred;
     saveAppData();
     renderItinerary();
-    renderStarredLocationsSummary();
+    renderSummaryPage();
   }
 }
 
@@ -731,7 +834,7 @@ function saveItineraryForm() {
   saveAppData();
   closeModal('modal-itinerary');
   renderItinerary();
-  renderStarredLocationsSummary();
+  renderSummaryPage();
 }
 
 function deleteItineraryActivity(realIdx) {
@@ -740,11 +843,11 @@ function deleteItineraryActivity(realIdx) {
     trip.itinerary.splice(realIdx, 1);
     saveAppData();
     renderItinerary();
-    renderStarredLocationsSummary();
+    renderSummaryPage();
   }
 }
 
-// --- CHECKLISTS, PACKING, TICKETS & DOCUMENTS POPUP ---
+// --- MERGED PACKING & DOCS SUB-TAB (2 TABS: PACKING & EXPENSES) ---
 function selectPackingCategory(cat) {
   activePackingCategory = cat;
   const categories = ['clothes', 'toiletries', 'electronics', 'documents'];
@@ -771,7 +874,7 @@ function renderCategorizedPackingList() {
 
   const items = (trip.checklists.packing || []).filter(item => (item.category || 'clothes') === activePackingCategory);
 
-  // Pinned/Important items always at top
+  // Pin / Starred items always on top
   items.sort((a, b) => (b.important ? 1 : 0) - (a.important ? 1 : 0));
 
   if (items.length === 0) {
@@ -782,18 +885,21 @@ function renderCategorizedPackingList() {
   items.forEach((item) => {
     const realIdx = trip.checklists.packing.indexOf(item);
     const div = document.createElement('div');
-    div.className = "flex justify-between items-center bg-white/90 p-3 rounded-2xl border border-stone-200/60";
+    div.className = "flex flex-col space-y-2 bg-white/90 p-3.5 rounded-2xl border border-stone-200/60";
     div.innerHTML = `
-      <label class="flex items-center space-x-2.5 cursor-pointer">
-        <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePackingDone(${realIdx})" class="rounded text-amber-600">
-        <span class="${item.done ? 'line-through text-stone-400' : 'text-stone-800 font-medium'}">${item.text}</span>
-      </label>
-      <div class="flex items-center space-x-2">
-        <button onclick="togglePackingImportant(${realIdx})" class="focus:outline-none">
-          <i class="fa-solid fa-thumbtack ${item.important ? 'text-amber-500' : 'text-stone-300 hover:text-amber-400'} text-xs"></i>
-        </button>
-        <button onclick="deletePackingItem(${realIdx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-xs"></i></button>
+      <div class="flex justify-between items-center">
+        <label class="flex items-center space-x-2.5 cursor-pointer">
+          <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePackingDone(${realIdx})" class="rounded text-amber-600">
+          <span class="${item.done ? 'line-through text-stone-400' : 'text-stone-800 font-medium'}">${item.text}</span>
+        </label>
+        <div class="flex items-center space-x-2">
+          <button onclick="togglePackingImportant(${realIdx})" class="focus:outline-none">
+            <i class="fa-solid fa-thumbtack ${item.important ? 'text-amber-500' : 'text-stone-300 hover:text-amber-400'} text-xs"></i>
+          </button>
+          <button onclick="deletePackingItem(${realIdx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-xs"></i></button>
+        </div>
       </div>
+      ${item.fileData ? `<img src="${item.fileData}" class="w-full h-32 object-cover rounded-xl border border-stone-100 mt-1" />` : ''}
     `;
     container.appendChild(div);
   });
@@ -802,21 +908,48 @@ function renderCategorizedPackingList() {
 function openPackingItemModal() {
   document.getElementById('pack-form-text').value = "";
   document.getElementById('pack-form-category').value = activePackingCategory;
+  toggleDocUploadVisibility();
   openModal('modal-packing');
+}
+
+function toggleDocUploadVisibility() {
+  const cat = document.getElementById('pack-form-category')?.value;
+  const docContainer = document.getElementById('pack-doc-upload-container');
+  if (docContainer) {
+    if (cat === 'documents') {
+      docContainer.classList.remove('hidden');
+    } else {
+      docContainer.classList.add('hidden');
+    }
+  }
 }
 
 function savePackingItemForm() {
   const text = document.getElementById('pack-form-text').value.trim();
   const category = document.getElementById('pack-form-category').value;
+  const fileInput = document.getElementById('pack-form-file');
+
   if (!text) return alert("Enter item name!");
 
   const trip = getActiveTrip();
   if (!trip.checklists.packing) trip.checklists.packing = [];
 
-  trip.checklists.packing.push({ text, category, done: false, important: false });
-  saveAppData();
-  closeModal('modal-packing');
-  selectPackingCategory(category);
+  if (category === 'documents' && fileInput && fileInput.files && fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      trip.checklists.packing.push({ text, category, done: false, important: false, fileData: e.target.result });
+      saveAppData();
+      closeModal('modal-packing');
+      selectPackingCategory(category);
+      renderSummaryPage();
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    trip.checklists.packing.push({ text, category, done: false, important: false, fileData: null });
+    saveAppData();
+    closeModal('modal-packing');
+    selectPackingCategory(category);
+  }
 }
 
 function togglePackingDone(idx) {
@@ -825,6 +958,7 @@ function togglePackingDone(idx) {
     trip.checklists.packing[idx].done = !trip.checklists.packing[idx].done;
     saveAppData();
     renderCategorizedPackingList();
+    renderSummaryPage();
   }
 }
 
@@ -842,83 +976,12 @@ function deletePackingItem(idx) {
   trip.checklists.packing.splice(idx, 1);
   saveAppData();
   renderCategorizedPackingList();
+  renderSummaryPage();
 }
 
-// --- TICKETS & DOCUMENTS SECTION ---
-function renderTicketsList() {
-  const container = document.getElementById('tickets-list-container');
-  if (!container) return;
-  const trip = getActiveTrip();
-  container.innerHTML = "";
-
-  if (!trip.tickets || trip.tickets.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No tickets uploaded yet. Tap "Upload Ticket" above!</p>`;
-    return;
-  }
-
-  trip.tickets.forEach((ticket, idx) => {
-    const card = document.createElement('div');
-    card.className = "lily-card p-4 space-y-2 bg-white";
-    card.innerHTML = `
-      <div class="flex justify-between items-center">
-        <div>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">${ticket.type} Document</span>
-          <strong style="color: var(--midnight-blue);" class="font-bold text-sm block mt-1">${ticket.title}</strong>
-        </div>
-        <button onclick="deleteTicket(${idx})" class="text-stone-300 hover:text-red-500 text-xs"><i class="fa-solid fa-trash"></i></button>
-      </div>
-      ${ticket.fileData ? `<img src="${ticket.fileData}" class="w-full h-40 object-cover rounded-xl border border-stone-100 mt-2" />` : ''}
-    `;
-    container.appendChild(card);
-  });
-}
-
-function openTicketModal() {
-  document.getElementById('ticket-form-title').value = "";
-  document.getElementById('ticket-form-file').value = "";
-  openModal('modal-ticket');
-}
-
-function saveTicketForm() {
-  const title = document.getElementById('ticket-form-title').value.trim();
-  const type = document.getElementById('ticket-form-type').value;
-  const fileInput = document.getElementById('ticket-form-file');
-
-  if (!title) return alert("Enter ticket title!");
-
-  const trip = getActiveTrip();
-  if (!trip.tickets) trip.tickets = [];
-
-  if (fileInput.files && fileInput.files[0]) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      trip.tickets.push({ title, type, fileData: e.target.result });
-      saveAppData();
-      closeModal('modal-ticket');
-      renderTicketsList();
-    };
-    reader.readAsDataURL(fileInput.files[0]);
-  } else {
-    trip.tickets.push({ title, type, fileData: null });
-    saveAppData();
-    closeModal('modal-ticket');
-    renderTicketsList();
-  }
-}
-
-function deleteTicket(idx) {
-  const trip = getActiveTrip();
-  if (confirm("Delete this ticket document?")) {
-    trip.tickets.splice(idx, 1);
-    saveAppData();
-    renderTicketsList();
-  }
-}
-
-// --- BILLING REPORTS EXPENSE TRACKER ---
+// --- BILLING REPORTS EXPENSES ---
 function renderChecklistsAndExpenses() {
   renderCategorizedPackingList();
-  renderTicketsList();
 
   const trip = getActiveTrip();
   let totalSum = 0;
@@ -966,7 +1029,7 @@ function renderChecklistsAndExpenses() {
           </div>
         </div>
         <div class="flex items-center space-x-3">
-          <strong style="color: var(--midnight-blue);" class="font-extrabold text-xs">RM ${exp.amount}</strong>
+          <strong style="color: var(--olive-green);" class="font-extrabold text-xs">RM ${exp.amount}</strong>
           <button onclick="openEditExpenseModal(${idx})" class="text-stone-300 hover:text-stone-600"><i class="fa-solid fa-pen text-[10px]"></i></button>
           <button onclick="deleteExpenseItem(${idx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-[10px]"></i></button>
         </div>
@@ -1030,7 +1093,7 @@ function deleteExpenseItem(idx) {
 }
 
 function switchChecklistSubTab(tab) {
-  ['packing', 'tickets', 'expenses'].forEach(t => {
+  ['packing', 'expenses'].forEach(t => {
     document.getElementById(`checklist-sub-${t}`)?.classList.add('hidden');
     const btn = document.getElementById(`checktab-${t}`);
     if (btn) {
@@ -1047,12 +1110,12 @@ function switchChecklistSubTab(tab) {
   }
 }
 
-// --- HOTEL DROPDOWN LOGIC ---
-function populateHotelCityDropdown(selectedCity = "jakarta") {
+// --- HOTEL SELECTION LOGIC ---
+function populateHotelCityDropdown(selectedCity = "bandung") {
   const citySelect = document.getElementById('hotel-city-dropdown');
   if (!citySelect) return;
   citySelect.innerHTML = "";
-  if (typeof hotelDatabase === 'undefined') return;
+  initHotelDatabase();
 
   Object.keys(hotelDatabase).forEach(cityKey => {
     const opt = document.createElement('option');
@@ -1072,7 +1135,8 @@ function populateHotelNameDropdown(selectedHotelName = "") {
   const selectedCity = citySelect.value.toLowerCase();
   hotelSelect.innerHTML = "";
 
-  const hotels = (typeof hotelDatabase !== 'undefined' && hotelDatabase[selectedCity]) ? hotelDatabase[selectedCity] : [];
+  initHotelDatabase();
+  const hotels = hotelDatabase[selectedCity] || [];
   hotels.forEach(h => {
     const opt = document.createElement('option');
     opt.value = h.name;
@@ -1095,8 +1159,7 @@ function onHotelSelectionChange() {
   const found = hotels.find(h => h.name === hotelName);
 
   if (found) {
-    const autoStation = typeof findNearestStation === 'function' ? findNearestStation(found.lat, found.lng, city) : "No station nearby";
-    previewLabel.innerText = autoStation;
+    previewLabel.innerText = found.nearestStation || "No station nearby";
   }
 }
 
@@ -1109,12 +1172,14 @@ function openHotelModal() {
 }
 
 function saveHotelForm() {
+  const citySelect = document.getElementById('hotel-city-dropdown');
   const hotelSelect = document.getElementById('hotel-name-dropdown');
   const previewLabel = document.getElementById('hotel-form-preview-station');
   if (!hotelSelect) return;
 
   const trip = getActiveTrip();
   trip.activeHotel = hotelSelect.value;
+  trip.hotelCity = citySelect ? citySelect.value : "bandung";
   trip.hotelStation = previewLabel ? previewLabel.innerText : "No station nearby";
 
   saveAppData();
@@ -1122,7 +1187,7 @@ function saveHotelForm() {
   renderActiveTripDashboard();
 }
 
-// --- TRIP MODALS & SPOTS ---
+// --- TRIPS MANAGEMENT MODALS ---
 function openTripModal(tripIdToEdit = null) {
   const targetId = tripIdToEdit || activeTripId;
   const trip = appData.trips.find(t => t.id === targetId);
@@ -1173,12 +1238,12 @@ function saveTripForm() {
       category: document.getElementById('trip-form-category').value || "Vacation",
       people: document.getElementById('trip-form-people').value || "1 Pax",
       budget: document.getElementById('trip-form-budget').value || "RM 0",
-      activeHotel: "Hotel Grand Sahid Jaya",
-      hotelStation: "Setiabudi Astra (1 min walk)",
+      activeHotel: "The Papandayan Hotel",
+      hotelCity: "bandung",
+      hotelStation: "Bandung Station (23 min walk)",
       places: typeof getAllMasterLocations === 'function' ? getAllMasterLocations() : [],
       itinerary: [],
       checklists: { packing: [] },
-      tickets: [],
       expenses: []
     });
     activeTripId = newTripId;
@@ -1194,7 +1259,7 @@ function openMasterSpotModal() {
   editingPlaceId = null;
   document.getElementById('spot-form-id').value = '';
   document.getElementById('spot-form-name').value = '';
-  document.getElementById('spot-form-city').value = 'Jakarta';
+  document.getElementById('spot-form-city').value = 'Bandung';
   document.getElementById('spot-form-category').value = 'Attraction';
   document.getElementById('spot-form-station').value = '';
   document.getElementById('spot-form-walk').value = '';
@@ -1209,7 +1274,7 @@ function openEditSpotModal(placeId) {
   editingPlaceId = placeId;
   document.getElementById('spot-form-id').value = place.id;
   document.getElementById('spot-form-name').value = place.name || '';
-  document.getElementById('spot-form-city').value = place.city || 'Jakarta';
+  document.getElementById('spot-form-city').value = place.city || 'Bandung';
   document.getElementById('spot-form-category').value = place.category || 'Attraction';
   document.getElementById('spot-form-station').value = place.station || '';
   document.getElementById('spot-form-walk').value = place.walk || '';
@@ -1247,7 +1312,8 @@ function saveMasterSpotForm() {
       station: station || "Near Hotel Area",
       walk: walk,
       map: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
-      starred: false
+      starred: false,
+      gallery: []
     });
   }
 
