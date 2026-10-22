@@ -1,18 +1,26 @@
 /**
- * LILY POND TRAVEL HUB - STYLE.CSS
- * Theme Palette: Dark Green (#0A3323), Moss Green (#839958), 
- * Beige (#F7F4D5), Rosy Brown (#D3968C), Midnight Green (#105666)
+ * LILY POND & CARNIVAL TRAVEL HUB - STYLE.CSS
+ * Theme Blend:
+ * - Carnival Red: #CE191C
+ * - Mustard Yellow: #D59E30
+ * - Muted Teal: #4E888A
+ * - Midnight Blue: #113665
+ * - Dusty Rose: #A76D71
+ * - Dark Green: #0A3323
+ * - Beige: #F7F4D5
  */
 
-/* --- 1. COLOR VARIABLES & BASE STYLES --- */
+/* --- 1. THEME VARIABLES & BASE STYLES --- */
 :root {
+  --carnival-red: #CE191C;
+  --mustard-yellow: #D59E30;
+  --muted-teal: #4E888A;
+  --midnight-blue: #113665;
+  --dusty-rose: #A76D71;
   --dark-green: #0A3323;
-  --moss-green: #839958;
   --beige: #F7F4D5;
-  --rosy-brown: #D3968C;
-  --midnight-green: #105666;
-  --pond-bg: #F9FAF8;
-  --card-border: rgba(131, 153, 88, 0.18);
+  --pond-bg: #F9FAF7;
+  --card-border: rgba(17, 54, 101, 0.08);
 }
 
 body {
@@ -22,39 +30,44 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* --- 2. CARD ELEVATION & COZY BORDERS --- */
+/* --- 2. ELEGANT CARD ELEVATION --- */
 .lily-card {
   background: #ffffff;
   border: 1px solid var(--card-border);
   border-radius: 1.5rem;
-  box-shadow: 0 4px 14px rgba(10, 51, 35, 0.04);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 14px rgba(17, 54, 101, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .lily-card:active {
   transform: scale(0.985);
 }
 
-/* --- 3. FLOATING CURVED BOTTOM NAVBAR --- */
+/* --- 3. FLOATING CURVED BOTTOM NAVBAR (Text-Hiding Active Pill) --- */
 .floating-nav-bar {
   background: #ffffff;
   border-radius: 2rem;
-  box-shadow: 0 10px 25px -5px rgba(10, 51, 35, 0.12), 0 8px 10px -6px rgba(10, 51, 35, 0.05);
-  border: 1px solid rgba(131, 153, 88, 0.2);
+  box-shadow: 0 10px 25px -5px rgba(17, 54, 101, 0.12), 0 8px 10px -6px rgba(17, 54, 101, 0.05);
+  border: 1px solid rgba(17, 54, 101, 0.08);
 }
 
-/* Floating elevated active tab pill */
+/* When selected, button lifts up and hides text label to eliminate clutter */
 .nav-item-active {
   transform: translateY(-12px);
-  background-color: var(--dark-green) !important;
+  background-color: var(--midnight-blue) !important;
   color: var(--beige) !important;
   border: 4px solid var(--pond-bg);
-  box-shadow: 0 8px 18px rgba(10, 51, 35, 0.35);
+  box-shadow: 0 8px 18px rgba(17, 54, 101, 0.35);
 }
 
-.nav-item-active i, 
-.nav-item-active span {
+.nav-item-active i {
   color: var(--beige) !important;
+  font-size: 1.25rem;
+}
+
+/* Hide text label on active selection for a clean icon-focused elevated look */
+.nav-item-active span {
+  display: none !important;
 }
 
 /* --- 4. PACKING SIDEBAR & CATEGORY CHIPS --- */
@@ -63,7 +76,7 @@ body {
 }
 
 #checklist-sub-packing button:hover {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
 
 /* --- 5. TIMELINE ITINERARY NODES & LINES --- */
@@ -74,13 +87,13 @@ body {
   bottom: 1rem;
   left: 0.875rem;
   width: 2px;
-  background: rgba(131, 153, 88, 0.25);
+  background: rgba(78, 136, 138, 0.25);
   border-radius: 9999px;
 }
 
 /* --- 6. MODAL BACKDROP & ENTRY ANIMATIONS --- */
 .modal-backdrop {
-  background-color: rgba(10, 51, 35, 0.45);
+  background-color: rgba(17, 54, 101, 0.45);
   backdrop-filter: blur(6px);
   transition: opacity 0.2s ease-in-out;
 }
@@ -100,11 +113,20 @@ body {
   }
 }
 
+.animate-fadeIn {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* --- 7. FORM INPUT STYLING --- */
 input:focus, 
 select:focus, 
 textarea:focus {
-  outline: 2px solid var(--moss-green);
+  outline: 2px solid var(--muted-teal);
   outline-offset: -1px;
 }
 
@@ -125,12 +147,12 @@ textarea#itin-form-notes {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(131, 153, 88, 0.3);
+  background: rgba(78, 136, 138, 0.3);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(10, 51, 35, 0.5);
+  background: rgba(17, 54, 101, 0.5);
 }
 
 .no-scrollbar::-webkit-scrollbar {
