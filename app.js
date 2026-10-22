@@ -1,3 +1,4 @@
+
 /**
  * LILY POND & CARNIVAL TRAVEL HUB - APP.JS
  * Complete Logic with Image 2 Palette, Hidden Nav on Home,
