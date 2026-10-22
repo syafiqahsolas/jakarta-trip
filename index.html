@@ -11,7 +11,7 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Custom Styling Variables -->
+  <!-- Custom Styling Variables for Cozy Aesthetic -->
   <style>
     :root {
       --pond-green: #1b4332;
@@ -159,7 +159,7 @@
         <label style="color: var(--pond-green);" class="font-bold text-xs uppercase tracking-wider block"><i class="fa-solid fa-magnifying-glass me-1"></i>Cluster Search</label>
         <input type="text" id="waddleSearchInput" oninput="executeWaddleSearch()" placeholder="Search by category, station, or place..." class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-xs">
         <div id="waddle-quick-hubs" class="flex flex-wrap gap-1.5 pt-1">
-          <!-- Cluster chips -->
+          <!-- Clutter-free top 3 station chips -->
         </div>
       </div>
       <div id="waddleSearchResults" class="space-y-2">
@@ -169,8 +169,14 @@
 
     <!-- PAGE D: LOCATIONS DATABASE -->
     <div id="page-master" class="space-y-3 hidden">
-      <div class="flex gap-2">
+      <div class="flex gap-2 items-center">
         <input type="text" id="masterSearchInput" oninput="renderMasterPlacesList()" placeholder="Search locations..." class="w-full bg-white border border-stone-200 rounded-2xl p-2.5 text-xs">
+        
+        <!-- GPS Proximity Sort Button -->
+        <button onclick="sortByUserLocation()" title="Sort by Nearest to Me" class="px-3 py-2.5 bg-emerald-100 text-emerald-800 rounded-2xl text-xs font-semibold flex-shrink-0 flex items-center gap-1">
+          <i class="fa-solid fa-location-crosshairs"></i>
+        </button>
+
         <select id="masterCategoryFilter" onchange="renderMasterPlacesList()" class="bg-white border border-stone-200 rounded-2xl p-2.5 text-xs">
           <option value="ALL">All Categories</option>
           <option value="Attraction">Attraction</option>
@@ -186,20 +192,20 @@
     </div>
 
     <!-- PAGE E: CHECKLISTS & EXPENSES -->
-    <div id="page-checklists" class="space-y-3 hidden">
-      <div class="flex space-x-2 border-b border-stone-200 pb-2">
-        <button id="checktab-prep" onclick="switchChecklistSubTab('prep')" class="text-xs font-bold pb-1 border-b-2 border-emerald-800 text-stone-800">Prep</button>
-        <button id="checktab-packing" onclick="switchChecklistSubTab('packing')" class="text-xs font-semibold pb-1 text-stone-400 border-b-2 border-transparent">Packing</button>
-        <button id="checktab-expenses" onclick="switchChecklistSubTab('expenses')" class="text-xs font-semibold pb-1 text-stone-400 border-b-2 border-transparent">Expenses</button>
+    <div id="page-checklists" class="space-y-4 hidden">
+      <div class="flex space-x-2 bg-stone-200/60 p-1 rounded-2xl">
+        <button id="checktab-prep" onclick="switchChecklistSubTab('prep'); renderChecklistsAndExpenses();" class="flex-1 py-2 rounded-xl text-xs font-bold text-stone-800 bg-white shadow-xs transition-all">Prep</button>
+        <button id="checktab-packing" onclick="switchChecklistSubTab('packing'); renderChecklistsAndExpenses();" class="flex-1 py-2 rounded-xl text-xs font-semibold text-stone-500 transition-all">Packing</button>
+        <button id="checktab-expenses" onclick="switchChecklistSubTab('expenses'); renderChecklistsAndExpenses();" class="flex-1 py-2 rounded-xl text-xs font-semibold text-stone-500 transition-all">Expenses</button>
       </div>
-      <div id="checklist-sub-prep" class="space-y-2 text-xs">
-        <p class="text-stone-400 text-center py-4">Preparation checklist items go here.</p>
+      <div id="checklist-sub-prep" class="space-y-2 text-xs pt-1">
+        <!-- Rendered dynamically -->
       </div>
-      <div id="checklist-sub-packing" class="space-y-2 text-xs hidden">
-        <p class="text-stone-400 text-center py-4">Packing checklist items go here.</p>
+      <div id="checklist-sub-packing" class="space-y-2 text-xs pt-1 hidden">
+        <!-- Rendered dynamically -->
       </div>
-      <div id="checklist-sub-expenses" class="space-y-2 text-xs hidden">
-        <p class="text-stone-400 text-center py-4">Trip expenses tracking goes here.</p>
+      <div id="checklist-sub-expenses" class="space-y-2 text-xs pt-1 hidden">
+        <!-- Rendered dynamically -->
       </div>
     </div>
   </section>
