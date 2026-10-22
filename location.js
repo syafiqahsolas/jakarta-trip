@@ -1,4 +1,3 @@
-
 /**
  * LILY POND TRAVEL HUB - LOCATIONS.JS
  * Master Location Database for Jakarta & Bandung
@@ -40,31 +39,41 @@ const masterLocationDatabase = {
     ]
   },
   bandung: {
+    // lat/lng marked null = add them in the app (Spots > Master Database > edit > Find coordinates), then paste the copied line here
     attraction: [
-      // Add your Bandung attractions here when ready!
+      { id: "bdg_attr_1", name: "Taman Hutan Raya Ir. H. Djuanda", category: "Attraction", lat: -6.856, lng: 107.631, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Taman+Hutan+Raya+Ir.+H.+Djuanda+Bandung", starred: false },
+      { id: "bdg_attr_2", name: "Stone Garden Citatah", category: "Attraction", lat: -6.834, lng: 107.427, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Stone+Garden+Citatah+Bandung", starred: false },
+      { id: "bdg_attr_3", name: "Tebing Masigit", category: "Attraction", lat: -6.829, lng: 107.412, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Tebing+Masigit+Bandung", starred: false },
+      { id: "bdg_attr_4", name: "Gua Pawon", category: "Attraction", lat: -6.833, lng: 107.437, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Gua+Pawon+Bandung", starred: false },
+      { id: "bdg_attr_5", name: "Kampung Pelangi", category: "Attraction", lat: null, lng: null, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Kampung+Pelangi+Bandung", starred: false },
+      { id: "bdg_attr_6", name: "ArtSociates Art Gallery & Cafe", category: "Attraction", lat: null, lng: null, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=ArtSociates+Art+Gallery+%26+Cafe+Bandung", starred: false }
     ],
     coffee: [
-      // Add your Bandung coffee spots here when ready!
+      { id: "bdg_cof_1", name: "Hidden Farm Plantshop Cafe", category: "Coffee", lat: null, lng: null, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Hidden+Farm+Plantshop+Cafe+Bandung", starred: false },
+      { id: "bdg_cof_2", name: "Ekara Coffee & Eatery", category: "Coffee", lat: null, lng: null, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Ekara+Coffee+%26+Eatery+Bandung", starred: false },
+      { id: "bdg_cof_3", name: "Momiji Cafe", category: "Coffee", lat: null, lng: null, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Momiji+Cafe+Bandung", starred: false },
+      { id: "bdg_cof_4", name: "Warung Kopi Imah Babaturan", category: "Coffee", lat: null, lng: null, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Warung+Kopi+Imah+Babaturan+Bandung", starred: false }
     ],
     food: [
-      // Add your Bandung food spots here when ready!
+      { id: "bdg_food_1", name: "Warung Sego Nusantara", category: "Food", lat: null, lng: null, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Warung+Sego+Nusantara+Bandung", starred: false },
+      { id: "bdg_food_2", name: "Warung Ketan Bakar Bu Isah", category: "Food", lat: null, lng: null, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Warung+Ketan+Bakar+Bu+Isah+Bandung", starred: false },
+      { id: "bdg_food_3", name: "Warung Nasi Ibu Imas", category: "Food", lat: null, lng: null, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Warung+Nasi+Ibu+Imas+Bandung", starred: false },
+      { id: "bdg_food_4", name: "Little Contrast Kota Baru Parahyangan", category: "Food", lat: null, lng: null, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Little+Contrast+Kota+Baru+Parahyangan+Bandung", starred: false },
+      { id: "bdg_food_5", name: "Bumi Hejo Kota Baru Parahyangan", category: "Food", lat: null, lng: null, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Bumi+Hejo+Kota+Baru+Parahyangan+Bandung", starred: false }
+    ],
+    shopping_mall: [
+      { id: "bdg_mall_1", name: "Braga City Walk", category: "Shopping Mall", lat: -6.9143, lng: 107.6099, station: "Bandung Station", walk: "", map: "https://www.google.com/maps/search/?api=1&query=Braga+City+Walk+Bandung", starred: false },
+      { id: "bdg_mall_2", name: "IKEA Kota Baru Parahyangan", category: "Shopping Mall", lat: -6.842, lng: 107.493, station: "No station nearby", walk: "", map: "https://www.google.com/maps/search/?api=1&query=IKEA+Kota+Baru+Parahyangan+Bandung", starred: false }
     ]
   }
 };
 
-// Helper function to flatten all city locations into one array for the active trip
+// Flatten all cities into one list, tagging each spot with its city
 function getAllMasterLocations() {
-  let allPlaces = [];
-  
-  // Combine Jakarta spots
-  Object.values(masterLocationDatabase.jakarta).forEach(categoryArray => {
-    allPlaces.push(...categoryArray);
+  const all = [];
+  Object.entries(masterLocationDatabase).forEach(([city, cats]) => {
+    const name = city.charAt(0).toUpperCase() + city.slice(1);
+    Object.values(cats).forEach(arr => arr.forEach(p => all.push({ ...p, city: name })));
   });
-  
-  // Combine Bandung spots
-  Object.values(masterLocationDatabase.bandung).forEach(categoryArray => {
-    allPlaces.push(...categoryArray);
-  });
-
-  return allPlaces;
+  return all;
 }
