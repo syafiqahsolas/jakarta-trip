@@ -3,56 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lily Pond Travel Hub</title>
+  <title>Lily Pond & Carnival Travel Hub</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
   <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
-  <!-- Lily Pond Theme Colors & Custom Styles -->
-  <style>
-    :root {
-      --dark-green: #0A3323;
-      --moss-green: #839958;
-      --beige: #F7F4D5;
-      --rosy-brown: #D3968C;
-      --midnight-green: #105666;
-      --pond-bg: #F9FAF8;
-    }
-    body {
-      background-color: var(--pond-bg);
-      color: #2b2b2b;
-      font-family: system-ui, -apple-system, sans-serif;
-    }
-    .lily-card {
-      background: #ffffff;
-      border: 1px solid rgba(131, 153, 88, 0.15);
-      border-radius: 1.5rem;
-      box-shadow: 0 4px 12px rgba(10, 51, 35, 0.04);
-    }
-    .modal-backdrop {
-      background-color: rgba(10, 51, 35, 0.45);
-      backdrop-filter: blur(5px);
-    }
-    .floating-nav-bar {
-      background: #ffffff;
-      border-radius: 2rem;
-      box-shadow: 0 10px 25px -5px rgba(10, 51, 35, 0.12);
-      border: 1px solid rgba(131, 153, 88, 0.2);
-    }
-    .nav-item-active {
-      transform: translateY(-12px);
-      background-color: var(--dark-green) !important;
-      color: var(--beige) !important;
-      border: 4px solid var(--pond-bg);
-      box-shadow: 0 8px 16px rgba(10, 51, 35, 0.3);
-    }
-    .nav-item-active i, .nav-item-active span {
-      color: var(--beige) !important;
-    }
-  </style>
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen pb-32">
 
@@ -60,23 +20,25 @@
   <section id="section-home" class="max-w-md mx-auto p-4 space-y-4">
     <header class="flex justify-between items-center py-3">
       <div>
-        <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-800">Lily Pond Hub</span>
-        <h1 style="color: var(--dark-green);" class="font-extrabold text-2xl">My Trips</h1>
+        <span class="text-[10px] font-extrabold uppercase tracking-widest" style="color: var(--carnival-red);">Where Next? ✈️</span>
+        <h1 style="color: var(--midnight-blue);" class="font-extrabold text-2xl">Travel Hub</h1>
       </div>
-      <button onclick="openTripModal()" style="background-color: var(--dark-green);" class="w-10 h-10 rounded-full text-white flex items-center justify-center shadow-md">
+      <button onclick="openTripModal()" style="background-color: var(--midnight-blue);" class="w-10 h-10 rounded-full text-white flex items-center justify-center shadow-md hover:scale-105 transition-all">
         <i class="fa-solid fa-plus text-sm"></i>
       </button>
     </header>
 
     <div class="flex space-x-2 bg-stone-200/60 p-1 rounded-2xl">
-      <button id="home-tab-upcoming" onclick="switchHomeTab('upcoming')" class="flex-1 py-2 rounded-xl text-xs font-bold text-stone-800 bg-white shadow-xs transition-all">Upcoming</button>
+      <button id="home-tab-upcoming" onclick="switchHomeTab('upcoming')" class="flex-1 py-2 rounded-xl text-xs font-bold text-stone-800 bg-white shadow-xs transition-all">Upcoming Trips</button>
       <button id="home-tab-all" onclick="switchHomeTab('all')" class="flex-1 py-2 rounded-xl text-xs font-semibold text-stone-500 transition-all">All Trips</button>
     </div>
 
+    <!-- Upcoming Trips View -->
     <div id="home-view-upcoming" class="space-y-3">
       <div id="upcoming-trips-list" class="space-y-3"></div>
     </div>
 
+    <!-- All Trips Search View -->
     <div id="home-view-all" class="space-y-3 hidden">
       <div class="flex gap-2">
         <input type="text" id="tripSearchInput" oninput="renderAllTripsList()" placeholder="Search trips..." class="w-full bg-white border border-stone-200 rounded-2xl p-2.5 text-xs">
@@ -94,17 +56,19 @@
   <!-- ================= SECTION 2: ACTIVE TRIP DASHBOARD ================= -->
   <section id="section-trip-dashboard" class="max-w-md mx-auto p-4 space-y-4 hidden">
     
-    <!-- PAGE A: SUMMARY (Contains Trip Header Banner Box ONLY here) -->
+    <!-- PAGE A: SUMMARY (Image 7 Concept) -->
     <div id="page-summary" class="space-y-4">
-      <div style="background-color: var(--dark-green);" class="text-white p-5 rounded-3xl shadow-md space-y-3 relative overflow-hidden">
+      
+      <!-- Trip Banner Header -->
+      <div style="background: linear-gradient(135deg, var(--midnight-blue), var(--dark-green));" class="text-white p-5 rounded-3xl shadow-md space-y-3 relative overflow-hidden">
         <div class="flex justify-between items-start">
-          <button onclick="openHomePage('upcoming')" class="text-xs bg-white/20 px-3 py-1 rounded-full font-semibold" style="color: var(--beige);"><i class="fa-solid fa-arrow-left me-1"></i>Back</button>
+          <button onclick="openHomePage('upcoming')" class="text-xs bg-white/20 px-3 py-1 rounded-full font-semibold text-white hover:bg-white/30"><i class="fa-solid fa-arrow-left me-1"></i>Back</button>
           <button onclick="openTripModal(activeTripId)" class="text-white/80 hover:text-white"><i class="fa-solid fa-pen text-xs"></i></button>
         </div>
         <div>
-          <span id="sum-card-category" class="text-[10px] uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full" style="background-color: var(--moss-green); color: var(--beige);">Vacation</span>
-          <h2 id="sum-card-title" class="font-extrabold text-xl mt-1">Trip Name</h2>
-          <p id="sum-card-dates" class="text-xs text-stone-200 mt-0.5">Dates TBD</p>
+          <span class="text-[10px] uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full text-white" style="background-color: var(--carnival-red);">Vacation</span>
+          <h2 id="sum-trip-title" class="font-extrabold text-xl mt-1">Trip Destination</h2>
+          <p id="sum-trip-dates" class="text-xs text-stone-200 mt-0.5">Dates TBD</p>
         </div>
         <div class="flex justify-between items-center text-xs pt-2 border-t border-white/10">
           <span><i class="fa-solid fa-users me-1"></i><span id="sum-card-people">1 Pax</span></span>
@@ -112,63 +76,96 @@
         </div>
       </div>
 
+      <!-- Readiness Progress Bar Card (Image 7 Concept) -->
+      <div class="lily-card p-4 space-y-3 bg-white">
+        <div class="flex justify-between items-center">
+          <h3 style="color: var(--midnight-blue);" class="font-bold text-sm">Trip Readiness</h3>
+          <span id="readiness-percent" class="font-extrabold text-xs text-amber-600">0%</span>
+        </div>
+        <div class="w-full bg-stone-100 rounded-full h-3 overflow-hidden p-0.5 border border-stone-200">
+          <div id="readiness-bar-fill" class="h-full rounded-full transition-all duration-500" style="width: 0%; background-color: var(--muted-teal);"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center text-[10px] pt-1 font-semibold text-stone-600">
+          <div class="bg-stone-50 py-1.5 rounded-xl border border-stone-100"><i class="fa-solid fa-passport text-emerald-700 me-1"></i>Docs Ready</div>
+          <div class="bg-stone-50 py-1.5 rounded-xl border border-stone-100"><i class="fa-solid fa-hotel text-amber-600 me-1"></i>Bookings</div>
+          <div class="bg-stone-50 py-1.5 rounded-xl border border-stone-100"><i class="fa-solid fa-suitcase text-teal-700 me-1"></i>Packing</div>
+        </div>
+      </div>
+
+      <!-- E-Ticket Quick Access Preview -->
+      <div id="summary-ticket-preview" class="space-y-2"></div>
+
+      <!-- Starred Locations Snapshot -->
       <div class="lily-card p-4 space-y-3">
         <div class="flex justify-between items-center">
-          <h3 style="color: var(--dark-green);" class="font-bold text-sm">Starred Must-Visits</h3>
+          <h3 style="color: var(--midnight-blue);" class="font-bold text-sm">Starred Must-Visits</h3>
           <button onclick="unstarAllLocations()" class="text-[10px] text-stone-400 hover:text-red-500">Unstar All</button>
         </div>
         <div id="summary-starred-spots" class="grid grid-cols-2 gap-2"></div>
       </div>
 
+      <!-- Key Itinerary Snapshot -->
       <div class="lily-card p-4 space-y-3">
-        <h3 style="color: var(--dark-green);" class="font-bold text-sm">Key Itinerary Snapshot</h3>
+        <h3 style="color: var(--midnight-blue);" class="font-bold text-sm">Starred Itinerary Slots</h3>
         <div id="summary-tentative-snapshot" class="space-y-2"></div>
       </div>
     </div>
 
-    <!-- PAGE B: ITINERARY (Styled after Image 3 Reminders Timeline) -->
+    <!-- PAGE B: ITINERARY (Image 4 Concept) -->
     <div id="page-itinerary" class="space-y-4 hidden">
       <div class="flex justify-between items-center">
         <div id="itinerary-day-buttons" class="flex space-x-2 overflow-x-auto pb-1 max-w-[280px]"></div>
-        <button onclick="openItineraryModal()" style="background-color: var(--dark-green); color: var(--beige);" class="px-3.5 py-2 rounded-2xl text-xs font-semibold shadow-xs flex-shrink-0">
+        <button onclick="openItineraryModal()" style="background-color: var(--midnight-blue);" class="px-3.5 py-2 rounded-2xl text-xs font-semibold text-white shadow-xs flex-shrink-0">
           <i class="fa-solid fa-plus me-1"></i>Add Activity
         </button>
       </div>
 
-      <!-- Timeline Container -->
       <div id="itinerary-timeline-container" class="space-y-4 pt-1 relative"></div>
     </div>
 
-    <!-- PAGE C: WADDLE -->
+    <!-- PAGE C: WADDLE (Rubber-Duck Transit Exploration) -->
     <div id="page-waddle" class="space-y-4 hidden">
-      <div style="background-color: var(--dark-green);" class="text-white p-4 rounded-3xl shadow-sm space-y-2">
+      <div style="background-color: var(--midnight-blue);" class="text-white p-4 rounded-3xl shadow-sm space-y-2">
         <div class="flex justify-between items-start">
           <div>
-            <span class="text-[10px] uppercase font-bold tracking-wider text-emerald-300">Accommodation Base</span>
+            <span class="text-[10px] uppercase font-bold tracking-wider text-amber-300">Hotel Accommodation Base</span>
             <h3 id="waddle-hotel-title" class="font-bold text-sm mt-0.5">Hotel Name</h3>
           </div>
-          <button onclick="openHotelModal()" class="text-xs bg-white/20 px-2.5 py-1 rounded-xl font-semibold"><i class="fa-solid fa-pen text-[10px] me-1"></i>Change</button>
+          <button onclick="openHotelModal()" class="text-xs bg-white/20 px-2.5 py-1 rounded-xl font-semibold hover:bg-white/30"><i class="fa-solid fa-pen text-[10px] me-1"></i>Change</button>
         </div>
         <p id="waddle-hotel-station" class="text-xs text-stone-200">Nearest Station: Loading...</p>
       </div>
 
       <div class="lily-card p-4 space-y-3">
-        <label style="color: var(--dark-green);" class="font-bold text-xs uppercase tracking-wider block"><i class="fa-solid fa-magnifying-glass me-1"></i>Cluster Search</label>
-        <input type="text" id="waddleSearchInput" oninput="executeWaddleSearch()" placeholder="Search by category, station, or place..." class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-xs">
+        <label style="color: var(--midnight-blue);" class="font-bold text-xs uppercase tracking-wider block"><i class="fa-solid fa-magnifying-glass me-1"></i>Explore Nearby Clusters</label>
+        <input type="text" id="waddleSearchInput" oninput="executeWaddleSearch()" placeholder="Search by category, station, or spot..." class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-xs">
         <div id="waddle-quick-hubs" class="flex flex-wrap gap-1.5 pt-1"></div>
       </div>
       <div id="waddleSearchResults" class="space-y-2"></div>
     </div>
 
-    <!-- PAGE D: LOCATIONS (Styled after Image 4 Transport Cards) -->
+    <!-- PAGE D: LOCATIONS (Nearby First Default, Image 3 Concept) -->
     <div id="page-master" class="space-y-4 hidden">
       <div class="flex space-x-2 bg-stone-200/60 p-1 rounded-2xl">
-        <button id="loctab-master" onclick="switchLocationSubTab('master')" class="flex-1 py-2 rounded-xl text-xs font-bold text-stone-800 bg-white shadow-xs transition-all">Master Database</button>
-        <button id="loctab-nearby" onclick="switchLocationSubTab('nearby')" class="flex-1 py-2 rounded-xl text-xs font-semibold text-stone-500 transition-all">Nearby (&lt; 40m walk / Car)</button>
+        <button id="loctab-nearby" onclick="switchLocationSubTab('nearby')" class="flex-1 py-2 rounded-xl text-xs font-bold text-stone-800 bg-white shadow-xs transition-all">Nearby Spots</button>
+        <button id="loctab-master" onclick="switchLocationSubTab('master')" class="flex-1 py-2 rounded-xl text-xs font-semibold text-stone-500 transition-all">Master Database</button>
       </div>
 
-      <!-- Sub-Tab 1: Master Database -->
-      <div id="loc-sub-master" class="space-y-3">
+      <!-- Sub-Tab 1: Nearby Spots (<40m Walk or Car) -->
+      <div id="loc-sub-nearby" class="space-y-3">
+        <div class="flex justify-around bg-white p-2 rounded-2xl border border-stone-200 text-xs">
+          <button id="transport-btn-walk" onclick="setTransportMode('walk')" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl font-bold bg-amber-100 text-amber-900">
+            <i class="fa-solid fa-person-walking"></i> Walk (&lt;40m)
+          </button>
+          <button id="transport-btn-car" onclick="setTransportMode('car')" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl font-semibold text-stone-500">
+            <i class="fa-solid fa-car"></i> Car / Taxi
+          </button>
+        </div>
+        <div id="nearbyPlacesContainer" class="space-y-3"></div>
+      </div>
+
+      <!-- Sub-Tab 2: Master Database -->
+      <div id="loc-sub-master" class="space-y-3 hidden">
         <div class="flex gap-2 items-center">
           <input type="text" id="masterSearchInput" oninput="renderMasterPlacesList()" placeholder="Search locations..." class="w-full bg-white border border-stone-200 rounded-2xl p-2.5 text-xs">
           <select id="masterCategoryFilter" onchange="renderMasterPlacesList()" class="bg-white border border-stone-200 rounded-2xl p-2.5 text-xs">
@@ -178,59 +175,42 @@
             <option value="Food">Food</option>
             <option value="Shopping Mall">Shopping Mall</option>
           </select>
-          <button onclick="openMasterSpotModal()" style="background-color: var(--dark-green); color: var(--beige);" class="px-3 py-2.5 rounded-2xl text-xs font-semibold flex-shrink-0"><i class="fa-solid fa-plus"></i></button>
+          <button onclick="openMasterSpotModal()" style="background-color: var(--midnight-blue);" class="px-3 py-2.5 rounded-2xl text-xs text-white font-semibold flex-shrink-0"><i class="fa-solid fa-plus"></i></button>
         </div>
         <div id="masterPlacesContainer" class="space-y-3"></div>
       </div>
-
-      <!-- Sub-Tab 2: Nearby Spots -->
-      <div id="loc-sub-nearby" class="space-y-3 hidden">
-        <!-- Transport Type Selector (Walk vs Car) -->
-        <div class="flex justify-around bg-white p-2 rounded-2xl border border-stone-200 text-xs">
-          <button id="transport-btn-walk" onclick="setTransportMode('walk')" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl font-bold bg-emerald-100 text-emerald-900">
-            <i class="fa-solid fa-person-walking"></i> Walk (&lt;40m)
-          </button>
-          <button id="transport-btn-car" onclick="setTransportMode('car')" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl font-semibold text-stone-500">
-            <i class="fa-solid fa-car"></i> Car / Taxi
-          </button>
-        </div>
-        <div id="nearbyPlacesContainer" class="space-y-3"></div>
-      </div>
     </div>
 
-    <!-- PAGE E: PACKING CHECKLIST & TICKET DOCUMENTS (Styled after Image 2) -->
+    <!-- PAGE E: CHECKLISTS, PACKING, TICKETS & EXPENSES -->
     <div id="page-checklists" class="space-y-4 hidden">
       <div class="flex space-x-2 bg-stone-200/60 p-1 rounded-2xl">
-        <button id="checktab-packing" onclick="switchChecklistSubTab('packing'); renderChecklistsAndExpenses();" class="flex-1 py-2 rounded-xl text-xs font-bold text-stone-800 bg-white shadow-xs transition-all">Packing & Prep</button>
+        <button id="checktab-packing" onclick="switchChecklistSubTab('packing'); renderChecklistsAndExpenses();" class="flex-1 py-2 rounded-xl text-xs font-bold text-stone-800 bg-white shadow-xs transition-all">Packing</button>
         <button id="checktab-tickets" onclick="switchChecklistSubTab('tickets'); renderChecklistsAndExpenses();" class="flex-1 py-2 rounded-xl text-xs font-semibold text-stone-500 transition-all">Tickets & Docs</button>
         <button id="checktab-expenses" onclick="switchChecklistSubTab('expenses'); renderChecklistsAndExpenses();" class="flex-1 py-2 rounded-xl text-xs font-semibold text-stone-500 transition-all">Expenses</button>
       </div>
 
-      <!-- PACKING & PREP SUB-TAB (Vertical Category Sidebar Layout) -->
-      <div id="checklist-sub-packing" class="flex gap-3 pt-1">
-        <!-- Category Sidebar -->
-        <div class="w-12 bg-white rounded-2xl border border-stone-200/80 p-1.5 flex flex-col items-center space-y-4 flex-shrink-0">
-          <button onclick="selectPackingCategory('clothes')" id="pack-cat-clothes" class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-800 text-white shadow-xs"><i class="fa-solid fa-shirt text-sm"></i></button>
-          <button onclick="selectPackingCategory('toiletries')" id="pack-cat-toiletries" class="w-9 h-9 rounded-xl flex items-center justify-center text-stone-400"><i class="fa-solid fa-soap text-sm"></i></button>
-          <button onclick="selectPackingCategory('electronics')" id="pack-cat-electronics" class="w-9 h-9 rounded-xl flex items-center justify-center text-stone-400"><i class="fa-solid fa-plug text-sm"></i></button>
-          <button onclick="selectPackingCategory('documents')" id="pack-cat-documents" class="w-9 h-9 rounded-xl flex items-center justify-center text-stone-400"><i class="fa-solid fa-passport text-sm"></i></button>
+      <!-- PACKING CATEGORIES SUB-TAB -->
+      <div id="checklist-sub-packing" class="space-y-3 pt-1">
+        <div class="flex justify-between items-center">
+          <div class="flex space-x-2 bg-white border border-stone-200 p-1 rounded-2xl">
+            <button onclick="selectPackingCategory('clothes')" id="pack-cat-clothes" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white shadow-xs"><i class="fa-solid fa-shirt me-1"></i>Clothes</button>
+            <button onclick="selectPackingCategory('toiletries')" id="pack-cat-toiletries" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-400"><i class="fa-solid fa-soap me-1"></i>Toiletries</button>
+            <button onclick="selectPackingCategory('electronics')" id="pack-cat-electronics" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-400"><i class="fa-solid fa-plug me-1"></i>Electronics</button>
+            <button onclick="selectPackingCategory('documents')" id="pack-cat-documents" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-400"><i class="fa-solid fa-passport me-1"></i>Docs</button>
+          </div>
+          <button onclick="openPackingItemModal()" style="background-color: var(--midnight-blue);" class="px-3 py-2 rounded-2xl text-xs font-semibold text-white flex-shrink-0">
+            <i class="fa-solid fa-plus me-1"></i>Add
+          </button>
         </div>
 
-        <!-- Category Items List (Pinnable / Important Items at Top) -->
-        <div class="flex-1 space-y-3">
-          <div class="flex gap-2">
-            <input type="text" id="new-pack-input" placeholder="Add item..." class="w-full bg-white border border-stone-200 rounded-2xl p-2.5 text-xs">
-            <button onclick="addPackingItem()" style="background-color: var(--dark-green); color: var(--beige);" class="px-3.5 py-2 rounded-2xl font-semibold text-xs flex-shrink-0">Add</button>
-          </div>
-          <div id="packing-items-container" class="space-y-2 text-xs"></div>
-        </div>
+        <div id="packing-items-container" class="space-y-2 text-xs"></div>
       </div>
 
       <!-- TICKETS & DOCUMENTS SUB-TAB -->
       <div id="checklist-sub-tickets" class="space-y-3 pt-1 hidden">
         <div class="flex justify-between items-center">
-          <h4 style="color: var(--dark-green);" class="font-bold text-sm">Flight & Train Tickets</h4>
-          <button onclick="openTicketModal()" style="background-color: var(--dark-green); color: var(--beige);" class="px-3 py-1.5 rounded-xl text-xs font-semibold">
+          <h4 style="color: var(--midnight-blue);" class="font-bold text-sm">Flight, Train & Travel Docs</h4>
+          <button onclick="openTicketModal()" style="background-color: var(--midnight-blue);" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-white">
             <i class="fa-solid fa-upload me-1"></i>Upload Ticket
           </button>
         </div>
@@ -241,8 +221,8 @@
       <div id="checklist-sub-expenses" class="space-y-4 text-xs pt-1 hidden">
         <div class="lily-card p-5 space-y-4 bg-white relative">
           <div class="flex justify-between items-center">
-            <h4 style="color: var(--dark-green);" class="font-extrabold text-base">Expense Breakdown</h4>
-            <button onclick="openExpenseModal()" style="background-color: var(--dark-green); color: var(--beige);" class="px-3 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-1 shadow-xs">
+            <h4 style="color: var(--midnight-blue);" class="font-extrabold text-base">Expense Breakdown</h4>
+            <button onclick="openExpenseModal()" style="background-color: var(--midnight-blue);" class="px-3 py-1.5 rounded-xl font-semibold text-xs text-white flex items-center gap-1 shadow-xs">
               <i class="fa-solid fa-plus text-[10px]"></i> Add Expense
             </button>
           </div>
@@ -257,7 +237,7 @@
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
                 <span class="text-[9px] uppercase tracking-wider font-semibold text-stone-400">Total</span>
-                <span id="expense-total-display" style="color: var(--dark-green);" class="font-extrabold text-xs">RM 0</span>
+                <span id="expense-total-display" style="color: var(--midnight-blue);" class="font-extrabold text-xs">RM 0</span>
               </div>
             </div>
 
@@ -265,7 +245,7 @@
               <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-800"></span>Hotel & Stay</span><strong id="cat-amount-stay" class="text-stone-800">RM 0</strong></div>
               <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>Food & Cafe</span><strong id="cat-amount-food" class="text-stone-800">RM 0</strong></div>
               <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span>Transport</span><strong id="cat-amount-transport" class="text-stone-800">RM 0</strong></div>
-              <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full opacity-60" style="background-color: var(--rosy-brown);"></span>Other</span><strong id="cat-amount-other" class="text-stone-800">RM 0</strong></div>
+              <div class="flex items-center justify-between"><span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full opacity-60" style="background-color: var(--dusty-rose);"></span>Other</span><strong id="cat-amount-other" class="text-stone-800">RM 0</strong></div>
             </div>
           </div>
         </div>
@@ -289,8 +269,9 @@
         <span class="text-[10px] mt-0.5">Itinerary</span>
       </button>
 
+      <!-- Waddle Rubber-Duck Icon -->
       <button id="nav-waddle" onclick="switchDashboardPage('waddle')" class="flex flex-col items-center justify-center w-12 h-12 rounded-full transition-all duration-200">
-        <i class="fa-solid fa-train-subway text-base"></i>
+        <i class="fa-solid fa-duck text-base"></i>
         <span class="text-[10px] mt-0.5">Waddle</span>
       </button>
 
@@ -303,19 +284,46 @@
         <i class="fa-solid fa-clipboard-list text-base"></i>
         <span class="text-[10px] mt-0.5">Checklist</span>
       </button>
-
-      <div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-20 h-1 bg-stone-300 rounded-full"></div>
     </nav>
   </div>
 
 
   <!-- ================= MODALS ================= -->
 
-  <!-- Modal 1: Add/Edit Trip -->
+  <!-- Modal 1: Add Packing Item Popup -->
+  <div id="modal-packing" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border-2 border-stone-200">
+      <div class="flex justify-between items-center border-b border-stone-100 pb-2.5">
+        <h3 style="color: var(--midnight-blue);" class="font-bold text-base">Add Packing Item</h3>
+        <button onclick="closeModal('modal-packing')" class="text-stone-400 hover:text-stone-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-stone-500 mb-1 font-medium">Item Name</label>
+          <input type="text" id="pack-form-text" placeholder="e.g. Universal Adapter" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800">
+        </div>
+        <div>
+          <label class="block text-stone-500 mb-1 font-medium">Category</label>
+          <select id="pack-form-category" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800">
+            <option value="clothes">Clothes & Accessories</option>
+            <option value="toiletries">Toiletries & Skincare</option>
+            <option value="electronics">Electronics & Gadgets</option>
+            <option value="documents">Documents & Money</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal('modal-packing')" class="px-3.5 py-2 bg-stone-100 text-stone-600 rounded-2xl text-xs font-medium">Cancel</button>
+        <button onclick="savePackingItemForm()" style="background-color: var(--midnight-blue);" class="px-4 py-2 rounded-2xl text-xs font-semibold text-white">Add Item</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Add/Edit Trip -->
   <div id="modal-trip" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border-2 border-stone-200">
       <div class="flex justify-between items-center border-b border-stone-100 pb-2.5">
-        <h3 id="modal-trip-title" style="color: var(--dark-green);" class="font-bold text-base">Add New Trip</h3>
+        <h3 id="modal-trip-title" style="color: var(--midnight-blue);" class="font-bold text-base">Add New Trip</h3>
         <button onclick="closeModal('modal-trip')" class="text-stone-400 hover:text-stone-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <input type="hidden" id="trip-form-id" />
@@ -337,16 +345,16 @@
       </div>
       <div class="flex justify-end space-x-2 pt-2">
         <button onclick="closeModal('modal-trip')" class="px-3.5 py-2 bg-stone-100 text-stone-600 rounded-2xl text-xs font-medium">Cancel</button>
-        <button onclick="saveTripForm()" style="background-color: var(--dark-green); color: var(--beige);" class="px-4 py-2 rounded-2xl text-xs font-semibold">Save Trip</button>
+        <button onclick="saveTripForm()" style="background-color: var(--midnight-blue);" class="px-4 py-2 rounded-2xl text-xs font-semibold text-white">Save Trip</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal 2: Itinerary Activity -->
+  <!-- Modal 3: Itinerary Activity -->
   <div id="modal-itinerary" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border-2 border-stone-200">
       <div class="flex justify-between items-center border-b border-stone-100 pb-2.5">
-        <h3 style="color: var(--dark-green);" class="font-bold text-base">Itinerary Activity</h3>
+        <h3 style="color: var(--midnight-blue);" class="font-bold text-base">Itinerary Activity</h3>
         <button onclick="closeModal('modal-itinerary')" class="text-stone-400 hover:text-stone-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="space-y-3 text-xs">
@@ -360,16 +368,16 @@
       </div>
       <div class="flex justify-end space-x-2 pt-2">
         <button onclick="closeModal('modal-itinerary')" class="px-3.5 py-2 bg-stone-100 text-stone-600 rounded-2xl text-xs font-medium">Cancel</button>
-        <button onclick="saveItineraryForm()" style="background-color: var(--dark-green); color: var(--beige);" class="px-4 py-2 rounded-2xl text-xs font-semibold">Save Activity</button>
+        <button onclick="saveItineraryForm()" style="background-color: var(--midnight-blue);" class="px-4 py-2 rounded-2xl text-xs font-semibold text-white">Save Activity</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal 3: Hotel Base Setup -->
+  <!-- Modal 4: Hotel Base Setup -->
   <div id="modal-hotel" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border-2 border-stone-200">
       <div class="flex justify-between items-center border-b border-stone-100 pb-2.5">
-        <h3 style="color: var(--dark-green);" class="font-bold text-base">Select Hotel Base</h3>
+        <h3 style="color: var(--midnight-blue);" class="font-bold text-base">Select Hotel Base</h3>
         <button onclick="closeModal('modal-hotel')" class="text-stone-400 hover:text-stone-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="space-y-3 text-xs">
@@ -382,22 +390,22 @@
           <select id="hotel-name-dropdown" onchange="onHotelSelectionChange()" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800 font-semibold"></select>
         </div>
         <div class="bg-stone-50 p-3 rounded-2xl border border-stone-200/60 space-y-1">
-          <span class="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Auto-Calculated Nearest Station</span>
-          <p id="hotel-form-preview-station" style="color: var(--dark-green);" class="font-bold text-xs">Select hotel...</p>
+          <span class="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Nearest Station</span>
+          <p id="hotel-form-preview-station" style="color: var(--midnight-blue);" class="font-bold text-xs">Select hotel...</p>
         </div>
       </div>
       <div class="flex justify-end space-x-2 pt-2">
         <button onclick="closeModal('modal-hotel')" class="px-3.5 py-2 bg-stone-100 text-stone-600 rounded-2xl text-xs font-medium">Cancel</button>
-        <button onclick="saveHotelForm()" style="background-color: var(--dark-green); color: var(--beige);" class="px-4 py-2 rounded-2xl text-xs font-semibold">Save Hotel</button>
+        <button onclick="saveHotelForm()" style="background-color: var(--midnight-blue);" class="px-4 py-2 rounded-2xl text-xs font-semibold text-white">Save Hotel</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal 4: Master Spot Add/Edit -->
+  <!-- Modal 5: Master Spot Add/Edit -->
   <div id="modal-master-spot" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border-2 border-stone-200">
       <div class="flex justify-between items-center border-b border-stone-100 pb-2.5">
-        <h3 id="modal-spot-title" style="color: var(--dark-green);" class="font-bold text-base">Location Spot</h3>
+        <h3 id="modal-spot-title" style="color: var(--midnight-blue);" class="font-bold text-base">Location Spot</h3>
         <button onclick="closeModal('modal-master-spot')" class="text-stone-400 hover:text-stone-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <input type="hidden" id="spot-form-id" />
@@ -424,16 +432,16 @@
       </div>
       <div class="flex justify-end space-x-2 pt-2">
         <button onclick="closeModal('modal-master-spot')" class="px-3.5 py-2 bg-stone-100 text-stone-600 rounded-2xl text-xs font-medium">Cancel</button>
-        <button onclick="saveMasterSpotForm()" style="background-color: var(--dark-green); color: var(--beige);" class="px-4 py-2 rounded-2xl text-xs font-semibold">Save Spot</button>
+        <button onclick="saveMasterSpotForm()" style="background-color: var(--midnight-blue);" class="px-4 py-2 rounded-2xl text-xs font-semibold text-white">Save Spot</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal 5: Expense Modal -->
+  <!-- Modal 6: Expense Record -->
   <div id="modal-expense" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border-2 border-stone-200">
       <div class="flex justify-between items-center border-b border-stone-100 pb-2.5">
-        <h3 id="modal-expense-title" style="color: var(--dark-green);" class="font-bold text-base">Expense Record</h3>
+        <h3 id="modal-expense-title" style="color: var(--midnight-blue);" class="font-bold text-base">Expense Record</h3>
         <button onclick="closeModal('modal-expense')" class="text-stone-400 hover:text-stone-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <input type="hidden" id="exp-form-idx" value="-1" />
@@ -452,16 +460,16 @@
       </div>
       <div class="flex justify-end space-x-2 pt-2">
         <button onclick="closeModal('modal-expense')" class="px-3.5 py-2 bg-stone-100 text-stone-600 rounded-2xl text-xs font-medium">Cancel</button>
-        <button onclick="saveExpenseForm()" style="background-color: var(--dark-green); color: var(--beige);" class="px-4 py-2 rounded-2xl text-xs font-semibold">Save Expense</button>
+        <button onclick="saveExpenseForm()" style="background-color: var(--midnight-blue);" class="px-4 py-2 rounded-2xl text-xs font-semibold text-white">Save Expense</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal 6: Ticket & Document Upload Modal -->
+  <!-- Modal 7: Ticket & Document Upload -->
   <div id="modal-ticket" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border-2 border-stone-200">
       <div class="flex justify-between items-center border-b border-stone-100 pb-2.5">
-        <h3 style="color: var(--dark-green);" class="font-bold text-base">Upload Ticket / Document</h3>
+        <h3 style="color: var(--midnight-blue);" class="font-bold text-base">Upload Ticket / Document</h3>
         <button onclick="closeModal('modal-ticket')" class="text-stone-400 hover:text-stone-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="space-y-3 text-xs">
@@ -482,7 +490,7 @@
       </div>
       <div class="flex justify-end space-x-2 pt-2">
         <button onclick="closeModal('modal-ticket')" class="px-3.5 py-2 bg-stone-100 text-stone-600 rounded-2xl text-xs font-medium">Cancel</button>
-        <button onclick="saveTicketForm()" style="background-color: var(--dark-green); color: var(--beige);" class="px-4 py-2 rounded-2xl text-xs font-semibold">Save Ticket</button>
+        <button onclick="saveTicketForm()" style="background-color: var(--midnight-blue);" class="px-4 py-2 rounded-2xl text-xs font-semibold text-white">Save Ticket</button>
       </div>
     </div>
   </div>
