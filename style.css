@@ -1,6 +1,6 @@
 /**
  * LILY POND TRAVEL HUB - STYLE.CSS
- * Cozy Aesthetics, Smooth Transitions & Modern Custom Controls
+ * Floating Curved Bottom Navbar, Billing Donut Reports, & Cozy Aesthetics
  */
 
 /* --- 1. THEME VARIABLES & BASE STYLES --- */
@@ -22,8 +22,8 @@ body {
 .lily-card {
   background: #ffffff;
   border: 1px solid var(--card-border);
-  border-radius: 1.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -31,28 +31,56 @@ body {
   transform: scale(0.985);
 }
 
-/* --- 3. MODERN FORM CONTROLS & AUTO-RESIZING TEXTAREAS --- */
-/* Form inputs auto-size cleanly without hard overflows */
+/* --- 3. FLOATING CURVED NOTCH BOTTOM NAVBAR (Image 1 Ref) --- */
+.floating-nav-bar {
+  background: #ffffff;
+  border-radius: 2rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(27, 67, 50, 0.06);
+}
+
+/* Active floating pill effect */
+.nav-item-active {
+  transform: translateY(-14px);
+  background-color: var(--pond-green) !important;
+  color: #ffffff !important;
+  border: 4px solid var(--pond-bg);
+  box-shadow: 0 8px 16px rgba(27, 67, 50, 0.35);
+}
+
+.nav-item-active i, .nav-item-active span {
+  color: #ffffff !important;
+}
+
+/* --- 4. BILLING REPORT DONUT SVG (Image 2 Ref) --- */
+.donut-chart-svg {
+  transform: rotate(-90deg);
+}
+
+/* Smooth transition on donut fill paths */
+.donut-chart-svg path {
+  transition: stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease;
+}
+
+/* --- 5. MODERN FORM CONTROLS & AUTO-RESIZING TEXTAREAS --- */
 textarea#itin-form-notes {
   field-sizing: content;
   min-height: 5rem;
   resize: none;
 }
 
-/* Clean focus rings matching pond green */
 input:focus, select:focus, textarea:focus {
   outline: 2px solid var(--sage-green);
   outline-offset: -1px;
 }
 
-/* --- 4. MODAL ENTRY & BACKDROP ANIMATIONS --- */
+/* --- 6. MODAL ENTRY & BACKDROP ANIMATIONS --- */
 .modal-backdrop {
   background-color: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(6px);
   transition: opacity 0.2s ease-in-out;
 }
 
-/* Animate modals smoothly using modern entry styles */
 .modal-backdrop:not(.hidden) > div {
   animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -68,7 +96,7 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* --- 5. COZY HORIZONTAL SCROLLBARS (For Day Tabs & Clusters) --- */
+/* --- 7. COZY HORIZONTAL SCROLLBARS --- */
 ::-webkit-scrollbar {
   height: 4px;
   width: 4px;
@@ -87,10 +115,10 @@ input:focus, select:focus, textarea:focus {
   background: rgba(45, 106, 79, 0.4);
 }
 
-/* Hide scrollbar utility for horizontal day buttons */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
