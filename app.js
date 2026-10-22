@@ -1,6 +1,7 @@
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * Cozy UI, Clutter-Free Cluster Filter (Top 3 Stations + Near Hotel), Working Checklists
+ * Complete Production Logic: Offline-First, GPS Proximity, Top 3 Cluster Search,
+ * Chronological Itinerary, Working Checklists & Real-Time Firebase Sync
  */
 
 const firebaseConfig = {
@@ -13,6 +14,7 @@ const firebaseConfig = {
   measurementId: "G-RZC21KJMJS"
 };
 
+// Initialize Firebase & Firestore
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -46,6 +48,11 @@ let selectedWaddleCluster = "NEAR_HOTEL";
 let editingItineraryIndex = null;
 let editingPlaceId = null;
 
+// GPS Coordinates State
+let userCurrentLat = null;
+let userCurrentLng = null;
+
+// --- INITIALIZATION & REAL-TIME LISTENER ---
 window.onload = function() {
   listenToCloudChanges();
 };
@@ -76,6 +83,7 @@ function listenToCloudChanges() {
       saveAppData();
     }
   }, (error) => {
+    console.warn("Offline/Cloud error, loading local cache:", error);
     const saved = localStorage.getItem("lily_pond_cloud_data");
     if (saved) appData = JSON.parse(saved);
     renderUpcomingTripsList();
@@ -89,7 +97,7 @@ function saveAppData() {
   localStorage.setItem("lily_pond_cloud_data", JSON.stringify(appData));
 
   db.collection("travelHub").doc("sharedTripData").set(appData).catch((error) => {
-    console.error("Cloud sync error:", error);
+    console.error("Cloud sync error (Saved locally):", error);
   });
 }
 
@@ -276,6 +284,91 @@ function unstarAllLocations() {
   }
 }
 
+// --- GPS GEOLOCATION & MASTER LOCATIONS SORTING ---
+function sortByUserLocation() {
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser");
+    return;
+  }
+
+  const container = document.getElementById('masterPlacesContainer');
+  if (container) container.innerHTML = `<p class="text-xs text-stone-400 text-center py-4">📍 Detecting your GPS position...</p>`;
+
+  navigator.geolocation.getCurrentPosition((position) => {
+    userCurrentLat = position.coords.latitude;
+    userCurrentLng = position.coords.longitude;
+    renderMasterPlacesList();
+  }, (error) => {
+    console.error("GPS error:", error);
+    alert("Unable to fetch GPS position. Please check location permissions.");
+    renderMasterPlacesList();
+  }, {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 0
+  });
+}
+
+function renderMasterPlacesList() {
+  const container = document.getElementById('masterPlacesContainer');
+  if (!container) return;
+  const trip = getActiveTrip();
+  container.innerHTML = "";
+
+  const query = (document.getElementById('masterSearchInput')?.value || '').toLowerCase();
+  const catFilter = document.getElementById('masterCategoryFilter')?.value || 'ALL';
+
+  let filtered = (trip.places || []).filter(p => {
+    const matchesQuery = p.name.toLowerCase().includes(query) || (p.station && p.station.toLowerCase().includes(query)) || (p.city && p.city.toLowerCase().includes(query));
+    const pCat = (p.category || '').toLowerCase();
+    const filterCat = catFilter.toLowerCase();
+    const matchesCat = filterCat === 'all' || pCat === filterCat || pCat.includes(filterCat);
+    return matchesQuery && matchesCat;
+  });
+
+  // Sort by GPS proximity if live coordinates exist
+  if (userCurrentLat !== null && userCurrentLng !== null) {
+    filtered.sort((a, b) => {
+      const distA = (a.lat && a.lng && typeof calculateDistanceInKm === 'function') 
+        ? calculateDistanceInKm(userCurrentLat, userCurrentLng, a.lat, a.lng) : Infinity;
+      const distB = (b.lat && b.lng && typeof calculateDistanceInKm === 'function') 
+        ? calculateDistanceInKm(userCurrentLat, userCurrentLng, b.lat, b.lng) : Infinity;
+      return distA - distB;
+    });
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No locations found.</p>`;
+    return;
+  }
+
+  filtered.forEach(place => {
+    let distanceLabel = "";
+    if (userCurrentLat !== null && userCurrentLng !== null && place.lat && place.lng && typeof calculateDistanceInKm === 'function') {
+      const km = calculateDistanceInKm(userCurrentLat, userCurrentLng, place.lat, place.lng);
+      distanceLabel = ` • 📍 ${km < 1 ? Math.round(km * 1000) + 'm away' : km.toFixed(1) + 'km away'}`;
+    }
+
+    const card = document.createElement('div');
+    card.className = "lily-card p-3.5 flex justify-between items-center text-xs bg-white/80";
+    card.innerHTML = `
+      <div class="space-y-0.5">
+        <div class="flex items-center space-x-2">
+          <button onclick="toggleStarSpot('${place.id}')" class="focus:outline-none transition-transform active:scale-125">
+            ${place.starred ? '<span class="text-amber-400 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-base">☆</span>'}
+          </button>
+          <h4 style="color: var(--pond-green);" class="font-bold text-sm">${place.name}</h4>
+        </div>
+        <p class="text-stone-500">${place.city ? place.city + ' • ' : ''}${place.category || 'General'}${distanceLabel}</p>
+      </div>
+      <a href="${place.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px]" style="background-color: var(--pond-bg); color: var(--pond-green);">
+        <i class="fa-solid fa-location-dot me-1"></i>Map
+      </a>
+    `;
+    container.appendChild(card);
+  });
+}
+
 // --- WADDLE VIEW (LIMITED TO TOP 3 STATIONS + NEAR HOTEL) ---
 function executeWaddleSearch() {
   renderWaddleView();
@@ -292,7 +385,6 @@ function renderWaddleView() {
   const hotelStation = (trip.hotelStation || 'Setiabudi Astra').toLowerCase();
   const places = trip.places || [];
 
-  // Gather unique stations present in places
   const stationCounts = {};
   places.forEach(p => {
     if (p.station && p.station !== 'N/A' && p.station !== 'No station nearby') {
@@ -300,7 +392,6 @@ function renderWaddleView() {
     }
   });
 
-  // Sort and pick top 3 closest/most relevant stations
   const topStations = Object.keys(stationCounts).slice(0, 3);
 
   if (quickHubsContainer) {
@@ -313,7 +404,7 @@ function renderWaddleView() {
     hotelChip.onclick = () => { selectedWaddleCluster = 'NEAR_HOTEL'; renderWaddleView(); };
     quickHubsContainer.appendChild(hotelChip);
 
-    // 2. Top 3 Station Chips Only (No "All Clusters")
+    // 2. Top 3 Stations Only
     topStations.forEach(stationName => {
       const chip = document.createElement('button');
       chip.className = `px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all ${selectedWaddleCluster === stationName ? 'bg-emerald-900 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
@@ -361,50 +452,6 @@ function renderWaddleView() {
       </a>
     `;
     container.appendChild(div);
-  });
-}
-
-// --- MASTER LOCATIONS ---
-function renderMasterPlacesList() {
-  const container = document.getElementById('masterPlacesContainer');
-  if (!container) return;
-  const trip = getActiveTrip();
-  container.innerHTML = "";
-
-  const query = (document.getElementById('masterSearchInput')?.value || '').toLowerCase();
-  const catFilter = document.getElementById('masterCategoryFilter')?.value || 'ALL';
-
-  const filtered = (trip.places || []).filter(p => {
-    const matchesQuery = p.name.toLowerCase().includes(query) || (p.station && p.station.toLowerCase().includes(query));
-    const pCat = (p.category || '').toLowerCase();
-    const filterCat = catFilter.toLowerCase();
-    const matchesCat = filterCat === 'all' || pCat === filterCat || pCat.includes(filterCat);
-    return matchesQuery && matchesCat;
-  });
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No locations found.</p>`;
-    return;
-  }
-
-  filtered.forEach(place => {
-    const card = document.createElement('div');
-    card.className = "lily-card p-3.5 flex justify-between items-center text-xs bg-white/80";
-    card.innerHTML = `
-      <div class="space-y-0.5">
-        <div class="flex items-center space-x-2">
-          <button onclick="toggleStarSpot('${place.id}')" class="focus:outline-none transition-transform active:scale-125">
-            ${place.starred ? '<span class="text-amber-400 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-base">☆</span>'}
-          </button>
-          <h4 style="color: var(--pond-green);" class="font-bold text-sm">${place.name}</h4>
-        </div>
-        <p class="text-stone-500">${place.city ? place.city + ' • ' : ''}${place.category || 'General'} • <strong class="text-stone-700">${place.station || 'Auto-Assigned'}</strong></p>
-      </div>
-      <a href="${place.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px]" style="background-color: var(--pond-bg); color: var(--pond-green);">
-        <i class="fa-solid fa-location-dot me-1"></i>Map
-      </a>
-    `;
-    container.appendChild(card);
   });
 }
 
