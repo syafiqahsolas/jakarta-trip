@@ -12,21 +12,29 @@
 
 /* --- 1. THEME VARIABLES & BASE STYLES --- */
 :root {
-  --carnival-red: #CE191C;
-  --mustard-yellow: #D59E30;
-  --muted-teal: #4E888A;
-  --midnight-blue: #113665;
-  --dusty-rose: #A76D71;
-  --dark-green: #0A3323;
-  --beige: #F7F4D5;
-  --pond-bg: #F9FAF7;
-  --card-border: rgba(17, 54, 101, 0.08);
+  /* Lily-pond palette (variable names kept so existing markup still works):
+     midnight-blue = deep olive (main), carnival-red = coral, muted-teal = olive */
+  --carnival-red: #E9767F;
+  --mustard-yellow: #C4BA65;
+  --muted-teal: #8A8C41;
+  --midnight-blue: #4D5A2E;
+  --dusty-rose: #E1A794;
+  --dark-green: #39431f;
+  --beige: #F1ECD3;
+  --sand: #C8B891;
+  --pond-bg: #F7F4E8;
+  --card-border: rgba(77, 90, 46, 0.12);
+
+  /* Aliases: app.js still references these older names.
+     Re-pointed to the new carnival palette so titles/buttons pick up the theme. */
+  --olive-green: var(--dark-green);
+  --rose-pink: var(--dusty-rose);
 }
 
 body {
   background-color: var(--pond-bg);
   color: #2b2b2b;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -35,7 +43,7 @@ body {
   background: #ffffff;
   border: 1px solid var(--card-border);
   border-radius: 1.5rem;
-  box-shadow: 0 4px 14px rgba(17, 54, 101, 0.04);
+  box-shadow: 0 4px 14px rgba(77, 90, 46, 0.04);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
@@ -47,8 +55,8 @@ body {
 .floating-nav-bar {
   background: #ffffff;
   border-radius: 2rem;
-  box-shadow: 0 10px 25px -5px rgba(17, 54, 101, 0.12), 0 8px 10px -6px rgba(17, 54, 101, 0.05);
-  border: 1px solid rgba(17, 54, 101, 0.08);
+  box-shadow: 0 10px 25px -5px rgba(77, 90, 46, 0.12), 0 8px 10px -6px rgba(77, 90, 46, 0.05);
+  border: 1px solid rgba(77, 90, 46, 0.08);
 }
 
 /* When selected, button lifts up and hides text label to eliminate clutter */
@@ -57,7 +65,7 @@ body {
   background-color: var(--midnight-blue) !important;
   color: var(--beige) !important;
   border: 4px solid var(--pond-bg);
-  box-shadow: 0 8px 18px rgba(17, 54, 101, 0.35);
+  box-shadow: 0 8px 18px rgba(77, 90, 46, 0.35);
 }
 
 .nav-item-active i {
@@ -79,21 +87,11 @@ body {
   transform: scale(1.06);
 }
 
-/* --- 5. TIMELINE ITINERARY NODES & LINES --- */
-#itinerary-timeline-container::before {
-  content: '';
-  position: absolute;
-  top: 1rem;
-  bottom: 1rem;
-  left: 0.875rem;
-  width: 2px;
-  background: rgba(78, 136, 138, 0.25);
-  border-radius: 9999px;
-}
+/* --- 5. (timeline line now drawn per row in app.js) --- */
 
 /* --- 6. MODAL BACKDROP & ENTRY ANIMATIONS --- */
 .modal-backdrop {
-  background-color: rgba(17, 54, 101, 0.45);
+  background-color: rgba(77, 90, 46, 0.45);
   backdrop-filter: blur(6px);
   transition: opacity 0.2s ease-in-out;
 }
@@ -136,7 +134,23 @@ textarea#itin-form-notes {
   resize: none;
 }
 
-/* --- 8. CUSTOM SCROLLBARS --- */
+/* --- 8. TAILWIND v3 GAP-FILLERS ---
+   app.js / index.html use shadow-xs and backdrop-blur-xs (Tailwind v4 names).
+   The Tailwind CDN is v3, so these classes would silently do nothing. */
+.shadow-xs {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.backdrop-blur-xs {
+  backdrop-filter: blur(2px);
+}
+
+/* --- 9. SPOT DETAIL GALLERY THUMBNAILS --- */
+#spot-gallery-thumbs img {
+  flex-shrink: 0;
+}
+
+/* --- 10. CUSTOM SCROLLBARS --- */
 ::-webkit-scrollbar {
   height: 4px;
   width: 4px;
@@ -147,12 +161,12 @@ textarea#itin-form-notes {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(78, 136, 138, 0.3);
+  background: rgba(138, 140, 65, 0.3);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(17, 54, 101, 0.5);
+  background: rgba(77, 90, 46, 0.5);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -163,3 +177,17 @@ textarea#itin-form-notes {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* --- 11. PALETTE OVERRIDES for Tailwind colour classes used in app.js --- */
+.bg-amber-600 { background-color: var(--muted-teal) !important; }
+.bg-amber-100 { background-color: #EDEBC4 !important; }
+.bg-amber-50 { background-color: #F4F1D6 !important; }
+.text-amber-900, .text-amber-800, .text-amber-700 { color: var(--midnight-blue) !important; }
+.text-amber-600 { color: var(--muted-teal) !important; }
+.hover\:border-amber-500:hover { border-color: var(--muted-teal) !important; }
+.bg-emerald-50 { background-color: #EEF0D8 !important; }
+.bg-emerald-100 { background-color: #E3E6B8 !important; }
+.bg-emerald-800 { background-color: var(--midnight-blue) !important; }
+.text-emerald-800, .text-emerald-700 { color: var(--midnight-blue) !important; }
+.text-teal-700, .text-teal-600 { color: var(--muted-teal) !important; }
+.text-rose-600 { color: var(--carnival-red) !important; }
