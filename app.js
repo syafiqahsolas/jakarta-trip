@@ -1,7 +1,7 @@
 /**
- * LILY POND TRAVEL HUB - APP.JS
- * Complete Logic with Packing Categories, Ticket Uploads, Timeline Itinerary,
- * Transport Modes (Walk vs Car), and City-Strict Hotel Base Handling.
+ * LILY POND & CARNIVAL TRAVEL HUB - APP.JS
+ * Features: Popup item creation, star-pinning, ticket uploads, image-style spot drilldowns,
+ * rubber-duck waddle icon, clean navbar labels, trip readiness progress tracking.
  */
 
 const firebaseConfig = {
@@ -14,7 +14,6 @@ const firebaseConfig = {
   measurementId: "G-RZC21KJMJS"
 };
 
-// Initialize Firebase & Firestore
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -23,7 +22,7 @@ let appData = {
   trips: [
     {
       id: "trip_jakarta_bandung",
-      name: "Jakarta & Bandung",
+      name: "Jakarta & Bandung Escape",
       startDate: "2026-11-21",
       endDate: "2026-11-26",
       category: "Vacation",
@@ -33,19 +32,19 @@ let appData = {
       hotelStation: "Setiabudi Astra (1 min walk)",
       places: [],
       itinerary: [
-        { day: 1, title: "Hotel Check-in", time: "14:00", location: "Hotel Grand Sahid Jaya", notes: "Leave bags at lobby", starred: true },
-        { day: 1, title: "Dinner & Waddle Around", time: "18:30", location: "Chillax Sudirman", notes: "Try local coffee", starred: false }
+        { day: 1, title: "Airport Arrival & Transfer", time: "09:00", location: "CGK Airport", notes: "Private car transfer booked", starred: true, type: "Transport" },
+        { day: 1, title: "Hotel Check-in", time: "14:00", location: "Hotel Grand Sahid Jaya", notes: "Leave bags at lobby", starred: true, type: "Stay" }
       ],
       checklists: {
         packing: [
-          { text: "Passport & IC", category: "documents", done: true, important: true },
+          { text: "Passport & ID", category: "documents", done: true, important: true },
           { text: "Universal Adapter", category: "electronics", done: false, important: true },
-          { text: "Flight Boarding Pass", category: "documents", done: false, important: true },
-          { text: "T-Shirts (5x)", category: "clothes", done: false, important: false },
-          { text: "Toothbrush & Paste", category: "toiletries", done: false, important: false }
+          { text: "T-Shirts (5x)", category: "clothes", done: false, important: false }
         ]
       },
-      tickets: [],
+      tickets: [
+        { title: "Flight Boarding Pass (KLIA - CGK)", type: "Flight", fileData: null }
+      ],
       expenses: [
         { title: "Hotel Deposit", amount: "300", category: "Hotel & Stay" },
         { title: "Whoosh Train Ticket", amount: "150", category: "Transport" }
@@ -57,7 +56,7 @@ let appData = {
 let activeTripId = "trip_jakarta_bandung";
 let activeItineraryDay = 1;
 let selectedWaddleCluster = "NEAR_HOTEL";
-let activeLocationSubTab = "master";
+let activeLocationSubTab = "nearby"; // Default to Nearby first as requested
 let activePackingCategory = "clothes";
 let activeTransportMode = "walk";
 
@@ -65,7 +64,6 @@ let editingItineraryIndex = null;
 let editingPlaceId = null;
 let editingExpenseIndex = null;
 
-// --- INITIALIZATION & REALTIME CLOUD LISTENER ---
 window.onload = function() {
   listenToCloudChanges();
 };
@@ -84,9 +82,8 @@ function listenToCloudChanges() {
         saveAppData();
       }
 
-      localStorage.setItem("lily_pond_cloud_data", JSON.stringify(appData));
-      renderUpcomingTripsList();
-      renderAllTripsList();
+      localStorage.setItem("lily_carnival_cloud_data", JSON.stringify(appData));
+      renderHomeViews();
       renderActiveTripDashboard();
     } else {
       const trip = getActiveTrip();
@@ -96,21 +93,18 @@ function listenToCloudChanges() {
       saveAppData();
     }
   }, (error) => {
-    console.warn("Offline fallback activated:", error);
-    const saved = localStorage.getItem("lily_pond_cloud_data");
+    const saved = localStorage.getItem("lily_carnival_cloud_data");
     if (saved) appData = JSON.parse(saved);
-    renderUpcomingTripsList();
-    renderAllTripsList();
+    renderHomeViews();
     renderActiveTripDashboard();
   });
 }
 
 function saveAppData() {
   appData.currentTripId = activeTripId;
-  localStorage.setItem("lily_pond_cloud_data", JSON.stringify(appData));
-
+  localStorage.setItem("lily_carnival_cloud_data", JSON.stringify(appData));
   db.collection("travelHub").doc("sharedTripData").set(appData).catch((err) => {
-    console.error("Firebase sync error (Saved locally):", err);
+    console.error("Cloud sync error:", err);
   });
 }
 
@@ -130,7 +124,7 @@ function getActiveTrip() {
   return trip;
 }
 
-// --- NAVIGATION & FLOATING BOTTOM NAVBAR ---
+// --- NAVIGATION & HOME VIEW ---
 function openHomePage(subTab = 'upcoming') {
   document.getElementById('section-home')?.classList.remove('hidden');
   document.getElementById('section-trip-dashboard')?.classList.add('hidden');
@@ -179,7 +173,7 @@ function switchDashboardPage(pageName) {
     activeNav.classList.remove('text-stone-400');
   }
 
-  if (pageName === 'summary') renderStarredLocationsSummary();
+  if (pageName === 'summary') renderSummaryPage();
   if (pageName === 'itinerary') renderItinerary();
   if (pageName === 'master') renderLocationsPage();
   if (pageName === 'waddle') renderWaddleView();
@@ -195,29 +189,104 @@ function openTripDashboard(tripId) {
   switchDashboardPage('summary');
 }
 
-// --- DASHBOARD & SUMMARY ---
-function renderActiveTripDashboard() {
+function renderHomeViews() {
+  renderUpcomingTripsList();
+  renderAllTripsList();
+}
+
+function renderUpcomingTripsList() {
+  const container = document.getElementById('upcoming-trips-list');
+  if (!container) return;
+  container.innerHTML = "";
+
+  appData.trips.forEach(trip => {
+    const card = document.createElement('div');
+    card.className = "lily-card p-4 space-y-3 cursor-pointer hover:border-amber-500/30 transition-all bg-white/90";
+    card.onclick = () => openTripDashboard(trip.id);
+    card.innerHTML = `
+      <div class="flex justify-between items-start">
+        <span class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full" style="background-color: var(--carnival-red);">${trip.category || 'Trip'}</span>
+        <span class="text-xs text-stone-400"><i class="fa-solid fa-calendar-days me-1"></i>${trip.startDate || ''} - ${trip.endDate || ''}</span>
+      </div>
+      <h3 style="color: var(--midnight-blue);" class="font-bold text-lg leading-tight">${trip.name}</h3>
+      <div class="flex justify-between text-xs text-stone-500 pt-1">
+        <span><i class="fa-solid fa-users me-1"></i>${trip.people || '1 Pax'}</span>
+        <span class="font-semibold" style="color: var(--carnival-red);">${trip.budget || 'RM 0'}</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function renderAllTripsList() {
+  const container = document.getElementById('all-trips-list');
+  if (!container) return;
+  container.innerHTML = "";
+
+  const query = (document.getElementById('tripSearchInput')?.value || '').toLowerCase();
+  const catFilter = document.getElementById('tripCategoryFilter')?.value || 'ALL';
+
+  const filtered = appData.trips.filter(t => {
+    const matchesQuery = t.name.toLowerCase().includes(query);
+    const matchesCat = catFilter === 'ALL' || t.category === catFilter;
+    return matchesQuery && matchesCat;
+  });
+
+  filtered.forEach(trip => {
+    const card = document.createElement('div');
+    card.className = "lily-card p-4 flex justify-between items-center cursor-pointer bg-white/90";
+    card.onclick = () => openTripDashboard(trip.id);
+    card.innerHTML = `
+      <div>
+        <h4 style="color: var(--midnight-blue);" class="font-bold text-base">${trip.name}</h4>
+        <p class="text-xs text-stone-400">${trip.category} • ${trip.startDate || 'TBD'}</p>
+      </div>
+      <button class="text-xs px-3 py-1.5 rounded-xl font-semibold text-white" style="background-color: var(--carnival-red);">Open ➔</button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// --- SUMMARY PAGE (Image 7 Style) ---
+function renderSummaryPage() {
   const trip = getActiveTrip();
   if (!trip) return;
 
-  document.getElementById('sum-card-title').innerText = trip.name;
-  document.getElementById('sum-card-dates').innerText = `${trip.startDate || 'TBD'} – ${trip.endDate || 'TBD'}`;
-  document.getElementById('sum-card-category').innerText = trip.category || 'Vacation';
-  document.getElementById('sum-card-people').innerText = trip.people || '1 Pax';
-  document.getElementById('sum-card-budget').innerText = trip.budget || 'RM 0';
+  document.getElementById('sum-trip-title').innerText = trip.name;
+  document.getElementById('sum-trip-dates').innerText = `${trip.startDate || 'TBD'} – ${trip.endDate || 'TBD'}`;
 
-  const hotelTitle = document.getElementById('waddle-hotel-title');
-  const hotelStation = document.getElementById('waddle-hotel-station');
-  if (hotelTitle) hotelTitle.innerText = trip.activeHotel || 'Hotel Grand Sahid Jaya';
-  if (hotelStation) {
-    hotelStation.innerHTML = (trip.hotelStation && trip.hotelStation !== 'No station nearby')
-      ? `<strong>Nearest Station:</strong> ${trip.hotelStation}`
-      : `<strong>Nearest Station:</strong> No train station nearby`;
+  // Calculate readiness percentage
+  const packingCount = (trip.checklists?.packing || []).length;
+  const packedDone = (trip.checklists?.packing || []).filter(i => i.done).length;
+  const packPercent = packingCount > 0 ? Math.round((packedDone / packingCount) * 100) : 100;
+  
+  document.getElementById('readiness-percent').innerText = `${packPercent}%`;
+  const bar = document.getElementById('readiness-bar-fill');
+  if (bar) bar.style.width = `${packPercent}%`;
+
+  // Render E-Ticket preview if any ticket exists
+  const ticketPreview = document.getElementById('summary-ticket-preview');
+  if (ticketPreview) {
+    if (trip.tickets && trip.tickets.length > 0) {
+      const t = trip.tickets[0];
+      ticketPreview.innerHTML = `
+        <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-stone-200/80 shadow-xs">
+          <div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Confirmed E-Ticket</span>
+            <h4 style="color: var(--midnight-blue);" class="font-extrabold text-sm mt-1">${t.title}</h4>
+            <p class="text-[11px] text-stone-500">Type: ${t.type}</p>
+          </div>
+          <div class="w-12 h-12 bg-stone-100 rounded-xl flex items-center justify-center text-stone-600">
+            <i class="fa-solid fa-qrcode text-xl"></i>
+          </div>
+        </div>
+      `;
+    } else {
+      ticketPreview.innerHTML = `<p class="text-xs text-stone-400 text-center py-2">No tickets uploaded yet.</p>`;
+    }
   }
 
   renderStarredLocationsSummary();
-  renderLocationsPage();
-  renderWaddleView();
 }
 
 function renderStarredLocationsSummary() {
@@ -236,8 +305,8 @@ function renderStarredLocationsSummary() {
         card.className = "lily-card p-3 flex justify-between items-center text-xs col-span-2 sm:col-span-1 bg-white/80";
         card.innerHTML = `
           <div class="space-y-0.5 overflow-hidden">
-            <h5 style="color: var(--dark-green);" class="font-bold text-xs truncate flex items-center gap-1">
-              <span class="text-amber-400">★</span>
+            <h5 style="color: var(--midnight-blue);" class="font-bold text-xs truncate flex items-center gap-1">
+              <span class="text-amber-500">★</span>
               <span class="truncate">${p.name}</span>
             </h5>
             <p class="text-stone-500 text-[10px] truncate">${p.city ? p.city + ' • ' : ''}${p.category}</p>
@@ -253,15 +322,15 @@ function renderStarredLocationsSummary() {
     snapshotContainer.innerHTML = "";
     const starredItin = (trip.itinerary || []).filter(act => act.starred === true).sort((a, b) => (a.time || "00:00").localeCompare(b.time || "00:00"));
     if (starredItin.length === 0) {
-      snapshotContainer.innerHTML = `<p class="text-xs text-stone-400 py-2 text-center">No starred itinerary activities yet.</p>`;
+      snapshotContainer.innerHTML = `<p class="text-xs text-stone-400 py-2 text-center">No starred itinerary activities looking forward to.</p>`;
     } else {
       starredItin.forEach(act => {
         const item = document.createElement('div');
         item.className = "flex justify-between items-center text-xs bg-white/80 p-2.5 rounded-2xl border border-stone-200/60";
         item.innerHTML = `
           <div>
-            <strong style="color: var(--dark-green);" class="block font-bold text-xs flex items-center gap-1">
-              <span class="text-amber-400 text-xs">★</span>
+            <strong style="color: var(--midnight-blue);" class="block font-bold text-xs flex items-center gap-1">
+              <span class="text-amber-500 text-xs">★</span>
               <span>${act.title}</span>
             </strong>
             <span class="text-stone-400 text-[10px]">${act.time || 'TBD'} • Day ${act.day}</span>
@@ -273,31 +342,7 @@ function renderStarredLocationsSummary() {
   }
 }
 
-function toggleStarSpot(placeId) {
-  const trip = getActiveTrip();
-  const place = (trip.places || []).find(p => p.id === placeId);
-  if (place) {
-    place.starred = !place.starred;
-    saveAppData();
-    renderLocationsPage();
-    renderWaddleView();
-    renderStarredLocationsSummary();
-  }
-}
-
-function unstarAllLocations() {
-  const trip = getActiveTrip();
-  if (!trip || !trip.places) return;
-  if (confirm("Unstar all locations?")) {
-    trip.places.forEach(p => p.starred = false);
-    saveAppData();
-    renderLocationsPage();
-    renderWaddleView();
-    renderStarredLocationsSummary();
-  }
-}
-
-// --- CITY-STRICT WADDLE VIEW ---
+// --- WADDLE VIEW (Image 3 Concept: Tap Spot for Drilldown Page) ---
 function getActiveHotelCity(trip) {
   const hotelName = trip.activeHotel || "";
   if (typeof hotelDatabase !== 'undefined' && hotelDatabase) {
@@ -338,14 +383,14 @@ function renderWaddleView() {
     quickHubsContainer.innerHTML = "";
     
     const hotelChip = document.createElement('button');
-    hotelChip.className = `px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all ${selectedWaddleCluster === 'NEAR_HOTEL' ? 'bg-emerald-900 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
+    hotelChip.className = `px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all ${selectedWaddleCluster === 'NEAR_HOTEL' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
     hotelChip.innerHTML = `<i class="fa-solid fa-hotel me-1"></i>Near Hotel`;
     hotelChip.onclick = () => { selectedWaddleCluster = 'NEAR_HOTEL'; renderWaddleView(); };
     quickHubsContainer.appendChild(hotelChip);
 
     topStations.forEach(stationName => {
       const chip = document.createElement('button');
-      chip.className = `px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all ${selectedWaddleCluster === stationName ? 'bg-emerald-900 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
+      chip.className = `px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all ${selectedWaddleCluster === stationName ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
       chip.innerText = `🚆 ${stationName}`;
       chip.onclick = () => { selectedWaddleCluster = stationName; renderWaddleView(); };
       quickHubsContainer.appendChild(chip);
@@ -356,46 +401,77 @@ function renderWaddleView() {
   
   let filtered = places.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.station && p.station.toLowerCase().includes(searchQuery)) || p.category.toLowerCase().includes(searchQuery);
-    
-    if (selectedWaddleCluster === 'NEAR_HOTEL') {
-      return matchesSearch;
-    } else {
-      return matchesSearch && p.station === selectedWaddleCluster;
-    }
+    if (selectedWaddleCluster === 'NEAR_HOTEL') return matchesSearch;
+    return matchesSearch && p.station === selectedWaddleCluster;
   });
 
   if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots found in ${activeCity.toUpperCase()}.</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No transport/waddle spots found for ${activeCity.toUpperCase()}.</p>`;
     return;
   }
 
   filtered.forEach(p => {
     const div = document.createElement('div');
-    div.className = "lily-card p-3.5 text-xs flex justify-between items-center mb-2 bg-white/80";
-    
+    div.className = "lily-card p-3.5 text-xs flex justify-between items-center mb-2 bg-white/80 cursor-pointer hover:border-amber-500 transition-all";
+    div.onclick = () => openSpotDetailView(p);
+
     const stationTag = (p.station && p.station !== 'N/A' && p.station !== 'No station nearby')
       ? `<i class="fa-solid fa-train-subway me-1 text-emerald-700"></i>${p.station}`
       : `<i class="fa-solid fa-person-walking me-1 text-emerald-700"></i>${p.walk || 'Short Walk'}`;
 
     div.innerHTML = `
       <div class="flex items-center space-x-2.5">
-        <button onclick="toggleStarSpot('${p.id}')" class="focus:outline-none">
-          ${p.starred ? '<span class="text-amber-400 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-base">☆</span>'}
-        </button>
+        <div class="w-9 h-9 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-700 flex-shrink-0">
+          <i class="fa-solid fa-duck text-sm"></i>
+        </div>
         <div>
-          <strong style="color: var(--dark-green);" class="text-sm font-bold block">${p.name}</strong>
-          <p class="text-stone-500 text-[11px] mt-0.5">${stationTag}</p>
+          <strong style="color: var(--midnight-blue);" class="text-sm font-bold block">${p.name}</strong>
+          <p class="text-stone-500 text-[11px] mt-0.5">${stationTag} • ${p.category}</p>
         </div>
       </div>
-      <a href="${p.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-emerald-50 border border-emerald-100" style="color: var(--dark-green);">
-        Go ➔
-      </a>
+      <span class="text-xs font-semibold px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800">View ➔</span>
     `;
     container.appendChild(div);
   });
 }
 
-// --- TWO-PAGE LOCATIONS & TRANSPORT MODES ---
+// --- SPOT DRILLDOWN PAGE (Image 3 Right Side Concept) ---
+function openSpotDetailView(place) {
+  const container = document.getElementById('page-master'); // Or a dedicated detail wrapper
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="space-y-4 animate-fadeIn">
+      <button onclick="renderLocationsPage()" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-stone-200 text-stone-700 flex items-center gap-1 w-fit">
+        <i class="fa-solid fa-arrow-left"></i> Back to Spots
+      </button>
+
+      <div class="lily-card overflow-hidden bg-white">
+        <div class="h-48 bg-stone-200 relative flex items-center justify-center">
+          <i class="fa-solid fa-image text-4xl text-stone-400"></i>
+          <span class="absolute bottom-3 left-3 bg-white/90 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-bold text-stone-800">${place.category}</span>
+        </div>
+        <div class="p-5 space-y-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 style="color: var(--midnight-blue);" class="font-extrabold text-xl">${place.name}</h2>
+              <p class="text-xs text-stone-500 mt-0.5"><i class="fa-solid fa-location-dot text-rose-600 me-1"></i>${place.city || 'Jakarta'} • ${place.station || 'Near Hotel'}</p>
+            </div>
+            <button onclick="toggleStarSpot('${place.id}'); openSpotDetailView(getActiveTrip().places.find(p => p.id === '${place.id}'));" class="text-xl">
+              ${place.starred ? '<span class="text-amber-500">★</span>' : '<span class="text-stone-300">☆</span>'}
+            </button>
+          </div>
+          <p class="text-xs text-stone-600 leading-relaxed">This spot is located within easy reach of your accommodation base. Enjoy exploring local cafes, scenic views, and cultural landmarks.</p>
+          <a href="${place.map || '#'}" target="_blank" class="w-full py-3 rounded-2xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm" style="background-color: var(--carnival-red);">
+            <i class="fa-solid fa-diamond-turn-right"></i> Get Directions
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// --- LOCATIONS SECTION (Nearby First by Default) ---
 function switchLocationSubTab(tab) {
   activeLocationSubTab = tab;
   const masterSub = document.getElementById('loc-sub-master');
@@ -403,7 +479,15 @@ function switchLocationSubTab(tab) {
   const btnMaster = document.getElementById('loctab-master');
   const btnNearby = document.getElementById('loctab-nearby');
 
-  if (tab === 'master') {
+  if (tab === 'nearby') {
+    nearbySub?.classList.remove('hidden');
+    masterSub?.classList.add('hidden');
+    btnNearby?.classList.add('text-stone-800', 'bg-white', 'shadow-xs', 'font-bold');
+    btnNearby?.classList.remove('text-stone-500', 'font-semibold');
+    btnMaster?.classList.remove('text-stone-800', 'bg-white', 'shadow-xs', 'font-bold');
+    btnMaster?.classList.add('text-stone-500', 'font-semibold');
+    renderNearbyPlacesList();
+  } else {
     masterSub?.classList.remove('hidden');
     nearbySub?.classList.add('hidden');
     btnMaster?.classList.add('text-stone-800', 'bg-white', 'shadow-xs', 'font-bold');
@@ -411,14 +495,6 @@ function switchLocationSubTab(tab) {
     btnNearby?.classList.remove('text-stone-800', 'bg-white', 'shadow-xs', 'font-bold');
     btnNearby?.classList.add('text-stone-500', 'font-semibold');
     renderMasterPlacesList();
-  } else {
-    masterSub?.classList.add('hidden');
-    nearbySub?.classList.remove('hidden');
-    btnNearby?.classList.add('text-stone-800', 'bg-white', 'shadow-xs', 'font-bold');
-    btnNearby?.classList.remove('text-stone-500', 'font-semibold');
-    btnMaster?.classList.remove('text-stone-800', 'bg-white', 'shadow-xs', 'font-bold');
-    btnMaster?.classList.add('text-stone-500', 'font-semibold');
-    renderNearbyPlacesList();
   }
 }
 
@@ -428,14 +504,14 @@ function setTransportMode(mode) {
   const btnCar = document.getElementById('transport-btn-car');
 
   if (mode === 'walk') {
-    btnWalk?.classList.add('bg-emerald-100', 'text-emerald-900', 'font-bold');
+    btnWalk?.classList.add('bg-amber-100', 'text-amber-900', 'font-bold');
     btnWalk?.classList.remove('text-stone-500', 'font-semibold');
-    btnCar?.classList.remove('bg-emerald-100', 'text-emerald-900', 'font-bold');
+    btnCar?.classList.remove('bg-amber-100', 'text-amber-900', 'font-bold');
     btnCar?.classList.add('text-stone-500', 'font-semibold');
   } else {
-    btnCar?.classList.add('bg-emerald-100', 'text-emerald-900', 'font-bold');
+    btnCar?.classList.add('bg-amber-100', 'text-amber-900', 'font-bold');
     btnCar?.classList.remove('text-stone-500', 'font-semibold');
-    btnWalk?.classList.remove('bg-emerald-100', 'text-emerald-900', 'font-bold');
+    btnWalk?.classList.remove('bg-amber-100', 'text-amber-900', 'font-bold');
     btnWalk?.classList.add('text-stone-500', 'font-semibold');
   }
   renderNearbyPlacesList();
@@ -443,6 +519,54 @@ function setTransportMode(mode) {
 
 function renderLocationsPage() {
   switchLocationSubTab(activeLocationSubTab);
+}
+
+function renderNearbyPlacesList() {
+  const container = document.getElementById('nearbyPlacesContainer');
+  if (!container) return;
+  const trip = getActiveTrip();
+  container.innerHTML = "";
+
+  const activeCity = getActiveHotelCity(trip);
+  
+  let filtered = (trip.places || []).filter(p => {
+    const isSameCity = (p.city || 'jakarta').toLowerCase() === activeCity;
+    const walkMins = parseInt(p.walk) || 15;
+    if (activeTransportMode === 'walk') {
+      return isSameCity && walkMins <= 40;
+    } else {
+      return isSameCity;
+    }
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots found for ${activeTransportMode.toUpperCase()} mode in ${activeCity.toUpperCase()}.</p>`;
+    return;
+  }
+
+  filtered.forEach(place => {
+    const card = document.createElement('div');
+    card.className = "lily-card p-3.5 flex justify-between items-center text-xs bg-white/80 cursor-pointer hover:border-amber-500 transition-all";
+    card.onclick = () => openSpotDetailView(place);
+    
+    const modeBadge = activeTransportMode === 'walk' 
+      ? `<i class="fa-solid fa-person-walking text-emerald-700 me-1"></i>${place.walk || '15 min walk'}`
+      : `<i class="fa-solid fa-car text-amber-700 me-1"></i>10-25 min drive`;
+
+    card.innerHTML = `
+      <div class="space-y-0.5">
+        <div class="flex items-center space-x-2">
+          <button onclick="event.stopPropagation(); toggleStarSpot('${place.id}')" class="focus:outline-none">
+            ${place.starred ? '<span class="text-amber-500 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-500 text-base">☆</span>'}
+          </button>
+          <h4 style="color: var(--midnight-blue);" class="font-bold text-sm">${place.name}</h4>
+        </div>
+        <p class="text-stone-500">${modeBadge} • ${place.category}</p>
+      </div>
+      <a href="${place.map || '#'}" target="_blank" onclick="event.stopPropagation();" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-emerald-50 text-emerald-800">Map ➔</a>
+    `;
+    container.appendChild(card);
+  });
 }
 
 function renderMasterPlacesList() {
@@ -469,75 +593,26 @@ function renderMasterPlacesList() {
 
   filtered.forEach(place => {
     const card = document.createElement('div');
-    card.className = "lily-card p-3.5 flex justify-between items-center text-xs bg-white/80";
+    card.className = "lily-card p-3.5 flex justify-between items-center text-xs bg-white/80 cursor-pointer hover:border-amber-500 transition-all";
+    card.onclick = () => openSpotDetailView(place);
     card.innerHTML = `
       <div class="space-y-0.5">
         <div class="flex items-center space-x-2">
-          <button onclick="toggleStarSpot('${place.id}')" class="focus:outline-none">
-            ${place.starred ? '<span class="text-amber-400 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-base">☆</span>'}
+          <button onclick="event.stopPropagation(); toggleStarSpot('${place.id}')" class="focus:outline-none">
+            ${place.starred ? '<span class="text-amber-500 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-500 text-base">☆</span>'}
           </button>
-          <h4 style="color: var(--dark-green);" class="font-bold text-sm">${place.name}</h4>
-          <button onclick="openEditSpotModal('${place.id}')" class="text-stone-300 hover:text-stone-600 text-xs ms-1"><i class="fa-solid fa-pen"></i></button>
+          <h4 style="color: var(--midnight-blue);" class="font-bold text-sm">${place.name}</h4>
+          <button onclick="event.stopPropagation(); openEditSpotModal('${place.id}')" class="text-stone-300 hover:text-stone-600 text-xs ms-1"><i class="fa-solid fa-pen"></i></button>
         </div>
-        <p class="text-stone-500"><span class="font-bold text-emerald-900">${place.city || 'Jakarta'}</span> • ${place.category || 'General'}</p>
+        <p class="text-stone-500"><span class="font-bold text-amber-800">${place.city || 'Jakarta'}</span> • ${place.category || 'General'}</p>
       </div>
-      <a href="${place.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px]" style="background-color: var(--pond-bg); color: var(--dark-green);">
-        <i class="fa-solid fa-location-dot me-1"></i>Map
-      </a>
+      <a href="${place.map || '#'}" target="_blank" onclick="event.stopPropagation();" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-emerald-50 text-emerald-800">Map ➔</a>
     `;
     container.appendChild(card);
   });
 }
 
-function renderNearbyPlacesList() {
-  const container = document.getElementById('nearbyPlacesContainer');
-  if (!container) return;
-  const trip = getActiveTrip();
-  container.innerHTML = "";
-
-  const activeCity = getActiveHotelCity(trip);
-  
-  let filtered = (trip.places || []).filter(p => {
-    const isSameCity = (p.city || 'jakarta').toLowerCase() === activeCity;
-    const walkMins = parseInt(p.walk) || 15;
-
-    if (activeTransportMode === 'walk') {
-      return isSameCity && walkMins <= 40;
-    } else {
-      return isSameCity; // Car / Taxi includes all spots in city
-    }
-  });
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots found for ${activeTransportMode.toUpperCase()} mode in ${activeCity.toUpperCase()}.</p>`;
-    return;
-  }
-
-  filtered.forEach(place => {
-    const card = document.createElement('div');
-    card.className = "lily-card p-3.5 flex justify-between items-center text-xs bg-white/80";
-    
-    const modeBadge = activeTransportMode === 'walk' 
-      ? `<i class="fa-solid fa-person-walking text-emerald-700 me-1"></i>${place.walk || '15 min walk'}`
-      : `<i class="fa-solid fa-car text-teal-700 me-1"></i>10-25 min drive`;
-
-    card.innerHTML = `
-      <div class="space-y-0.5">
-        <div class="flex items-center space-x-2">
-          <button onclick="toggleStarSpot('${place.id}')" class="focus:outline-none">
-            ${place.starred ? '<span class="text-amber-400 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-base">☆</span>'}
-          </button>
-          <h4 style="color: var(--dark-green);" class="font-bold text-sm">${place.name}</h4>
-        </div>
-        <p class="text-stone-500">${modeBadge} • ${place.category}</p>
-      </div>
-      <a href="${place.map || '#'}" target="_blank" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-emerald-50 text-emerald-800">Map ➔</a>
-    `;
-    container.appendChild(card);
-  });
-}
-
-// --- TIMELINE ITINERARY (Matching Image 3 Style) ---
+// --- ITINERARY (Image 4 Style with Swipe / Day Tabs & Star Favorites) ---
 function getTotalTripDays(trip) {
   if (!trip.startDate || !trip.endDate) return 5;
   const start = new Date(trip.startDate);
@@ -562,7 +637,7 @@ function renderItinerary() {
   for (let d = 1; d <= totalDays; d++) {
     const btn = document.createElement('button');
     btn.className = `px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all ${activeItineraryDay === d ? 'text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
-    if (activeItineraryDay === d) btn.style.backgroundColor = 'var(--dark-green)';
+    if (activeItineraryDay === d) btn.style.backgroundColor = 'var(--midnight-blue)';
     btn.innerText = `Day ${d}`;
     btn.onclick = () => { activeItineraryDay = d; renderItinerary(); };
     dayButtonsContainer.appendChild(btn);
@@ -573,7 +648,7 @@ function renderItinerary() {
     .sort((a, b) => (a.time || "00:00").localeCompare(b.time || "00:00"));
 
   if (dayActivities.length === 0) {
-    timelineContainer.innerHTML = `<p class="text-xs text-stone-400 py-6 text-center">No activities planned for Day ${activeItineraryDay}.</p>`;
+    timelineContainer.innerHTML = `<p class="text-xs text-stone-400 py-6 text-center">No activities planned for Day ${activeItineraryDay}. Tap + Add to create one!</p>`;
     return;
   }
 
@@ -582,23 +657,23 @@ function renderItinerary() {
     const item = document.createElement('div');
     item.className = "relative pl-8 space-y-1";
     item.innerHTML = `
-      <div class="absolute left-2 top-2.5 w-3 h-3 rounded-full border-2 border-white shadow-xs" style="background-color: var(--dark-green);"></div>
-      <div class="lily-card p-3.5 text-xs space-y-1 bg-white/80">
+      <div class="absolute left-2 top-2.5 w-3 h-3 rounded-full border-2 border-white shadow-xs" style="background-color: var(--carnival-red);"></div>
+      <div class="lily-card p-4 text-xs space-y-2 bg-white/90">
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-2">
             <button onclick="toggleStarItineraryActivity(${realIdx})" class="focus:outline-none">
-              ${act.starred ? '<span class="text-amber-400 text-sm">★</span>' : '<span class="text-stone-300 hover:text-amber-400 text-sm">☆</span>'}
+              ${act.starred ? '<span class="text-amber-500 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-500 text-base">☆</span>'}
             </button>
             <span class="font-bold text-stone-500 text-[11px]"><i class="fa-regular fa-clock me-1"></i>${act.time || 'TBD'}</span>
           </div>
           <div class="space-x-2">
-            <button onclick="openEditItineraryModal(${realIdx})" class="text-stone-400 hover:text-emerald-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
+            <button onclick="openEditItineraryModal(${realIdx})" class="text-stone-400 hover:text-amber-700"><i class="fa-solid fa-pen text-[10px]"></i></button>
             <button onclick="deleteItineraryActivity(${realIdx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-[10px]"></i></button>
           </div>
         </div>
-        <h4 style="color: var(--dark-green);" class="font-bold text-sm">${act.title}</h4>
-        <p class="text-stone-600"><i class="fa-solid fa-location-dot me-1" style="color: var(--moss-green);"></i>${act.location || 'N/A'}</p>
-        ${act.notes ? `<p class="text-stone-400 text-[11px] bg-stone-50 p-2 rounded-xl mt-1">${act.notes}</p>` : ''}
+        <h4 style="color: var(--midnight-blue);" class="font-bold text-sm">${act.title}</h4>
+        <p class="text-stone-600"><i class="fa-solid fa-location-dot me-1 text-rose-600"></i>${act.location || 'N/A'}</p>
+        ${act.notes ? `<p class="text-stone-500 text-[11px] bg-stone-50 p-2.5 rounded-xl mt-1">${act.notes}</p>` : ''}
       </div>
     `;
     timelineContainer.appendChild(item);
@@ -669,7 +744,7 @@ function deleteItineraryActivity(realIdx) {
   }
 }
 
-// --- CHECKLISTS, CATEGORIZED PACKING & TICKETS ---
+// --- CHECKLISTS, PACKING, TICKETS & DOCUMENTS POPUP ---
 function selectPackingCategory(cat) {
   activePackingCategory = cat;
   const categories = ['clothes', 'toiletries', 'electronics', 'documents'];
@@ -677,10 +752,10 @@ function selectPackingCategory(cat) {
     const btn = document.getElementById(`pack-cat-${c}`);
     if (btn) {
       if (c === cat) {
-        btn.classList.add('bg-emerald-800', 'text-white', 'shadow-xs');
+        btn.classList.add('bg-amber-600', 'text-white', 'shadow-xs');
         btn.classList.remove('text-stone-400');
       } else {
-        btn.classList.remove('bg-emerald-800', 'text-white', 'shadow-xs');
+        btn.classList.remove('bg-amber-600', 'text-white', 'shadow-xs');
         btn.classList.add('text-stone-400');
       }
     }
@@ -696,21 +771,21 @@ function renderCategorizedPackingList() {
 
   const items = (trip.checklists.packing || []).filter(item => (item.category || 'clothes') === activePackingCategory);
 
-  // Sort important/pinned items to top
+  // Pinned/Important items always at top
   items.sort((a, b) => (b.important ? 1 : 0) - (a.important ? 1 : 0));
 
   if (items.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-4">No items in this category yet.</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No items in this category yet. Tap "+ Add Item" above!</p>`;
     return;
   }
 
   items.forEach((item) => {
     const realIdx = trip.checklists.packing.indexOf(item);
     const div = document.createElement('div');
-    div.className = "flex justify-between items-center bg-white/80 p-3 rounded-2xl border border-stone-200/60";
+    div.className = "flex justify-between items-center bg-white/90 p-3 rounded-2xl border border-stone-200/60";
     div.innerHTML = `
       <label class="flex items-center space-x-2.5 cursor-pointer">
-        <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePackingDone(${realIdx})" class="rounded text-emerald-800">
+        <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePackingDone(${realIdx})" class="rounded text-amber-600">
         <span class="${item.done ? 'line-through text-stone-400' : 'text-stone-800 font-medium'}">${item.text}</span>
       </label>
       <div class="flex items-center space-x-2">
@@ -724,18 +799,24 @@ function renderCategorizedPackingList() {
   });
 }
 
-function addPackingItem() {
-  const input = document.getElementById('new-pack-input');
-  const val = input?.value.trim();
-  if (!val) return;
+function openPackingItemModal() {
+  document.getElementById('pack-form-text').value = "";
+  document.getElementById('pack-form-category').value = activePackingCategory;
+  openModal('modal-packing');
+}
+
+function savePackingItemForm() {
+  const text = document.getElementById('pack-form-text').value.trim();
+  const category = document.getElementById('pack-form-category').value;
+  if (!text) return alert("Enter item name!");
 
   const trip = getActiveTrip();
   if (!trip.checklists.packing) trip.checklists.packing = [];
 
-  trip.checklists.packing.push({ text: val, category: activePackingCategory, done: false, important: false });
+  trip.checklists.packing.push({ text, category, done: false, important: false });
   saveAppData();
-  input.value = "";
-  renderCategorizedPackingList();
+  closeModal('modal-packing');
+  selectPackingCategory(category);
 }
 
 function togglePackingDone(idx) {
@@ -763,7 +844,7 @@ function deletePackingItem(idx) {
   renderCategorizedPackingList();
 }
 
-// --- TICKETS & DOCUMENTS ---
+// --- TICKETS & DOCUMENTS SECTION ---
 function renderTicketsList() {
   const container = document.getElementById('tickets-list-container');
   if (!container) return;
@@ -777,16 +858,16 @@ function renderTicketsList() {
 
   trip.tickets.forEach((ticket, idx) => {
     const card = document.createElement('div');
-    card.className = "lily-card p-3.5 space-y-2 bg-white";
+    card.className = "lily-card p-4 space-y-2 bg-white";
     card.innerHTML = `
       <div class="flex justify-between items-center">
         <div>
-          <strong style="color: var(--dark-green);" class="font-bold text-xs block">${ticket.title}</strong>
-          <span class="text-[10px] text-stone-400">${ticket.type} Document</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">${ticket.type} Document</span>
+          <strong style="color: var(--midnight-blue);" class="font-bold text-sm block mt-1">${ticket.title}</strong>
         </div>
         <button onclick="deleteTicket(${idx})" class="text-stone-300 hover:text-red-500 text-xs"><i class="fa-solid fa-trash"></i></button>
       </div>
-      ${ticket.fileData ? `<img src="${ticket.fileData}" class="w-full h-36 object-cover rounded-xl border border-stone-100" />` : ''}
+      ${ticket.fileData ? `<img src="${ticket.fileData}" class="w-full h-40 object-cover rounded-xl border border-stone-100 mt-2" />` : ''}
     `;
     container.appendChild(card);
   });
@@ -836,12 +917,10 @@ function deleteTicket(idx) {
 
 // --- BILLING REPORTS EXPENSE TRACKER ---
 function renderChecklistsAndExpenses() {
-  const trip = getActiveTrip();
-
-  // Render Sub-Tabs
   renderCategorizedPackingList();
   renderTicketsList();
 
+  const trip = getActiveTrip();
   let totalSum = 0;
   const categories = { "Hotel & Stay": 0, "Food & Cafe": 0, "Transport": 0, "Other": 0 };
 
@@ -887,7 +966,7 @@ function renderChecklistsAndExpenses() {
           </div>
         </div>
         <div class="flex items-center space-x-3">
-          <strong style="color: var(--dark-green);" class="font-extrabold text-xs">RM ${exp.amount}</strong>
+          <strong style="color: var(--midnight-blue);" class="font-extrabold text-xs">RM ${exp.amount}</strong>
           <button onclick="openEditExpenseModal(${idx})" class="text-stone-300 hover:text-stone-600"><i class="fa-solid fa-pen text-[10px]"></i></button>
           <button onclick="deleteExpenseItem(${idx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-[10px]"></i></button>
         </div>
@@ -1043,60 +1122,7 @@ function saveHotelForm() {
   renderActiveTripDashboard();
 }
 
-// --- TRIPS HOMEPAGE LISTS ---
-function renderUpcomingTripsList() {
-  const container = document.getElementById('upcoming-trips-list');
-  if (!container) return;
-  container.innerHTML = "";
-
-  appData.trips.forEach(trip => {
-    const card = document.createElement('div');
-    card.className = "lily-card p-4 space-y-2 cursor-pointer hover:border-emerald-700/30 transition-all bg-white/90";
-    card.onclick = () => openTripDashboard(trip.id);
-    card.innerHTML = `
-      <div class="flex justify-between items-start">
-        <span class="text-[10px] font-bold text-white px-2.5 py-0.5 rounded-full" style="background-color: var(--moss-green); color: var(--beige);">${trip.category || 'Trip'}</span>
-        <span class="text-xs text-stone-400"><i class="fa-solid fa-calendar-days me-1"></i>${trip.startDate || ''} - ${trip.endDate || ''}</span>
-      </div>
-      <h3 style="color: var(--dark-green);" class="font-bold text-lg leading-tight">${trip.name}</h3>
-      <div class="flex justify-between text-xs text-stone-500 pt-1">
-        <span><i class="fa-solid fa-users me-1"></i>${trip.people || '1 Pax'}</span>
-        <span class="font-semibold" style="color: var(--dark-green);">${trip.budget || 'RM 0'}</span>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-}
-
-function renderAllTripsList() {
-  const container = document.getElementById('all-trips-list');
-  if (!container) return;
-  container.innerHTML = "";
-
-  const query = (document.getElementById('tripSearchInput')?.value || '').toLowerCase();
-  const catFilter = document.getElementById('tripCategoryFilter')?.value || 'ALL';
-
-  const filtered = appData.trips.filter(t => {
-    const matchesQuery = t.name.toLowerCase().includes(query);
-    const matchesCat = catFilter === 'ALL' || t.category === catFilter;
-    return matchesQuery && matchesCat;
-  });
-
-  filtered.forEach(trip => {
-    const card = document.createElement('div');
-    card.className = "lily-card p-4 flex justify-between items-center cursor-pointer bg-white/90";
-    card.onclick = () => openTripDashboard(trip.id);
-    card.innerHTML = `
-      <div>
-        <h4 style="color: var(--dark-green);" class="font-bold text-base">${trip.name}</h4>
-        <p class="text-xs text-stone-400">${trip.category} • ${trip.startDate || 'TBD'}</p>
-      </div>
-      <button class="text-xs px-3 py-1.5 rounded-xl font-semibold" style="background-color: var(--dark-green); color: var(--beige);">Open ➔</button>
-    `;
-    container.appendChild(card);
-  });
-}
-
+// --- TRIP MODALS & SPOTS ---
 function openTripModal(tripIdToEdit = null) {
   const targetId = tripIdToEdit || activeTripId;
   const trip = appData.trips.find(t => t.id === targetId);
@@ -1160,8 +1186,7 @@ function saveTripForm() {
 
   saveAppData();
   closeModal('modal-trip');
-  renderUpcomingTripsList();
-  renderAllTripsList();
+  renderHomeViews();
   openTripDashboard(activeTripId);
 }
 
@@ -1230,7 +1255,15 @@ function saveMasterSpotForm() {
   closeModal('modal-master-spot');
   renderLocationsPage();
   renderWaddleView();
-  renderStarredLocationsSummary();
+  renderSummaryPage();
+}
+
+function renderActiveTripDashboard() {
+  renderSummaryPage();
+  renderLocationsPage();
+  renderWaddleView();
+  renderItinerary();
+  renderChecklistsAndExpenses();
 }
 
 function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
