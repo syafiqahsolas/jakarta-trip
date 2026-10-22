@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lily Pond & Carnival Travel Hub</title>
+  <title>Lily Pond Carnival Travel Hub</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -378,9 +378,9 @@
           <label class="block text-stone-500 mb-1 font-medium">Time</label>
           <input type="time" id="itin-form-time" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800 font-semibold">
         </div>
-        <div><label class="block text-stone-500 mb-1 font-medium">Location / map pin</label><div class="location-picker-wrap"><input type="text" id="itin-form-location" autocomplete="off" oninput="onItinPlacePick(); renderItinLocationPopup()" onfocus="renderItinLocationPopup()" onblur="setTimeout(() => document.getElementById('itin-location-popup')?.classList.add('hidden'), 140)" onkeydown="handleItinLocationKeydown(event)" placeholder="Search a place or type a custom location" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"><div id="itin-location-popup" class="location-suggestion-popup hidden" role="listbox" aria-label="Location suggestions"></div></div><p class="text-[10px] text-stone-400 mt-1">Choose a saved spot, hotel, or station, or keep your own custom location.</p><input type="hidden" id="itin-form-place"></div>
-        <div><label class="block text-stone-500 mb-1 font-medium">Ticket / document (from Checklist Docs)</label><select id="itin-form-doc" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"></select></div>
-        <div><label class="block text-stone-500 mb-1 font-medium">Or upload a new ticket photo (saved to Docs)</label><input type="file" id="itin-form-docfile" accept="image/*" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2 text-stone-800 text-xs"></div>
+        <div><label class="block text-stone-500 mb-1 font-medium">Location</label><div class="location-picker-wrap"><input type="text" id="itin-form-location" autocomplete="off" oninput="onItinPlacePick(); renderItinLocationPopup()" onfocus="renderItinLocationPopup()" onblur="setTimeout(() => document.getElementById('itin-location-popup')?.classList.add('hidden'), 140)" onkeydown="handleItinLocationKeydown(event)" placeholder="Search a place or type a custom location" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"><div id="itin-location-popup" class="location-suggestion-popup hidden" role="listbox" aria-label="Location suggestions"></div></div><p class="text-[10px] text-stone-400 mt-1">Choose a saved spot, hotel, or station, or keep your own custom location.</p><input type="hidden" id="itin-form-place"></div>
+        <div><label class="block text-stone-500 mb-1 font-medium">Ticket(from Checklist Docs)</label><select id="itin-form-doc" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"></select></div>
+        <div><label class="block text-stone-500 mb-1 font-medium">Or upload a new ticket</label><input type="file" id="itin-form-docfile" accept="image/*" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2 text-stone-800 text-xs"></div>
         <div><label class="block text-stone-500 mb-1 font-medium">Notes</label><textarea id="itin-form-notes" class="w-full bg-stone-50 border border-stone-200 rounded-2xl p-2.5 text-stone-800"></textarea></div>
       </div>
       <div class="flex justify-end space-x-2 pt-2">
