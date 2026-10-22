@@ -1,8 +1,10 @@
 /**
  * LILY POND TRAVEL HUB - APP.JS
- * Chronological Itinerary Sorting, Dropdown Hotel Base, Firebase Sync
+ * Powered by Firebase Firestore Real-Time Sync, Modular City-First Hotels, 
+ * Chronological Itinerary Sorting, and Coordinate-based Station Proximity
  */
 
+// Your Firebase Project Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyD66lgTr64OmKbJVSFW0FqkU-hl-Cxj-Ko",
   authDomain: "lilypondhub.firebaseapp.com",
@@ -44,7 +46,7 @@ let selectedWaddleCluster = "NEAR_HOTEL";
 let editingItineraryIndex = null;
 let editingPlaceId = null;
 
-// --- INITIALIZATION & REAL-TIME LISTENER ---
+// --- INITIALIZATION & REAL-TIME CLOUD LISTENER ---
 window.onload = function() {
   listenToCloudChanges();
 };
@@ -225,7 +227,6 @@ function renderStarredLocationsSummary() {
 
   if (snapshotContainer) {
     snapshotContainer.innerHTML = "";
-    // Sort starred itinerary chronologically
     const starredItin = (trip.itinerary || []).filter(act => act.starred === true).sort((a, b) => (a.time || "00:00").localeCompare(b.time || "00:00"));
     
     if (starredItin.length === 0) {
@@ -520,7 +521,6 @@ function renderItinerary() {
     dayButtonsContainer.appendChild(btn);
   }
 
-  // Filter activities for this day and sort chronologically by time
   const dayActivities = (trip.itinerary || [])
     .filter(act => act.day === activeItineraryDay)
     .sort((a, b) => (a.time || "00:00").localeCompare(b.time || "00:00"));
@@ -613,58 +613,67 @@ function deleteItineraryActivity(realIdx) {
   }
 }
 
-// --- HOTEL DROPDOWN & AUTO STATION SELECTION ---
-function populateHotelDropdown(selectedHotelName = "") {
-  const dropdown = document.getElementById('hotel-form-dropdown');
-  if (!dropdown) return;
-  dropdown.innerHTML = "";
+// --- CITY-FIRST HOTEL & AUTO-STATION SELECTION LOGIC ---
+function populateHotelCityDropdown(selectedCity = "jakarta") {
+  const citySelect = document.getElementById('hotel-city-dropdown');
+  if (!citySelect) return;
+  citySelect.innerHTML = "";
 
-  let allHotels = [];
-  if (typeof hotelDatabase !== 'undefined') {
-    Object.values(hotelDatabase).forEach(cityHotels => {
-      allHotels.push(...cityHotels);
-    });
-  }
+  if (typeof hotelDatabase === 'undefined') return;
 
-  if (allHotels.length === 0) {
-    dropdown.innerHTML = `<option value="">No hotels found in database</option>`;
+  Object.keys(hotelDatabase).forEach(cityKey => {
+    const opt = document.createElement('option');
+    opt.value = cityKey;
+    opt.text = cityKey.charAt(0).toUpperCase() + cityKey.slice(1);
+    if (cityKey === selectedCity) opt.selected = true;
+    citySelect.appendChild(opt);
+  });
+
+  populateHotelNameDropdown();
+}
+
+function populateHotelNameDropdown(selectedHotelName = "") {
+  const citySelect = document.getElementById('hotel-city-dropdown');
+  const hotelSelect = document.getElementById('hotel-name-dropdown');
+  if (!citySelect || !hotelSelect) return;
+
+  const selectedCity = citySelect.value;
+  hotelSelect.innerHTML = "";
+
+  const hotels = hotelDatabase[selectedCity] || [];
+  if (hotels.length === 0) {
+    hotelSelect.innerHTML = `<option value="">No hotels available for this city</option>`;
     return;
   }
 
-  allHotels.forEach(h => {
+  hotels.forEach(h => {
     const opt = document.createElement('option');
     opt.value = h.name;
     opt.text = h.name;
     if (h.name === selectedHotelName) opt.selected = true;
-    dropdown.appendChild(opt);
+    hotelSelect.appendChild(opt);
   });
 
-  onHotelDropdownChange();
+  onHotelSelectionChange();
 }
 
-function onHotelDropdownChange() {
-  const dropdown = document.getElementById('hotel-form-dropdown');
+function onHotelSelectionChange() {
+  const citySelect = document.getElementById('hotel-city-dropdown');
+  const hotelSelect = document.getElementById('hotel-name-dropdown');
   const previewLabel = document.getElementById('hotel-form-preview-station');
-  if (!dropdown || !previewLabel) return;
+  if (!citySelect || !hotelSelect || !previewLabel) return;
 
-  const chosenHotelName = dropdown.value;
-  let foundHotel = null;
+  const city = citySelect.value;
+  const hotelName = hotelSelect.value;
+  
+  const hotels = hotelDatabase[city] || [];
+  const found = hotels.find(h => h.name === hotelName);
 
-  if (typeof hotelDatabase !== 'undefined') {
-    Object.values(hotelDatabase).forEach(cityHotels => {
-      const match = cityHotels.find(h => h.name === chosenHotelName);
-      if (match) foundHotel = match;
-    });
-  }
-
-  if (foundHotel) {
-    const cityKey = (foundHotel.lat < -6.5 && foundHotel.lat > -7.0) ? "bandung" : "jakarta";
+  if (found) {
     const autoStation = typeof findNearestStation === 'function' 
-      ? findNearestStation(foundHotel.lat, foundHotel.lng, cityKey) 
-      : (foundHotel.nearestStation || "Near Hotel Area");
-
+      ? findNearestStation(found.lat, found.lng, city) 
+      : "Near Hotel Area";
     previewLabel.innerText = autoStation;
-    foundHotel.calculatedStation = autoStation;
   } else {
     previewLabel.innerText = "Select a hotel to calculate station";
   }
@@ -672,18 +681,23 @@ function onHotelDropdownChange() {
 
 function openHotelModal() {
   const trip = getActiveTrip();
-  populateHotelDropdown(trip.activeHotel || "Hotel Grand Sahid Jaya");
+  // Determine city from active trip name or default to jakarta
+  let initialCity = "jakarta";
+  if (trip.name && trip.name.toLowerCase().includes("bandung")) initialCity = "bandung";
+  
+  populateHotelCityDropdown(initialCity);
+  populateHotelNameDropdown(trip.activeHotel || "");
   openModal('modal-hotel');
 }
 
 function saveHotelForm() {
-  const dropdown = document.getElementById('hotel-form-dropdown');
+  const hotelSelect = document.getElementById('hotel-name-dropdown');
   const previewLabel = document.getElementById('hotel-form-preview-station');
-  if (!dropdown) return;
+  if (!hotelSelect) return;
 
   const trip = getActiveTrip();
-  trip.activeHotel = dropdown.value;
-  trip.hotelStation = previewLabel ? previewLabel.innerText : "Setiabudi Astra (1 min walk)";
+  trip.activeHotel = hotelSelect.value;
+  trip.hotelStation = previewLabel ? previewLabel.innerText : "Near Hotel Area";
 
   saveAppData();
   closeModal('modal-hotel');
