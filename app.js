@@ -18,6 +18,7 @@ const firebaseConfig = {
 // Initialize Firebase & Firestore
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+try { if (db.enablePersistence) db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) {}   // keep data + edits when offline
 
 let appData = {
   currentTripId: "trip_jakarta_bandung",
@@ -64,6 +65,7 @@ let activeTransportMode = "walk";
 let editingItineraryIndex = null;
 let editingPlaceId = null;
 let editingExpenseIndex = null;
+let expSplitSel = new Set();
 let editingPackingIndex = null;
 let editingTicketIndex = null;
 let activeItinTab = 'plan';
@@ -109,9 +111,110 @@ function stationLabel(lat, lng, city) {
 }
 function openImageViewer(src) { document.getElementById('image-viewer-img').src = src; openModal('modal-image'); }
 
+// --- TODAY + WEATHER (Open-Meteo, free, no account) ---
+const WX = { 0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️', 51: '🌦️', 53: '🌦️', 55: '🌦️', 56: '🌧️', 57: '🌧️', 61: '🌧️', 63: '🌧️', 65: '🌧️', 66: '🌧️', 67: '🌧️', 71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '🌨️', 80: '🌦️', 81: '🌧️', 82: '⛈️', 85: '🌨️', 86: '🌨️', 95: '⛈️', 96: '⛈️', 99: '⛈️' };
+const wxIcon = c => WX[c] || '🌡️';
+let _wx = {};
+function todayIso() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+function tripDayIso(trip, n) { return new Date(new Date(trip.startDate).getTime() + (n - 1) * 864e5).toISOString().slice(0, 10); }
+function tripTodayIndex(trip) {
+  if (!trip || !trip.startDate) return 0;
+  const n = Math.round((new Date(todayIso()) - new Date(trip.startDate)) / 864e5) + 1;
+  return (n >= 1 && n <= getTotalTripDays(trip)) ? n : 0;
+}
+function weatherFor(trip, n) { const w = _wx[trip.id]; return (w && w.days && trip.startDate) ? w.days[tripDayIso(trip, n)] : null; }
+function weatherPoint(trip) {
+  const h = getHotelObj(trip); if (h) return { lat: h.lat, lng: h.lng };
+  const p = (trip.places || []).find(x => x.lat && x.lng); return p ? { lat: p.lat, lng: p.lng } : null;
+}
+async function loadWeather(trip) {
+  const pt = weatherPoint(trip);
+  if (!pt || !trip.startDate) return;
+  const key = 'lily_wx_' + trip.id, ptKey = pt.lat.toFixed(2) + ',' + pt.lng.toFixed(2);
+  if (!_wx[trip.id]) { try { const c = JSON.parse(localStorage.getItem(key) || 'null'); if (c) _wx[trip.id] = c; } catch (e) {} }
+  const cur = _wx[trip.id];
+  if ((!cur || cur.pt !== ptKey || Date.now() - cur.fetched > 3 * 3600e3) && navigator.onLine) {
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pt.lat}&longitude=${pt.lng}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=16`);
+      const j = await r.json(), days = {};
+      j.daily.time.forEach((t, i) => { days[t] = { code: j.daily.weathercode[i], max: Math.round(j.daily.temperature_2m_max[i]), min: Math.round(j.daily.temperature_2m_min[i]), pop: j.daily.precipitation_probability_max[i] }; });
+      _wx[trip.id] = { fetched: Date.now(), pt: ptKey, days };
+      try { localStorage.setItem(key, JSON.stringify(_wx[trip.id])); } catch (e) {}
+    } catch (e) { /* offline or blocked: keep the saved forecast */ }
+  }
+  renderTodayCard();
+  if (!document.getElementById('page-itinerary')?.classList.contains('hidden')) renderItinerary();
+}
+function openTodayItinerary() { const t = getActiveTrip(); activeItineraryDay = tripTodayIndex(t) || 1; switchDashboardPage('itinerary'); }
+function renderTodayCard() {
+  const el = document.getElementById('today-card'), trip = getActiveTrip();
+  if (!el || !trip) return;
+  const total = getTotalTripDays(trip), idx = tripTodayIndex(trip);
+  const until = trip.startDate ? Math.round((new Date(trip.startDate) - new Date(todayIso())) / 864e5) : null;
+  const wxBox = w => w ? `<div class="text-right flex-shrink-0"><span class="text-3xl leading-none">${wxIcon(w.code)}</span><p class="text-[11px] font-bold mt-0.5">${w.max}° / ${w.min}°</p><p class="text-[10px] text-stone-500">☔ ${w.pop ?? 0}%</p></div>` : '';
+  if (idx) {
+    const acts = trip.itinerary.filter(a => a.day === idx).sort((x, y) => (x.time || '99').localeCompare(y.time || '99'));
+    const now = new Date().toTimeString().slice(0, 5);
+    const next = acts.find(a => a.time && a.time >= now) || acts.find(a => !a.time);
+    el.innerHTML = `
+      <div class="flex justify-between items-start gap-3">
+        <div><p class="text-[10px] font-extrabold uppercase tracking-widest" style="color: var(--carnival-red);">Today • Day ${idx} of ${total}</p>
+          <h3 class="font-extrabold text-lg leading-tight mt-0.5" style="color: var(--midnight-blue);">${dayParts(trip, idx).full || ''}</h3></div>
+        ${wxBox(weatherFor(trip, idx))}
+      </div>
+      ${next ? `<div class="rounded-2xl p-3" style="background: var(--beige);"><p class="text-[10px] font-bold text-stone-500">NEXT UP</p><p class="font-bold text-sm mt-0.5" style="color: var(--dark-green);">${next.time ? next.time + ' • ' : ''}${escapeHtml(next.title)}</p>${next.location ? `<p class="text-[11px] text-stone-500 mt-0.5"><i class="fa-solid fa-location-dot me-1 text-rose-600"></i>${escapeHtml(next.location)}</p>` : ''}</div>` : '<p class="text-xs text-stone-500">Nothing left planned for today. Enjoy! 🦆</p>'}
+      <button onclick="openTodayItinerary()" class="w-full py-2.5 rounded-xl text-xs font-bold text-white" style="background-color: var(--midnight-blue);">Open today's plan</button>`;
+  } else if (until !== null && until > 0) {
+    const w = weatherFor(trip, 1);
+    el.innerHTML = `
+      <div class="flex justify-between items-start gap-3">
+        <div><p class="text-[10px] font-extrabold uppercase tracking-widest" style="color: var(--carnival-red);">Coming up</p>
+          <h3 class="font-extrabold text-xl leading-tight mt-0.5" style="color: var(--midnight-blue);">${until} day${until === 1 ? '' : 's'} to go 🦆</h3></div>
+        ${wxBox(w)}
+      </div>
+      <p class="text-[11px] text-stone-500">${w ? 'Forecast for your first day.' : 'The forecast appears here about 16 days before you leave.'}</p>`;
+  } else {
+    el.innerHTML = `<p class="text-[10px] font-extrabold uppercase tracking-widest" style="color: var(--carnival-red);">Trip</p><h3 class="font-extrabold text-lg" style="color: var(--midnight-blue);">${until !== null && until <= -total ? 'Hope it was lovely! 🪷' : 'Dates not set yet'}</h3>`;
+  }
+}
+
+// --- INSTALL + OFFLINE ---
+let _installEvt = null;
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); _installEvt = e; showInstallCard(); });
+window.addEventListener('appinstalled', () => document.getElementById('install-card')?.classList.add('hidden'));
+function showInstallCard() {
+  const card = document.getElementById('install-card');
+  if (!card || isStandalone()) return;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (!_installEvt && !ios) return;
+  card.classList.remove('hidden');
+  if (!_installEvt) { document.getElementById('install-hint').textContent = 'On iPhone: tap Share, then "Add to Home Screen".'; document.getElementById('install-btn').classList.add('hidden'); }
+}
+async function installApp() {
+  if (!_installEvt) return;
+  _installEvt.prompt();
+  try { await _installEvt.userChoice; } catch (e) {}
+  _installEvt = null; document.getElementById('install-card')?.classList.add('hidden');
+}
+function updateOnlinePill() { document.getElementById('offline-pill')?.classList.toggle('hidden', navigator.onLine); }
+window.addEventListener('online', updateOnlinePill);
+window.addEventListener('offline', updateOnlinePill);
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+// Show the last saved copy straight away (also when there is no signal)
+function loadCachedAppData() {
+  try {
+    const saved = localStorage.getItem('lily_pond_image2_data');
+    if (!saved) return;
+    appData = JSON.parse(saved); hydrateDeviceChecklists();
+    renderHomeViews(); renderActiveTripDashboard();
+  } catch (e) { console.warn('No saved copy yet', e); }
+}
+
 // --- INITIALIZATION ---
 window.onload = function() {
   initHotelDatabase();
+  showInstallCard(); updateOnlinePill(); loadCachedAppData();
   try { history.replaceState({ v: 'home' }, ''); } catch (e) {}
   listenToCloudChanges();
 };
@@ -266,6 +369,8 @@ function ensureLocation() {
 function refreshLocationViews() {
   if (!document.getElementById('page-master')?.classList.contains('hidden')) renderMasterPlacesList();
   if (!document.getElementById('page-waddle')?.classList.contains('hidden')) renderWaddleView();
+  const d = document.getElementById('page-spot-detail');
+  if (d && !d.classList.contains('hidden') && window._openSpotId) { const p = (getActiveTrip().places || []).find(x => x.id === window._openSpotId); if (p) openSpotDetailView(p, true); }
 }
 
 // Back / forward buttons move between pages instead of leaving the app
@@ -390,6 +495,7 @@ function openTripDashboard(tripId) {
 
   const globalTripName = document.getElementById('global-trip-name'); if (globalTripName) globalTripName.textContent = getActiveTrip()?.name || 'Your trip';
   renderActiveTripDashboard();
+  const ti = tripTodayIndex(getActiveTrip()); if (ti) activeItineraryDay = ti;   // open on today when you are on the trip
   switchDashboardPage('summary');
 }
 
@@ -477,6 +583,7 @@ function renderAllTripsList() {
 function renderSummaryPage() {
   const trip = getActiveTrip();
   if (!trip) return;
+  renderTodayCard();
 
   document.getElementById('sum-trip-title').innerText = trip.name;
   document.getElementById('sum-trip-dates').innerText = `${trip.startDate || 'TBD'} – ${trip.endDate || 'TBD'}`;
@@ -484,7 +591,7 @@ function renderSummaryPage() {
   const bEl = document.getElementById('sum-card-budget'); if (bEl) bEl.innerText = trip.budget || 'RM 0';
   const banner = document.getElementById('sum-banner');
   if (banner) banner.style.background = trip.coverImage
-    ? `linear-gradient(rgba(17,54,101,.4), rgba(10,51,35,.85)), url(${trip.coverImage}) center/cover`
+    ? `linear-gradient(rgba(77,90,46,.4), rgba(57,67,31,.85)), url(${trip.coverImage}) center/cover`
     : 'linear-gradient(135deg, var(--midnight-blue), var(--dark-green))';
 
   // Trip readiness calculation
@@ -657,11 +764,19 @@ function renderWaddleView() {
   const meDist = p => (userLoc.live && p.lat) ? calculateDistanceInKm(userLoc.lat, userLoc.lng, p.lat, p.lng) : 0;
   if (selectedWaddleCluster === 'NEAR_ME') filtered.sort((a, b) => meDist(a) - meDist(b));
   const meNote = selectedWaddleCluster === 'NEAR_ME' && !userLoc.live ? (userLoc.denied ? 'Location is off. Allow it in your browser to see spots near you.' : 'Finding your location…') : '';
-  renderMiniMap('waddle-map', [
-    ...(userLoc.live ? [{ lat: userLoc.lat, lng: userLoc.lng, label: 'You are here', kind: 'you' }] : []),
-    ...(hotel ? [{ lat: hotel.lat, lng: hotel.lng, label: trip.activeHotel || 'Hotel', kind: 'hotel' }] : []),
-    ...filtered.filter(p => p.lat).slice(0, 15).map(p => ({ lat: p.lat, lng: p.lng, label: p.name, kind: 'spot', placeId: p.id }))
-  ], { caption: selectedWaddleCluster === 'NEAR_ME' ? 'Spots within 40 min walk of you' : `Around ${trip.activeHotel || 'your hotel'}`, empty: 'No mapped spots here yet' });
+  const nearMe = userLoc.live
+    ? filtered.filter(p => p.lat).map(p => ({ p, km: meDist(p) })).filter(x => x.km <= 5).sort((a, b) => a.km - b.km).slice(0, 12)
+    : [];
+  if (userLoc.live) {
+    const pts = [{ lat: userLoc.lat, lng: userLoc.lng, label: 'You are here', kind: 'you' },
+      ...nearMe.map(x => ({ lat: x.p.lat, lng: x.p.lng, label: x.p.name, kind: 'spot', placeId: x.p.id }))];
+    if (hotel && calculateDistanceInKm(userLoc.lat, userLoc.lng, hotel.lat, hotel.lng) <= 5) pts.push({ lat: hotel.lat, lng: hotel.lng, label: trip.activeHotel || 'Hotel', kind: 'hotel' });
+    renderMiniMap('waddle-map', pts, { caption: `Around you • ${nearMe.length} spot${nearMe.length === 1 ? '' : 's'} within 5 km` });
+  } else {
+    renderMiniMap('waddle-map', [...(hotel ? [{ lat: hotel.lat, lng: hotel.lng, label: trip.activeHotel || 'Hotel', kind: 'hotel' }] : []),
+      ...filtered.filter(p => p.lat).slice(0, 12).map(p => ({ lat: p.lat, lng: p.lng, label: p.name, kind: 'spot', placeId: p.id }))],
+      { caption: userLoc.denied ? 'Location is off, so this shows your hotel area' : 'Finding your location…', empty: 'No mapped spots here yet' });
+  }
   if (filtered.length === 0) {
     container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">${meNote || 'No spots found for this filter.'}</p>`;
     return;
@@ -693,26 +808,27 @@ function renderWaddleView() {
 }
 
 // --- SPOTS DETAIL VIEW (Image 7 & 8 Concept: Back Button, Edit, Star & Gallery) ---
-function openSpotDetailView(place) {
+function openSpotDetailView(place, silent) {
+  window._openSpotId = place.id;
   const container = document.getElementById('page-spot-detail');
   if (!container) return;
   const cur = ['summary', 'itinerary', 'waddle', 'master', 'checklists'].find(p => !document.getElementById('page-' + p)?.classList.contains('hidden'));
-  if (cur) spotReturnPage = cur;
-  navPush({ v: 'trip', page: 'master', spot: place.id });
+  if (cur && !silent) spotReturnPage = cur;
+  if (!silent) navPush({ v: 'trip', page: 'master', spot: place.id });
   ['summary', 'itinerary', 'waddle', 'master', 'checklists'].forEach(p => document.getElementById('page-' + p)?.classList.add('hidden'));
   container.classList.remove('hidden');
 
   const trip = getActiveTrip(), hotel = getHotelObj(trip);
   const imgs = (place.gallery && place.gallery.length) ? place.gallery : [];
   const hasSt = place.station && place.station !== 'N/A' && place.station !== 'No station nearby';
-  const hotelMins = hotel && place.lat ? walkMins(hotel.lat, hotel.lng, place.lat, place.lng) : null;
   const meKm = userLoc.live && place.lat ? calculateDistanceInKm(userLoc.lat, userLoc.lng, place.lat, place.lng) : null;
+  const meMins = meKm !== null ? Math.round(meKm * 1000 / WALK_M_PER_MIN) : null;   // walking minutes from where you are
   const dir = place.lat ? `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}` : (place.map || 'https://maps.google.com/?q=' + encodeURIComponent(place.name));
   const tiles = [
     ['fa-tag', 'Category', place.category || 'Spot'],
     ['fa-train-subway', 'Nearest station', hasSt ? place.station : 'None nearby'],
-    ['fa-hotel', 'From your hotel', hotelMins !== null ? hotelMins + ' min walk' : '—'],
-    ['fa-location-crosshairs', 'From you', meKm !== null ? meKm.toFixed(1) + ' km' : 'Location off']
+    ['fa-person-walking', 'From me', meMins !== null ? meMins + ' min walk' : 'Location off'],
+    ['fa-route', 'Distance', meKm !== null ? meKm.toFixed(1) + ' km' : 'Location off']
   ].map(([ic, k, v]) => `<div class="flex items-center gap-2.5 rounded-2xl p-3" style="background: var(--beige);"><span class="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0" style="color: var(--muted-teal);"><i class="fa-solid ${ic} text-sm"></i></span><div class="min-w-0"><p class="text-[10px] text-stone-500">${k}</p><p class="text-xs font-bold truncate" style="color: var(--dark-green);">${escapeHtml(v)}</p></div></div>`).join('');
 
   container.innerHTML = `
@@ -732,7 +848,7 @@ function openSpotDetailView(place) {
             <h2 class="font-extrabold text-xl leading-tight" style="color: var(--dark-green);">${escapeHtml(place.name)}</h2>
             <p class="text-xs text-stone-500 mt-1"><i class="fa-solid fa-location-dot me-1 text-rose-600"></i>${escapeHtml(place.city || '')}${hasSt ? ' • ' + escapeHtml(place.station) : ''}</p>
           </div>
-          ${hotelMins !== null ? `<div class="flex-shrink-0 w-14 py-1.5 rounded-2xl text-center" style="background: var(--beige); color: var(--midnight-blue);"><span class="block text-lg font-extrabold leading-none">${hotelMins}</span><span class="block text-[9px] font-semibold mt-0.5">min walk</span></div>` : ''}
+          ${meMins !== null ? `<div class="flex-shrink-0 w-14 py-1.5 rounded-2xl text-center" style="background: var(--beige); color: var(--midnight-blue);"><span class="block text-lg font-extrabold leading-none">${meMins}</span><span class="block text-[9px] font-semibold mt-0.5">min walk</span></div>` : ''}
         </div>
         <div><p class="font-bold text-sm mb-1" style="color: var(--midnight-blue);">About this spot</p>
           <p class="text-xs text-stone-600 leading-relaxed">${place.desc ? escapeHtml(place.desc) : 'A saved spot for your trip. Tap the pencil to update its details, add photos from your visit, or add it to a day in your itinerary.'}</p></div>
@@ -744,7 +860,7 @@ function openSpotDetailView(place) {
         </div>
       </div>
     </div>`;
-  window.scrollTo({ top: 0 });
+  if (!silent) window.scrollTo({ top: 0 });
 }
 
 function addSpotToItinerary(placeId) {
@@ -910,7 +1026,8 @@ function renderItinerary() {
     const b = document.createElement('button');
     b.className = `flex-shrink-0 w-14 py-2 rounded-2xl text-center transition-all ${on ? 'text-white shadow-md' : 'bg-white text-stone-500 border border-stone-200'}`;
     if (on) b.style.backgroundColor = 'var(--midnight-blue)';
-    b.innerHTML = `<span class="block text-[10px] font-semibold">${p.wd}</span><span class="block text-lg font-extrabold leading-tight">${p.dd}</span><span class="block text-[9px] opacity-70">Day ${d}</span>`;
+    b.innerHTML = `<span class="block text-[10px] font-semibold">${p.wd}</span><span class="block text-lg font-extrabold leading-tight">${p.dd}</span><span class="block text-[9px] opacity-70">Day ${d}</span>${(() => { const w = weatherFor(trip, d); return w ? `<span class="block text-[10px] mt-0.5">${wxIcon(w.code)}${w.max}°</span>` : ''; })()}`;
+    if (d === tripTodayIndex(trip)) b.style.boxShadow = '0 0 0 2px var(--carnival-red)';
     b.onclick = () => { activeItineraryDay = d; renderItinerary(); };
     strip.appendChild(b);
   }
@@ -1218,6 +1335,7 @@ function deletePackingItem(idx) {
 // --- BILLING REPORTS EXPENSES ---
 function renderChecklistsAndExpenses() {
   renderCategorizedPackingList();
+  renderExpenseSplit();
 
   const trip = getActiveTrip();
   let totalSum = 0;
@@ -1261,7 +1379,7 @@ function renderChecklistsAndExpenses() {
           </div>
           <div>
             <strong class="font-bold text-stone-800 block text-xs">${exp.title}</strong>
-            <span class="text-[10px] text-stone-400">${exp.category || 'Expense'}</span>
+            <span class="text-[10px] text-stone-400">${exp.category || 'Expense'}${exp.paidBy ? ' • paid by ' + escapeHtml(exp.paidBy) : ''}</span>
           </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -1275,26 +1393,114 @@ function renderChecklistsAndExpenses() {
   }
 }
 
+function getMembers(trip) {
+  if (trip.members && trip.members.length) return trip.members;
+  const n = Math.max(1, parseInt(trip.people) || 1);
+  return Array.from({ length: n }, (_, i) => 'Person ' + (i + 1));
+}
+
+function computeSettlement(trip) {
+  const members = getMembers(trip), bal = {};
+  members.forEach(m => { bal[m] = 0; });
+  (trip.expenses || []).forEach(e => {
+    const amt = parseFloat(e.amount) || 0;
+    if (!e.paidBy || !(e.paidBy in bal)) return;
+    const sp = (e.split && e.split.length ? e.split : members).filter(m => m in bal);
+    if (!sp.length) return;
+    bal[e.paidBy] += amt;
+    sp.forEach(m => { bal[m] -= amt / sp.length; });
+  });
+  const debt = members.filter(m => bal[m] < -0.005).map(m => [m, -bal[m]]).sort((a, b) => b[1] - a[1]);
+  const cred = members.filter(m => bal[m] > 0.005).map(m => [m, bal[m]]).sort((a, b) => b[1] - a[1]);
+  const tx = []; let i = 0, j = 0;
+  while (i < debt.length && j < cred.length) {
+    const amt = Math.min(debt[i][1], cred[j][1]);
+    tx.push({ from: debt[i][0], to: cred[j][0], amt });
+    debt[i][1] -= amt; cred[j][1] -= amt;
+    if (debt[i][1] < 0.005) i++;
+    if (cred[j][1] < 0.005) j++;
+  }
+  return { bal, tx };
+}
+
+function renderExpenseSplit() {
+  const box = document.getElementById('expense-split-container');
+  if (!box) return;
+  const trip = getActiveTrip(), members = getMembers(trip), { bal, tx } = computeSettlement(trip);
+  const rows = members.map(m => {
+    const v = bal[m];
+    const t = Math.abs(v) < 0.005 ? '<span class="text-stone-400">settled</span>'
+      : v > 0 ? `<span class="font-bold" style="color: var(--muted-teal);">gets back RM ${v.toFixed(2)}</span>`
+      : `<span class="font-bold" style="color: var(--carnival-red);">owes RM ${(-v).toFixed(2)}</span>`;
+    return `<div class="flex justify-between text-xs py-1.5 border-t border-stone-100 first:border-0"><span class="font-semibold text-stone-700">${escapeHtml(m)}</span>${t}</div>`;
+  }).join('');
+  const pays = tx.length ? tx.map(t => `<div class="flex items-center gap-2 rounded-xl p-2.5 text-xs" style="background: var(--beige);"><span class="font-bold">${escapeHtml(t.from)}</span><i class="fa-solid fa-arrow-right text-stone-400"></i><span class="font-bold">${escapeHtml(t.to)}</span><span class="ms-auto font-extrabold" style="color: var(--midnight-blue);">RM ${t.amt.toFixed(2)}</span></div>`).join('')
+    : '<p class="text-xs text-stone-400">Nothing to settle yet. Choose who paid when you add an expense.</p>';
+  box.innerHTML = `<div class="lily-card p-4 space-y-3 bg-white">
+    <div class="flex justify-between items-center gap-2"><h4 class="font-extrabold text-sm" style="color: var(--midnight-blue);">Split &amp; settle up</h4>
+      <button onclick="editTravelers()" class="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-stone-100 text-stone-600 flex-shrink-0"><i class="fa-solid fa-user-pen me-1"></i>${members.length} travellers</button></div>
+    <div>${rows}</div>
+    <p class="text-[10px] font-bold uppercase tracking-wider text-stone-400">Suggested payments</p>
+    <div class="space-y-1.5">${pays}</div></div>`;
+}
+
+function editTravelers() {
+  const trip = getActiveTrip(), old = getMembers(trip);
+  const input = prompt("Who is travelling? Separate names with commas.", old.join(', '));
+  if (input === null) return;
+  const neu = [...new Set(input.split(',').map(s => s.trim()).filter(Boolean))];
+  if (!neu.length) return;
+  if (neu.length === old.length) {   // same headcount: treat as renames so past expenses follow
+    const map = {}; old.forEach((o, i) => { map[o] = neu[i]; });
+    (trip.expenses || []).forEach(e => { if (e.paidBy in map) e.paidBy = map[e.paidBy]; if (e.split) e.split = e.split.map(s => map[s] || s); });
+  }
+  trip.members = neu; trip.people = neu.length + ' Pax';
+  saveAppData(); renderChecklistsAndExpenses(); renderSummaryPage(); renderHomeViews();
+}
+
+function fillExpenseWho(paidBy, split) {
+  const members = getMembers(getActiveTrip());
+  const sel = document.getElementById('exp-form-paidby');
+  sel.innerHTML = '<option value="">Not assigned</option>' + members.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+  sel.value = members.includes(paidBy) ? paidBy : '';
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+  expSplitSel = new Set((split && split.length ? split : members).filter(m => members.includes(m)));
+  renderExpenseSplitChips(members);
+}
+function renderExpenseSplitChips(members) {
+  const box = document.getElementById('exp-form-split');
+  box.innerHTML = '';
+  members.forEach(m => {
+    const on = expSplitSel.has(m), b = document.createElement('button');
+    b.type = 'button';
+    b.className = `px-3 py-1.5 rounded-full text-[11px] font-bold border ${on ? 'text-white border-transparent' : 'bg-white text-stone-500 border-stone-200'}`;
+    if (on) b.style.backgroundColor = 'var(--muted-teal)';
+    b.textContent = m;
+    b.onclick = () => { if (on) expSplitSel.delete(m); else expSplitSel.add(m); renderExpenseSplitChips(members); };
+    box.appendChild(b);
+  });
+}
+
 function openExpenseModal() {
   editingExpenseIndex = null;
   document.getElementById('exp-form-idx').value = "-1";
   document.getElementById('exp-form-title').value = "";
   document.getElementById('exp-form-amount').value = "";
   document.getElementById('exp-form-category').value = "Hotel & Stay";
+  fillExpenseWho('', null);
   document.getElementById('modal-expense-title').innerText = "Add Expense";
   openModal('modal-expense');
 }
 
 function openEditExpenseModal(idx) {
-  const trip = getActiveTrip();
-  const exp = trip.expenses[idx];
+  const exp = getActiveTrip().expenses[idx];
   if (!exp) return;
-
   editingExpenseIndex = idx;
   document.getElementById('exp-form-idx').value = idx;
   document.getElementById('exp-form-title').value = exp.title || "";
   document.getElementById('exp-form-amount').value = exp.amount || "";
   document.getElementById('exp-form-category').value = exp.category || "Hotel & Stay";
+  fillExpenseWho(exp.paidBy || '', exp.split);
   document.getElementById('modal-expense-title').innerText = "Edit Expense";
   openModal('modal-expense');
 }
@@ -1303,17 +1509,15 @@ function saveExpenseForm() {
   const title = document.getElementById('exp-form-title').value.trim();
   const amount = document.getElementById('exp-form-amount').value.trim();
   const category = document.getElementById('exp-form-category').value;
+  const paidBy = document.getElementById('exp-form-paidby').value || null;
   if (!title || !amount) return alert("Enter title and amount!");
-
   const trip = getActiveTrip();
+  const split = getMembers(trip).filter(m => expSplitSel.has(m));
+  if (paidBy && !split.length) return alert("Pick at least one person to split between.");
   if (!trip.expenses) trip.expenses = [];
-
-  if (editingExpenseIndex !== null && trip.expenses[editingExpenseIndex]) {
-    trip.expenses[editingExpenseIndex] = { title, amount, category };
-  } else {
-    trip.expenses.push({ title, amount, category });
-  }
-
+  const exp = { title, amount, category, paidBy, split };
+  if (editingExpenseIndex !== null && trip.expenses[editingExpenseIndex]) trip.expenses[editingExpenseIndex] = exp;
+  else trip.expenses.push(exp);
   saveAppData();
   closeModal('modal-expense');
   renderChecklistsAndExpenses();
@@ -1565,6 +1769,7 @@ function saveMasterSpotForm() {
 }
 
 function renderActiveTripDashboard() {
+  setTimeout(() => { const t = getActiveTrip(); if (t) loadWeather(t); }, 0);
   renderSummaryPage();
   renderLocationsPage();
   renderWaddleView();
