@@ -1,4 +1,3 @@
-
 /**
  * LILY POND & CARNIVAL TRAVEL HUB - APP.JS
  * Complete Logic with Image 2 Palette, Hidden Nav on Home,
@@ -71,7 +70,9 @@ let activeItinTab = 'plan';
 const TICKET_ICONS = { Flight: 'fa-plane', Train: 'fa-train', Bus: 'fa-bus', Hotel: 'fa-hotel', Other: 'fa-ticket' };
 const ticketIcon = t => TICKET_ICONS[t] || TICKET_ICONS.Other;
 let pendingCover = null;
-let userLoc = { lat: -6.1754, lng: 106.8272, label: "Jakarta (simulated)" };
+let userLoc = { lat: null, lng: null, live: false, denied: false };
+let masterCat = 'ALL', spotsAllCities = false, spotReturnPage = 'master', _popping = false, _locWatch = null;
+const SPOT_EMOJI = { Attraction: '🏛️', Coffee: '☕', Food: '🍜', 'Shopping Mall': '🛍️' };
 const WALK_M_PER_MIN = 80;
 const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4E888A"/><stop offset="1" stop-color="#113665"/></linearGradient></defs><rect width="600" height="400" fill="url(#g)"/></svg>');
 
@@ -111,6 +112,7 @@ function openImageViewer(src) { document.getElementById('image-viewer-img').src 
 // --- INITIALIZATION ---
 window.onload = function() {
   initHotelDatabase();
+  try { history.replaceState({ v: 'home' }, ''); } catch (e) {}
   listenToCloudChanges();
 };
 
@@ -179,10 +181,7 @@ function syncMasterLocations(trip) {
 }
 
 // Stylised "pond map": pins + dashed route, no external map service needed
-function renderMiniMap(id, pts, opts = {}) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  pts = pts.filter(p => p.lat && p.lng);
+function renderSvgMap(el, pts, opts = {}) {
   if (!pts.length) { el.innerHTML = `<div class="h-28 flex items-center justify-center text-xs text-stone-400 px-6 text-center" style="background: var(--beige);">${opts.empty || 'No mapped places yet'}</div>`; return; }
   const W = 360, H = 190, pad = 28;
   const lats = pts.map(p => p.lat), lngs = pts.map(p => p.lng);
@@ -206,6 +205,84 @@ function renderMiniMap(id, pts, opts = {}) {
   const cap = opts.caption || (opts.route ? `${pts.length} stop${pts.length > 1 ? 's' : ''} • ≈ ${km.toFixed(1)} km straight-line${km <= 8 ? ` • ~${Math.round(km * 1000 / WALK_M_PER_MIN)} min if on foot` : ' • includes train / car legs'}` : '');
   el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="w-full block" style="background: linear-gradient(160deg, #F1ECD3, #E3E2B0);">${pads}${path}${pins}</svg>${cap ? `<div class="px-3.5 py-2 text-[11px] font-semibold text-white" style="background: var(--midnight-blue);">🦆 ${cap}</div>` : ''}`;
 }
+
+const _lmaps = {}, _pendingMaps = {};
+function renderMiniMap(id, pts, opts = {}) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  pts = pts.filter(p => p.lat && p.lng);
+  if (!window.L) return renderSvgMap(el, pts, opts);
+  if (!el.offsetParent) { _pendingMaps[id] = [pts, opts]; return; }   // page hidden: draw it when shown
+  delete _pendingMaps[id];
+  if (!pts.length) {
+    if (_lmaps[id]) { try { _lmaps[id].map.remove(); } catch (e) {} delete _lmaps[id]; }
+    el.innerHTML = `<div class="h-28 flex items-center justify-center text-xs text-stone-400 px-6 text-center" style="background: var(--beige);">${opts.empty || 'No mapped places yet'}</div>`;
+    return;
+  }
+  let rec = _lmaps[id];
+  if (!rec || !el.contains(rec.box)) {
+    if (rec) { try { rec.map.remove(); } catch (e) {} }
+    el.innerHTML = '<div class="live-map"></div><div class="live-map-cap"></div>';
+    const box = el.firstChild;
+    const map = L.map(box, { scrollWheelZoom: false });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+    rec = _lmaps[id] = { box, map, layer: L.layerGroup().addTo(map) };
+    map.setView([pts[0].lat, pts[0].lng], 14);
+  }
+  rec.layer.clearLayers();
+  let n = 0, km = 0;
+  pts.forEach((p, i) => {
+    const num = p.kind === 'stop' ? ++n : '';
+    const m = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: `<div class="pin pin-${p.kind || 'spot'}">${num}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] }) });
+    if (p.label) m.bindTooltip(p.label, { direction: 'top', offset: [0, -12] });
+    if (p.placeId) m.on('click', () => { const pl = (getActiveTrip().places || []).find(x => x.id === p.placeId); if (pl) openSpotDetailView(pl); });
+    m.addTo(rec.layer);
+    if (opts.route && i) km += calculateDistanceInKm(pts[i - 1].lat, pts[i - 1].lng, p.lat, p.lng);
+  });
+  if (opts.route && pts.length > 1) L.polyline(pts.map(p => [p.lat, p.lng]), { color: '#4D5A2E', weight: 4, opacity: .75, dashArray: '8 8' }).addTo(rec.layer);
+  rec.fit = () => {
+    rec.map.invalidateSize();
+    if (pts.length > 1) rec.map.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [30, 30], maxZoom: 16 });
+    else rec.map.setView([pts[0].lat, pts[0].lng], 15);
+  };
+  rec.fit();
+  const cap = opts.caption || (opts.route ? `${pts.length} stop${pts.length > 1 ? 's' : ''} • ≈ ${km.toFixed(1)} km straight-line${km <= 8 ? ` • ~${Math.round(km * 1000 / WALK_M_PER_MIN)} min if on foot` : ' • includes train / car legs'}` : '');
+  const capEl = el.lastChild; capEl.style.display = cap ? '' : 'none'; capEl.textContent = cap ? '🦆 ' + cap : '';
+}
+function flushPendingMaps() {
+  Object.keys(_pendingMaps).forEach(id => renderMiniMap(id, ..._pendingMaps[id]));
+  Object.values(_lmaps).forEach(r => { try { r.fit && r.fit(); } catch (e) {} });
+}
+
+// Real location (asked once; keeps updating while the app is open)
+function ensureLocation() {
+  if (_locWatch !== null || !navigator.geolocation) return;
+  _locWatch = navigator.geolocation.watchPosition(pos => {
+    const moved = !userLoc.live || calculateDistanceInKm(userLoc.lat, userLoc.lng, pos.coords.latitude, pos.coords.longitude) > 0.03;
+    userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude, live: true, denied: false };
+    if (moved) refreshLocationViews();
+  }, () => { userLoc.live = false; userLoc.denied = true; refreshLocationViews(); }, { enableHighAccuracy: true, maximumAge: 20000, timeout: 20000 });
+}
+function refreshLocationViews() {
+  if (!document.getElementById('page-master')?.classList.contains('hidden')) renderMasterPlacesList();
+  if (!document.getElementById('page-waddle')?.classList.contains('hidden')) renderWaddleView();
+}
+
+// Back / forward buttons move between pages instead of leaving the app
+function navPush(state) { if (_popping) return; try { history.pushState(state, ''); } catch (e) {} }
+window.addEventListener('popstate', e => {
+  const s = e.state || { v: 'home' };
+  _popping = true;
+  try {
+    if (s.v === 'trip' && getActiveTrip()) {
+      document.getElementById('section-home')?.classList.add('hidden');
+      document.getElementById('section-trip-dashboard')?.classList.remove('hidden');
+      document.getElementById('floating-bottom-nav')?.classList.remove('hidden');
+      switchDashboardPage(s.page || 'summary');
+      if (s.spot) { const p = getActiveTrip().places.find(x => x.id === s.spot); if (p) openSpotDetailView(p); }
+    } else openHomePage();
+  } finally { _popping = false; }
+});
 
 function saveAppData() {
   appData.currentTripId = activeTripId;
@@ -237,6 +314,7 @@ function getActiveTrip() {
 
 // --- NAVIGATION & BOTTOM NAVBAR TOGGLE ---
 function openHomePage(subTab = 'upcoming') {
+  navPush({ v: 'home' });
   document.getElementById('section-home')?.classList.remove('hidden');
   document.getElementById('section-trip-dashboard')?.classList.add('hidden');
   
@@ -296,6 +374,9 @@ function switchDashboardPage(pageName) {
   if (pageName === 'master') renderLocationsPage();
   if (pageName === 'waddle') renderWaddleView();
   if (pageName === 'checklists') renderChecklistsAndExpenses();
+  navPush({ v: 'trip', page: pageName });
+  if (pageName === 'master' || pageName === 'waddle') ensureLocation();
+  setTimeout(flushPendingMaps, 40);
 }
 
 function openTripDashboard(tripId) {
@@ -543,6 +624,12 @@ function renderWaddleView() {
     hotelChip.onclick = () => { selectedWaddleCluster = 'NEAR_HOTEL'; renderWaddleView(); };
     quickHubsContainer.appendChild(hotelChip);
 
+    const meChip = document.createElement('button');
+    meChip.className = `px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all ${selectedWaddleCluster === 'NEAR_ME' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
+    meChip.innerHTML = `<i class="fa-solid fa-location-crosshairs me-1"></i>Near me`;
+    meChip.onclick = () => { selectedWaddleCluster = 'NEAR_ME'; ensureLocation(); renderWaddleView(); };
+    quickHubsContainer.appendChild(meChip);
+
     topStations.forEach(stationName => {
       const chip = document.createElement('button');
       chip.className = `px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all ${selectedWaddleCluster === stationName ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-stone-600 border border-stone-200'}`;
@@ -560,16 +647,23 @@ function renderWaddleView() {
     categoryBox.innerHTML = '';
     ['ALL', ...categories].forEach(cat => { const b = document.createElement('button'); b.className = `px-3 py-1.5 rounded-full text-[11px] font-bold border ${current === cat ? 'text-white border-transparent' : 'bg-white text-stone-600 border-stone-200'}`; if (current === cat) b.style.backgroundColor = 'var(--midnight-blue)'; b.textContent = cat === 'ALL' ? 'All categories' : cat; b.onclick = () => { window.waddleCategoryFilter = cat; renderWaddleView(); }; categoryBox.appendChild(b); });
   }
-  let filtered = places.filter(p => {
+  let filtered = (selectedWaddleCluster === 'NEAR_ME' ? (trip.places || []) : places).filter(p => {
     const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery) || (p.station || '').toLowerCase().includes(searchQuery) || (p.category || '').toLowerCase().includes(searchQuery) || (p.city || '').toLowerCase().includes(searchQuery);
     const matchesCategory = !window.waddleCategoryFilter || window.waddleCategoryFilter === 'ALL' || (p.category || 'Other') === window.waddleCategoryFilter;
-    const matchesCluster = selectedWaddleCluster === 'NEAR_HOTEL' ? (!hotel || !p.lat || walkMins(hotel.lat, hotel.lng, p.lat, p.lng) <= 30) : p.station === selectedWaddleCluster;
+    const matchesCluster = selectedWaddleCluster === 'NEAR_ME' ? !!(userLoc.live && p.lat && walkMins(userLoc.lat, userLoc.lng, p.lat, p.lng) <= 40) : selectedWaddleCluster === 'NEAR_HOTEL' ? (!hotel || !p.lat || walkMins(hotel.lat, hotel.lng, p.lat, p.lng) <= 30) : p.station === selectedWaddleCluster;
     return matchesSearch && matchesCategory && matchesCluster;
   });
 
-  renderMiniMap('waddle-map', [...(hotel ? [{ lat: hotel.lat, lng: hotel.lng, label: 'Hotel', kind: 'hotel' }] : []), ...filtered.filter(p => p.lat).slice(0, 12).map(p => ({ lat: p.lat, lng: p.lng, label: p.name, kind: 'spot' }))], { caption: `Around ${trip.activeHotel || 'your hotel'}`, empty: 'No mapped spots within 30 min of the hotel yet' });
+  const meDist = p => (userLoc.live && p.lat) ? calculateDistanceInKm(userLoc.lat, userLoc.lng, p.lat, p.lng) : 0;
+  if (selectedWaddleCluster === 'NEAR_ME') filtered.sort((a, b) => meDist(a) - meDist(b));
+  const meNote = selectedWaddleCluster === 'NEAR_ME' && !userLoc.live ? (userLoc.denied ? 'Location is off. Allow it in your browser to see spots near you.' : 'Finding your location…') : '';
+  renderMiniMap('waddle-map', [
+    ...(userLoc.live ? [{ lat: userLoc.lat, lng: userLoc.lng, label: 'You are here', kind: 'you' }] : []),
+    ...(hotel ? [{ lat: hotel.lat, lng: hotel.lng, label: trip.activeHotel || 'Hotel', kind: 'hotel' }] : []),
+    ...filtered.filter(p => p.lat).slice(0, 15).map(p => ({ lat: p.lat, lng: p.lng, label: p.name, kind: 'spot', placeId: p.id }))
+  ], { caption: selectedWaddleCluster === 'NEAR_ME' ? 'Spots within 40 min walk of you' : `Around ${trip.activeHotel || 'your hotel'}`, empty: 'No mapped spots here yet' });
   if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No transport/waddle spots found for ${activeCity.toUpperCase()}.</p>`;
+    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">${meNote || 'No spots found for this filter.'}</p>`;
     return;
   }
 
@@ -589,7 +683,7 @@ function renderWaddleView() {
         </div>
         <div>
           <strong style="color: var(--olive-green);" class="text-sm font-bold block">${p.name}</strong>
-          <p class="text-stone-500 text-[11px] mt-0.5">${stationTag} • ${p.category}</p>
+          <p class="text-stone-500 text-[11px] mt-0.5">${stationTag} • ${p.category}${selectedWaddleCluster === 'NEAR_ME' && userLoc.live && p.lat ? ' • ' + walkMins(userLoc.lat, userLoc.lng, p.lat, p.lng) + ' min walk' : ''}</p>
         </div>
       </div>
       <span class="text-xs font-semibold px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800">View ➔</span>
@@ -602,72 +696,71 @@ function renderWaddleView() {
 function openSpotDetailView(place) {
   const container = document.getElementById('page-spot-detail');
   if (!container) return;
-  const galleryImages = (place.gallery && place.gallery.length) ? place.gallery : [PLACEHOLDER_IMG];
-  document.getElementById('page-master')?.classList.add('hidden');
+  const cur = ['summary', 'itinerary', 'waddle', 'master', 'checklists'].find(p => !document.getElementById('page-' + p)?.classList.contains('hidden'));
+  if (cur) spotReturnPage = cur;
+  navPush({ v: 'trip', page: 'master', spot: place.id });
+  ['summary', 'itinerary', 'waddle', 'master', 'checklists'].forEach(p => document.getElementById('page-' + p)?.classList.add('hidden'));
   container.classList.remove('hidden');
 
+  const trip = getActiveTrip(), hotel = getHotelObj(trip);
+  const imgs = (place.gallery && place.gallery.length) ? place.gallery : [];
+  const hasSt = place.station && place.station !== 'N/A' && place.station !== 'No station nearby';
+  const hotelMins = hotel && place.lat ? walkMins(hotel.lat, hotel.lng, place.lat, place.lng) : null;
+  const meKm = userLoc.live && place.lat ? calculateDistanceInKm(userLoc.lat, userLoc.lng, place.lat, place.lng) : null;
+  const dir = place.lat ? `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}` : (place.map || 'https://maps.google.com/?q=' + encodeURIComponent(place.name));
+  const tiles = [
+    ['fa-tag', 'Category', place.category || 'Spot'],
+    ['fa-train-subway', 'Nearest station', hasSt ? place.station : 'None nearby'],
+    ['fa-hotel', 'From your hotel', hotelMins !== null ? hotelMins + ' min walk' : '—'],
+    ['fa-location-crosshairs', 'From you', meKm !== null ? meKm.toFixed(1) + ' km' : 'Location off']
+  ].map(([ic, k, v]) => `<div class="flex items-center gap-2.5 rounded-2xl p-3" style="background: var(--beige);"><span class="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0" style="color: var(--muted-teal);"><i class="fa-solid ${ic} text-sm"></i></span><div class="min-w-0"><p class="text-[10px] text-stone-500">${k}</p><p class="text-xs font-bold truncate" style="color: var(--dark-green);">${escapeHtml(v)}</p></div></div>`).join('');
+
   container.innerHTML = `
-    <div class="space-y-4 animate-fadeIn">
-      <!-- Fixed Working Go Back Button -->
-      <button onclick="closeSpotDetail()" class="text-xs font-semibold px-3.5 py-2 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 flex items-center gap-1.5 w-fit shadow-xs">
-        <i class="fa-solid fa-arrow-left"></i> Back to Spots
-      </button>
-
-      <div class="lily-card overflow-hidden bg-white">
-        <!-- Photo Gallery Header -->
-        <div class="h-48 bg-stone-200 relative overflow-hidden flex items-center justify-center">
-          <img id="spot-detail-main-img" src="${galleryImages[0]}" onclick="openImageViewer(this.src)" class="w-full h-full object-cover cursor-pointer" />
-          <span class="absolute bottom-3 left-3 bg-white/90 backdrop-blur-xs px-3 py-1 rounded-full text-xs font-bold text-stone-800">${place.category}</span>
-          <button onclick="triggerSpotPhotoUpload('${place.id}')" class="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white px-2.5 py-1 rounded-xl text-[10px] font-semibold">
-            <i class="fa-solid fa-camera me-1"></i>Add Photo
-          </button>
+    <div class="animate-fadeIn -mx-4 md:mx-auto md:max-w-3xl">
+      <div class="relative h-64 md:rounded-3xl overflow-hidden" style="background: linear-gradient(160deg,#E3E2B0,#8A8C41);">
+        ${imgs[0] ? `<img id="spot-detail-main-img" src="${imgs[0]}" onclick="openImageViewer(this.src)" class="w-full h-full object-cover cursor-pointer">` : `<div class="w-full h-full flex items-center justify-center text-7xl">${SPOT_EMOJI[place.category] || '📍'}</div>`}
+        <button onclick="closeSpotDetail()" aria-label="Back" class="absolute top-3 left-3 w-10 h-10 rounded-full bg-white/90 shadow flex items-center justify-center" style="color: var(--midnight-blue);"><i class="fa-solid fa-arrow-left"></i></button>
+        <div class="absolute top-3 right-3 flex gap-2">
+          <button onclick="openEditSpotModal('${place.id}')" aria-label="Edit" class="w-10 h-10 rounded-full bg-white/90 shadow flex items-center justify-center" style="color: var(--midnight-blue);"><i class="fa-solid fa-pen text-sm"></i></button>
+          <button onclick="toggleStarSpot('${place.id}'); openSpotDetailView(getActiveTrip().places.find(p => p.id === '${place.id}'));" aria-label="Favourite" class="w-10 h-10 rounded-full bg-white/90 shadow flex items-center justify-center text-lg">${place.starred ? '<span class="text-amber-500">★</span>' : '<span class="text-stone-400">☆</span>'}</button>
         </div>
-
-        <!-- Detail Content -->
-        <div class="p-5 space-y-4">
-          <div class="flex justify-between items-start">
-            <div>
-              <h2 style="color: var(--olive-green);" class="font-extrabold text-xl">${place.name}</h2>
-              <p class="text-xs text-stone-500 mt-0.5"><i class="fa-solid fa-location-dot text-rose-600 me-1"></i>${place.city || 'Jakarta'} • ${place.station || 'Near Hotel'}</p>
-            </div>
-            
-            <!-- Actions: Edit & Star/Unstar -->
-            <div class="flex items-center space-x-2">
-              <button onclick="openEditSpotModal('${place.id}')" class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200">
-                <i class="fa-solid fa-pen text-xs"></i>
-              </button>
-              <button onclick="toggleStarSpot('${place.id}'); openSpotDetailView(getActiveTrip().places.find(p => p.id === '${place.id}'));" class="text-xl">
-                ${place.starred ? '<span class="text-amber-500">★</span>' : '<span class="text-stone-300">☆</span>'}
-              </button>
-            </div>
+        <button onclick="triggerSpotPhotoUpload('${place.id}')" class="absolute bottom-9 right-3 bg-black/55 text-white px-3 py-1.5 rounded-full text-[10px] font-semibold"><i class="fa-solid fa-camera me-1"></i>Add photo</button>
+      </div>
+      <div class="relative -mt-6 bg-white rounded-t-[1.75rem] md:rounded-3xl md:mt-4 p-5 space-y-4 shadow-sm border border-stone-100">
+        <div class="flex justify-between items-start gap-3">
+          <div class="min-w-0">
+            <h2 class="font-extrabold text-xl leading-tight" style="color: var(--dark-green);">${escapeHtml(place.name)}</h2>
+            <p class="text-xs text-stone-500 mt-1"><i class="fa-solid fa-location-dot me-1 text-rose-600"></i>${escapeHtml(place.city || '')}${hasSt ? ' • ' + escapeHtml(place.station) : ''}</p>
           </div>
-
-          <p class="text-xs text-stone-600 leading-relaxed">This spot is located within easy reach of your accommodation base. Enjoy local delicacies, cultural points, and scenic views.</p>
-
-          <!-- Gallery Thumbnails -->
-          <div class="space-y-1.5">
-            <span class="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Spot Gallery</span>
-            <div id="spot-gallery-thumbs" class="flex space-x-2 overflow-x-auto pb-1">
-              ${galleryImages.map((imgUrl, i) => `
-                <img src="${imgUrl}" onclick="document.getElementById('spot-detail-main-img').src='${imgUrl}'" class="w-14 h-14 object-cover rounded-xl border border-stone-200 cursor-pointer hover:scale-105 transition-all" />
-              `).join('')}
-            </div>
-          </div>
-
-          <!-- Get Directions Map Button -->
-          <a href="${place.map || 'https://maps.google.com/?q=' + encodeURIComponent(place.name)}" target="_blank" class="w-full py-3 rounded-2xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm" style="background-color: var(--rose-pink);">
-            <i class="fa-solid fa-diamond-turn-right"></i> Get Directions
-          </a>
+          ${hotelMins !== null ? `<div class="flex-shrink-0 w-14 py-1.5 rounded-2xl text-center" style="background: var(--beige); color: var(--midnight-blue);"><span class="block text-lg font-extrabold leading-none">${hotelMins}</span><span class="block text-[9px] font-semibold mt-0.5">min walk</span></div>` : ''}
+        </div>
+        <div><p class="font-bold text-sm mb-1" style="color: var(--midnight-blue);">About this spot</p>
+          <p class="text-xs text-stone-600 leading-relaxed">${place.desc ? escapeHtml(place.desc) : 'A saved spot for your trip. Tap the pencil to update its details, add photos from your visit, or add it to a day in your itinerary.'}</p></div>
+        <div><p class="font-bold text-sm mb-2" style="color: var(--midnight-blue);">Details</p><div class="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2.5">${tiles}</div></div>
+        ${imgs.length > 1 ? `<div id="spot-gallery-thumbs" class="flex gap-2 overflow-x-auto pb-1">${imgs.map(u => `<img src="${u}" onclick="document.getElementById('spot-detail-main-img').src=this.src" class="w-14 h-14 object-cover rounded-xl border border-stone-200 cursor-pointer">`).join('')}</div>` : ''}
+        <div class="flex gap-2 pt-1">
+          <a href="${dir}" target="_blank" rel="noopener" class="flex-1 py-3.5 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm" style="background-color: var(--midnight-blue);"><i class="fa-solid fa-diamond-turn-right"></i> Get directions</a>
+          <button onclick="addSpotToItinerary('${place.id}')" aria-label="Add to itinerary" class="w-14 rounded-2xl border border-stone-200 flex items-center justify-center" style="color: var(--midnight-blue);"><i class="fa-solid fa-calendar-plus"></i></button>
         </div>
       </div>
-    </div>
-  `;
+    </div>`;
+  window.scrollTo({ top: 0 });
+}
+
+function addSpotToItinerary(placeId) {
+  const p = (getActiveTrip().places || []).find(x => x.id === placeId);
+  if (!p) return;
+  switchDashboardPage('itinerary');
+  openItineraryModal();
+  const t = document.getElementById('itin-form-title'); if (t && !t.value) t.value = p.name;
+  const loc = document.getElementById('itin-form-location'); if (loc && !loc.value) loc.value = p.name;
+  const sel = document.getElementById('itin-form-place');
+  if (sel) { sel.value = p.id; sel.dispatchEvent(new Event('change', { bubbles: true })); }
 }
 
 function closeSpotDetail() {
-  document.getElementById('page-spot-detail')?.classList.add('hidden');
-  document.getElementById('page-master')?.classList.remove('hidden');
-  renderLocationsPage();
+  if (history.state && history.state.spot) { history.back(); return; }
+  switchDashboardPage(spotReturnPage || 'master');
 }
 
 function triggerSpotPhotoUpload(placeId) {
@@ -684,134 +777,62 @@ function triggerSpotPhotoUpload(placeId) {
 }
 
 // --- LOCATIONS PAGE (Nearby First) ---
-function switchLocationSubTab(tab) {
-  activeLocationSubTab = tab;
-  const masterSub = document.getElementById('loc-sub-master');
-  const nearbySub = document.getElementById('loc-sub-nearby');
-  const btnMaster = document.getElementById('loctab-master');
-  const btnNearby = document.getElementById('loctab-nearby');
-
-  if (tab === 'nearby') {
-    nearbySub?.classList.remove('hidden');
-    masterSub?.classList.add('hidden');
-    btnNearby?.classList.add('text-stone-800', 'bg-white', 'shadow-xs', 'font-bold');
-    btnNearby?.classList.remove('text-stone-500', 'font-semibold');
-    btnMaster?.classList.remove('text-stone-800', 'bg-white', 'shadow-xs', 'font-bold');
-    btnMaster?.classList.add('text-stone-500', 'font-semibold');
-    renderNearbyPlacesList();
-  } else {
-    masterSub?.classList.remove('hidden');
-    nearbySub?.classList.add('hidden');
-    btnMaster?.classList.add('text-stone-800', 'bg-white', 'shadow-xs', 'font-bold');
-    btnMaster?.classList.remove('text-stone-500', 'font-semibold');
-    btnNearby?.classList.remove('text-stone-800', 'bg-white', 'shadow-xs', 'font-bold');
-    btnNearby?.classList.add('text-stone-500', 'font-semibold');
-    renderMasterPlacesList();
-  }
-}
-
-function setTransportMode(mode) {
-  activeTransportMode = mode;
-  const btnWalk = document.getElementById('transport-btn-walk');
-  const btnCar = document.getElementById('transport-btn-car');
-
-  if (mode === 'walk') {
-    btnWalk?.classList.add('bg-amber-100', 'text-amber-900', 'font-bold');
-    btnWalk?.classList.remove('text-stone-500', 'font-semibold');
-    btnCar?.classList.remove('bg-amber-100', 'text-amber-900', 'font-bold');
-    btnCar?.classList.add('text-stone-500', 'font-semibold');
-  } else {
-    btnCar?.classList.add('bg-amber-100', 'text-amber-900', 'font-bold');
-    btnCar?.classList.remove('text-stone-500', 'font-semibold');
-    btnWalk?.classList.remove('bg-amber-100', 'text-amber-900', 'font-bold');
-    btnWalk?.classList.add('text-stone-500', 'font-semibold');
-  }
-  renderNearbyPlacesList();
-}
-
-function renderLocationsPage() {
-  switchLocationSubTab(activeLocationSubTab);
-}
-
-function useMyGps() {
-  if (!navigator.geolocation) return alert("GPS isn't available on this device.");
-  navigator.geolocation.getCurrentPosition(
-    pos => { userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude, label: "Your GPS location" }; renderNearbyPlacesList(); },
-    () => alert("Couldn't get your GPS. Staying on simulated Jakarta."), { timeout: 8000 });
-}
-function useSimulatedJakarta() { userLoc = { lat: -6.1754, lng: 106.8272, label: "Jakarta (simulated)" }; renderNearbyPlacesList(); }
-
-function renderNearbyPlacesList() {
-  const container = document.getElementById('nearbyPlacesContainer');
-  if (!container) return;
-  const lbl = document.getElementById('nearby-loc-label'); if (lbl) lbl.innerText = userLoc.label;
-  container.innerHTML = "";
-  const walk = activeTransportMode === 'walk';
-  const list = (getActiveTrip().places || []).filter(p => p.lat && p.lng)
-    .map(p => { const km = calculateDistanceInKm(userLoc.lat, userLoc.lng, p.lat, p.lng); return { p, km, wm: Math.round(km * 1000 / WALK_M_PER_MIN), dm: Math.max(3, Math.round(km / 25 * 60)) }; })
-    .filter(x => walk ? x.wm <= 40 : x.km <= 20).sort((a, b) => a.km - b.km);
-
-  renderMiniMap('nearby-map', [{ lat: userLoc.lat, lng: userLoc.lng, label: 'You', kind: 'you' }, ...list.slice(0, 10).map(x => ({ lat: x.p.lat, lng: x.p.lng, label: x.p.name, kind: 'spot' }))], { caption: `${userLoc.label} • ${list.length} spots nearby`, empty: 'No mapped spots near this location' });
-  if (list.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No spots within ${walk ? '40 min walk' : '20 km'} of ${userLoc.label}. Try Car / Taxi.</p>`;
-    return;
-  }
-  list.forEach(({ p, km, wm, dm }) => {
-    const card = document.createElement('div');
-    card.className = "lily-card p-3.5 flex justify-between items-center text-xs bg-white/80 cursor-pointer hover:border-amber-500 transition-all";
-    card.onclick = () => openSpotDetailView(p);
-    const badge = walk ? `<i class="fa-solid fa-person-walking text-emerald-700 me-1"></i>${wm} min walk` : `<i class="fa-solid fa-car text-amber-700 me-1"></i>~${dm} min drive`;
-    card.innerHTML = `
-      <div class="space-y-0.5">
-        <div class="flex items-center space-x-2">
-          <button onclick="event.stopPropagation(); toggleStarSpot('${p.id}')" class="focus:outline-none">${p.starred ? '<span class="text-amber-500 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-500 text-base">☆</span>'}</button>
-          <h4 style="color: var(--olive-green);" class="font-bold text-sm">${p.name}</h4>
-        </div>
-        <p class="text-stone-500">${badge} • ${km.toFixed(1)} km • ${p.category}</p>
-      </div>
-      <a href="${p.map || '#'}" target="_blank" onclick="event.stopPropagation();" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-emerald-50 text-emerald-800">Map ➔</a>`;
-    container.appendChild(card);
-  });
-}
+function renderLocationsPage() { renderMasterPlacesList(); }
+function toggleSpotsAllCities() { spotsAllCities = !spotsAllCities; masterCat = 'ALL'; renderMasterPlacesList(); }
 
 function renderMasterPlacesList() {
   const container = document.getElementById('masterPlacesContainer');
   if (!container) return;
   const trip = getActiveTrip();
-  container.innerHTML = "";
+  const city = getActiveHotelCity(trip), cityName = city.charAt(0).toUpperCase() + city.slice(1);
+  const q = (document.getElementById('masterSearchInput')?.value || '').trim().toLowerCase();
 
-  const query = (document.getElementById('masterSearchInput')?.value || '').toLowerCase();
-  const catFilter = document.getElementById('masterCategoryFilter')?.value || 'ALL';
-  const filtered = (trip.places || []).filter(p => {
-    const matchesQuery = p.name.toLowerCase().includes(query) || (p.city && p.city.toLowerCase().includes(query));
-    const pCat = (p.category || '').toLowerCase();
-    const filterCat = catFilter.toLowerCase();
-    const matchesCat = filterCat === 'all' || pCat === filterCat.toLowerCase();
-    return matchesQuery && matchesCat;
+  // Only the hotel's city unless "Show all" is on; hide accidental duplicates (same name in same city)
+  const seen = new Set();
+  const pool = (trip.places || []).filter(p => spotsAllCities || (p.city || 'jakarta').toLowerCase() === city).filter(p => {
+    const k = (p.name || '').trim().toLowerCase() + '|' + (p.city || '').toLowerCase();
+    if (seen.has(k)) return false; seen.add(k); return true;
   });
 
-  if (filtered.length === 0) {
-    container.innerHTML = `<p class="text-xs text-stone-400 text-center py-6">No master locations found.</p>`;
-    return;
+  const note = document.getElementById('spots-city-note');
+  if (note) note.innerHTML = `${spotsAllCities ? 'All cities' : cityName + ' spots'} • <button onclick="toggleSpotsAllCities()" class="underline font-semibold">${spotsAllCities ? 'Only ' + cityName : 'Show all cities'}</button>${userLoc.live ? ' • nearest first' : ''}`;
+
+  const cats = ['ALL', ...new Set(pool.map(p => p.category || 'Other'))];
+  if (!cats.includes(masterCat)) masterCat = 'ALL';
+  const box = document.getElementById('master-category-chips');
+  if (box) {
+    box.innerHTML = '';
+    cats.forEach(c => {
+      const b = document.createElement('button'), on = masterCat === c;
+      b.className = `px-4 py-1.5 rounded-full text-[11px] font-bold border flex-shrink-0 ${on ? 'text-white border-transparent' : 'bg-white text-stone-600 border-stone-200'}`;
+      if (on) b.style.backgroundColor = 'var(--muted-teal)';
+      b.textContent = c === 'ALL' ? 'All' : c;
+      b.onclick = () => { masterCat = c; renderMasterPlacesList(); };
+      box.appendChild(b);
+    });
   }
 
-  filtered.forEach(place => {
+  const dist = p => (userLoc.live && p.lat) ? calculateDistanceInKm(userLoc.lat, userLoc.lng, p.lat, p.lng) : null;
+  const list = pool.filter(p => (masterCat === 'ALL' || (p.category || 'Other') === masterCat) && (!q || (p.name || '').toLowerCase().includes(q) || (p.station || '').toLowerCase().includes(q)))
+    .sort((a, b) => { const x = dist(a), y = dist(b); if (x !== null && y !== null) return x - y; if (x !== null) return -1; if (y !== null) return 1; return (a.name || '').localeCompare(b.name || ''); });
+
+  container.innerHTML = '';
+  if (list.length === 0) { container.innerHTML = `<p class="text-xs text-stone-400 text-center py-8 col-span-full">No spots found. Try another category, or tap + to add one.</p>`; return; }
+  list.forEach(p => {
+    const d = dist(p), img = p.gallery && p.gallery[0];
+    const hasSt = p.station && p.station !== 'N/A' && p.station !== 'No station nearby';
     const card = document.createElement('div');
-    card.className = "lily-card p-3.5 flex justify-between items-center text-xs bg-white/80 cursor-pointer hover:border-amber-500 transition-all";
-    card.onclick = () => openSpotDetailView(place);
+    card.className = 'lily-card p-2.5 flex gap-3 items-center cursor-pointer bg-white';
+    card.onclick = () => openSpotDetailView(p);
     card.innerHTML = `
-      <div class="space-y-0.5">
-        <div class="flex items-center space-x-2">
-          <button onclick="event.stopPropagation(); toggleStarSpot('${place.id}')" class="focus:outline-none">
-            ${place.starred ? '<span class="text-amber-500 text-base">★</span>' : '<span class="text-stone-300 hover:text-amber-500 text-base">☆</span>'}
-          </button>
-          <h4 style="color: var(--olive-green);" class="font-bold text-sm">${place.name}</h4>
-          <button onclick="event.stopPropagation(); openEditSpotModal('${place.id}')" class="text-stone-300 hover:text-stone-600 text-xs ms-1"><i class="fa-solid fa-pen"></i></button>
-        </div>
-        <p class="text-stone-500"><span class="font-bold text-amber-800">${place.city || 'Jakarta'}</span> • ${place.category || 'General'}${place.lat ? '' : ' • <span class="text-rose-600">no coordinates</span>'}</p>
+      <div class="w-20 h-20 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center text-3xl" style="background: linear-gradient(160deg,#E3E2B0,#C4BA65);">${img ? `<img src="${img}" class="w-full h-full object-cover">` : (SPOT_EMOJI[p.category] || '📍')}</div>
+      <div class="min-w-0 flex-1 space-y-0.5">
+        <p class="text-[10px] font-extrabold uppercase tracking-wide" style="color: var(--muted-teal);">${escapeHtml(p.category || 'Spot')}${spotsAllCities ? ' • ' + escapeHtml(p.city || '') : ''}</p>
+        <h4 class="font-extrabold text-sm leading-snug" style="color: var(--dark-green);">${escapeHtml(p.name)}</h4>
+        <p class="text-[11px] text-stone-500 truncate"><i class="fa-solid ${hasSt ? 'fa-train-subway' : 'fa-person-walking'} me-1"></i>${escapeHtml(hasSt ? p.station : (p.walk || 'No station nearby'))}</p>
+        ${d !== null ? `<p class="text-[11px] font-semibold" style="color: var(--muted-teal);"><i class="fa-solid fa-location-arrow me-1"></i>${d.toFixed(1)} km • ~${Math.round(d * 1000 / WALK_M_PER_MIN)} min walk</p>` : (p.lat ? '' : '<p class="text-[11px] text-rose-600">no coordinates yet</p>')}
       </div>
-      <a href="${place.map || '#'}" target="_blank" onclick="event.stopPropagation();" class="px-3 py-1.5 rounded-xl font-semibold text-[11px] bg-emerald-50 text-emerald-800">Map ➔</a>
-    `;
+      <button onclick="event.stopPropagation(); toggleStarSpot('${p.id}')" class="text-xl px-1 flex-shrink-0" aria-label="Favourite">${p.starred ? '<span class="text-amber-500">★</span>' : '<span class="text-stone-300">☆</span>'}</button>`;
     container.appendChild(card);
   });
 }
