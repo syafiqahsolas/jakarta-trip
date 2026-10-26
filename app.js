@@ -1,4 +1,3 @@
-
 /**
  * LILY POND & CARNIVAL TRAVEL HUB - APP.JS
  * Complete Logic with Image 2 Palette, Hidden Nav on Home,
@@ -66,6 +65,20 @@ let activeTransportMode = "walk";
 let editingItineraryIndex = null;
 let editingPlaceId = null;
 let editingExpenseIndex = null;
+const CURRENCIES = { MYR: 'RM', IDR: 'Rp', SGD: 'S$', USD: 'US$', EUR: '€', GBP: '£', JPY: '¥', THB: '฿', AUD: 'A$', KRW: '₩', CNY: 'CN¥', HKD: 'HK$', PHP: '₱' };
+let _expSetup = false, _payIdx = null;
+const tripCur = trip => (trip && trip.currency) || 'MYR';
+function fmtMoney(n, code) {
+  const d = ['IDR', 'JPY', 'KRW'].includes(code) ? 0 : 2;
+  return (CURRENCIES[code] || code) + ' ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+// Value of an expense in the trip's main currency (null = needs an exchange rate)
+function expToTrip(trip, e) {
+  const amt = parseFloat(e.amount) || 0, cur = e.currency || tripCur(trip), tc = tripCur(trip);
+  if (cur === tc) return amt;
+  if ((e.rateCur || 'MYR') === tc && e.rate > 0) return amt * e.rate;
+  return null;
+}
 let expSplitSel = new Set();
 let editingPackingIndex = null;
 let editingTicketIndex = null;
@@ -1343,19 +1356,20 @@ function renderChecklistsAndExpenses() {
   const categories = { "Hotel & Stay": 0, "Food & Cafe": 0, "Transport": 0, "Other": 0 };
 
   (trip.expenses || []).forEach(exp => {
-    const amt = parseFloat(exp.amount) || 0;
+    const amt = expToTrip(trip, exp);
+    if (amt === null) return;
     totalSum += amt;
     const cat = exp.category || "Other";
     categories[cat] = (categories[cat] || 0) + amt;
   });
 
   const totalDisplay = document.getElementById('expense-total-display');
-  if (totalDisplay) totalDisplay.innerText = `RM ${totalSum.toLocaleString()}`;
+  if (totalDisplay) totalDisplay.innerText = fmtMoney(totalSum, tripCur(trip));
 
-  if (document.getElementById('cat-amount-stay')) document.getElementById('cat-amount-stay').innerText = `RM ${categories["Hotel & Stay"]}`;
-  if (document.getElementById('cat-amount-food')) document.getElementById('cat-amount-food').innerText = `RM ${categories["Food & Cafe"]}`;
-  if (document.getElementById('cat-amount-transport')) document.getElementById('cat-amount-transport').innerText = `RM ${categories["Transport"]}`;
-  if (document.getElementById('cat-amount-other')) document.getElementById('cat-amount-other').innerText = `RM ${categories["Other"]}`;
+  if (document.getElementById('cat-amount-stay')) document.getElementById('cat-amount-stay').innerText = fmtMoney(categories["Hotel & Stay"], tripCur(trip));
+  if (document.getElementById('cat-amount-food')) document.getElementById('cat-amount-food').innerText = fmtMoney(categories["Food & Cafe"], tripCur(trip));
+  if (document.getElementById('cat-amount-transport')) document.getElementById('cat-amount-transport').innerText = fmtMoney(categories["Transport"], tripCur(trip));
+  if (document.getElementById('cat-amount-other')) document.getElementById('cat-amount-other').innerText = fmtMoney(categories["Other"], tripCur(trip));
 
   const expListContainer = document.getElementById('expenses-list-container');
   if (expListContainer) {
@@ -1384,7 +1398,7 @@ function renderChecklistsAndExpenses() {
           </div>
         </div>
         <div class="flex items-center space-x-3">
-          <strong style="color: var(--olive-green);" class="font-extrabold text-xs">RM ${exp.amount}</strong>
+          ${expAmountHtml(trip, exp)}
           <button onclick="openEditExpenseModal(${idx})" class="text-stone-300 hover:text-stone-600"><i class="fa-solid fa-pen text-[10px]"></i></button>
           <button onclick="deleteExpenseItem(${idx})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash text-[10px]"></i></button>
         </div>
@@ -1394,6 +1408,13 @@ function renderChecklistsAndExpenses() {
   }
 }
 
+function expAmountHtml(trip, exp) {
+  const tc = tripCur(trip), cur = exp.currency || tc, v = expToTrip(trip, exp);
+  const main = `<strong style="color: var(--olive-green);" class="font-extrabold text-xs block text-right">${fmtMoney(exp.amount, cur)}</strong>`;
+  if (cur === tc) return `<div>${main}</div>`;
+  return `<div>${main}<span class="block text-right text-[10px] ${v === null ? 'font-bold' : 'text-stone-400'}" style="${v === null ? 'color: var(--carnival-red);' : ''}">${v === null ? '⚠ set rate (tap pencil)' : '≈ ' + fmtMoney(v, tc)}</span></div>`;
+}
+
 function getMembers(trip) {
   if (trip.members && trip.members.length) return trip.members;
   const n = Math.max(1, parseInt(trip.people) || 1);
@@ -1401,15 +1422,22 @@ function getMembers(trip) {
 }
 
 function computeSettlement(trip) {
-  const members = getMembers(trip), bal = {};
+  const members = getMembers(trip), bal = {}, tc = tripCur(trip);
   members.forEach(m => { bal[m] = 0; });
+  let missing = 0;
   (trip.expenses || []).forEach(e => {
-    const amt = parseFloat(e.amount) || 0;
+    const amt = expToTrip(trip, e);
+    if (amt === null) { missing++; return; }
     if (!e.paidBy || !(e.paidBy in bal)) return;
     const sp = (e.split && e.split.length ? e.split : members).filter(m => m in bal);
     if (!sp.length) return;
     bal[e.paidBy] += amt;
     sp.forEach(m => { bal[m] -= amt / sp.length; });
+  });
+  (trip.payments || []).forEach(p => {            // money already handed back between travellers
+    if ((p.cur || 'MYR') !== tc) return;
+    if (p.from in bal) bal[p.from] += p.amt;
+    if (p.to in bal) bal[p.to] -= p.amt;
   });
   const debt = members.filter(m => bal[m] < -0.005).map(m => [m, -bal[m]]).sort((a, b) => b[1] - a[1]);
   const cred = members.filter(m => bal[m] > 0.005).map(m => [m, bal[m]]).sort((a, b) => b[1] - a[1]);
@@ -1421,42 +1449,116 @@ function computeSettlement(trip) {
     if (debt[i][1] < 0.005) i++;
     if (cred[j][1] < 0.005) j++;
   }
-  return { bal, tx };
+  return { bal, tx, missing };
 }
 
 function renderExpenseSplit() {
   const box = document.getElementById('expense-split-container');
   if (!box) return;
-  const trip = getActiveTrip(), members = getMembers(trip), { bal, tx } = computeSettlement(trip);
+  const trip = getActiveTrip(), members = getMembers(trip), tc = tripCur(trip), { bal, tx, missing } = computeSettlement(trip);
+  window._tx = tx;
   const rows = members.map(m => {
     const v = bal[m];
     const t = Math.abs(v) < 0.005 ? '<span class="text-stone-400">settled</span>'
-      : v > 0 ? `<span class="font-bold" style="color: var(--muted-teal);">gets back RM ${v.toFixed(2)}</span>`
-      : `<span class="font-bold" style="color: var(--carnival-red);">owes RM ${(-v).toFixed(2)}</span>`;
+      : v > 0 ? `<span class="font-bold" style="color: var(--muted-teal);">gets back ${fmtMoney(v, tc)}</span>`
+      : `<span class="font-bold" style="color: var(--carnival-red);">owes ${fmtMoney(-v, tc)}</span>`;
     return `<div class="flex justify-between text-xs py-1.5 border-t border-stone-100 first:border-0"><span class="font-semibold text-stone-700">${escapeHtml(m)}</span>${t}</div>`;
   }).join('');
-  const pays = tx.length ? tx.map(t => `<div class="flex items-center gap-2 rounded-xl p-2.5 text-xs" style="background: var(--beige);"><span class="font-bold">${escapeHtml(t.from)}</span><i class="fa-solid fa-arrow-right text-stone-400"></i><span class="font-bold">${escapeHtml(t.to)}</span><span class="ms-auto font-extrabold" style="color: var(--midnight-blue);">RM ${t.amt.toFixed(2)}</span></div>`).join('')
-    : '<p class="text-xs text-stone-400">Nothing to settle yet. Choose who paid when you add an expense.</p>';
+  const pays = tx.length ? tx.map((t, i) => `<div class="flex items-center gap-2 rounded-xl p-2.5 text-xs" style="background: var(--beige);">
+      <span class="font-bold">${escapeHtml(t.from)}</span><i class="fa-solid fa-arrow-right text-stone-400 text-[10px]"></i><span class="font-bold">${escapeHtml(t.to)}</span>
+      <span class="ms-auto font-extrabold" style="color: var(--midnight-blue);">${fmtMoney(t.amt, tc)}</span>
+      <button onclick="openPaymentModal(${i})" class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-white flex-shrink-0" style="background: var(--muted-teal);">Mark paid</button></div>`).join('')
+    : `<p class="text-xs text-stone-400">${(trip.expenses || []).length ? 'All settled 🎉' : 'Nothing to settle yet. Choose who paid when you add an expense.'}</p>`;
+  const paid = (trip.payments || []).map((p, i) => `<div class="flex items-center gap-2 text-[11px] text-stone-600 py-1">
+      <i class="fa-solid fa-circle-check flex-shrink-0" style="color: var(--muted-teal);"></i>
+      <span class="min-w-0"><b>${escapeHtml(p.from)}</b> paid <b>${escapeHtml(p.to)}</b> ${fmtMoney(p.amt, p.cur || 'MYR')}</span>
+      <span class="text-stone-400 ms-auto flex-shrink-0">${p.at || ''}</span>
+      <button onclick="deletePayment(${i})" aria-label="Undo payment" class="text-stone-300 hover:text-red-500 px-1 flex-shrink-0"><i class="fa-solid fa-rotate-left text-[10px]"></i></button></div>`).join('');
   box.innerHTML = `<div class="lily-card p-4 space-y-3 bg-white">
     <div class="flex justify-between items-center gap-2"><h4 class="font-extrabold text-sm" style="color: var(--midnight-blue);">Split &amp; settle up</h4>
       <button onclick="editTravelers()" class="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-stone-100 text-stone-600 flex-shrink-0"><i class="fa-solid fa-user-pen me-1"></i>${members.length} travellers</button></div>
+    <p class="text-[11px] text-stone-500">Shown in <b>${CURRENCIES[tc] || tc} (${tc})</b> • <button onclick="openTripModal(activeTripId)" class="underline font-semibold">change currency</button></p>
+    ${missing ? `<p class="text-[11px] font-bold rounded-xl p-2.5" style="background: #fdecec; color: var(--carnival-red);">⚠ ${missing} expense${missing > 1 ? 's need' : ' needs'} an exchange rate to ${tc}. Tap its pencil and save to fix.</p>` : ''}
     <div>${rows}</div>
     <p class="text-[10px] font-bold uppercase tracking-wider text-stone-400">Suggested payments</p>
-    <div class="space-y-1.5">${pays}</div></div>`;
+    <div class="space-y-1.5">${pays}</div>
+    ${paid ? `<p class="text-[10px] font-bold uppercase tracking-wider text-stone-400 pt-1">Payments made</p><div>${paid}</div>` : ''}
+  </div>`;
 }
 
+function openPaymentModal(i) {
+  const t = (window._tx || [])[i];
+  if (!t) return;
+  _payIdx = i;
+  const tc = tripCur(getActiveTrip());
+  document.getElementById('pay-text').innerHTML = `<b>${escapeHtml(t.from)}</b> paid <b>${escapeHtml(t.to)}</b>`;
+  document.getElementById('pay-cur').textContent = CURRENCIES[tc] || tc;
+  document.getElementById('pay-amount').value = (Math.round(t.amt * 100) / 100).toString();
+  openModal('modal-payment');
+}
+function savePayment() {
+  const t = (window._tx || [])[_payIdx], amt = parseFloat(document.getElementById('pay-amount').value);
+  if (!t) return;
+  if (!(amt > 0)) return alert("Enter the amount that was paid.");
+  const trip = getActiveTrip();
+  if (!trip.payments) trip.payments = [];
+  trip.payments.push({ id: 'pay_' + Date.now(), from: t.from, to: t.to, amt: Math.round(amt * 100) / 100, cur: tripCur(trip), at: todayIso() });
+  saveAppData(); closeModal('modal-payment'); renderChecklistsAndExpenses();
+}
+function deletePayment(i) {
+  const trip = getActiveTrip();
+  if (!trip.payments || !trip.payments[i] || !confirm("Undo this payment record?")) return;
+  trip.payments.splice(i, 1);
+  saveAppData(); renderChecklistsAndExpenses();
+}
+
+let _travelerRows = [];
 function editTravelers() {
-  const trip = getActiveTrip(), old = getMembers(trip);
-  const input = prompt("Who is travelling? Separate names with commas.", old.join(', '));
-  if (input === null) return;
-  const neu = [...new Set(input.split(',').map(s => s.trim()).filter(Boolean))];
-  if (!neu.length) return;
-  if (neu.length === old.length) {   // same headcount: treat as renames so past expenses follow
-    const map = {}; old.forEach((o, i) => { map[o] = neu[i]; });
-    (trip.expenses || []).forEach(e => { if (e.paidBy in map) e.paidBy = map[e.paidBy]; if (e.split) e.split = e.split.map(s => map[s] || s); });
-  }
-  trip.members = neu; trip.people = neu.length + ' Pax';
-  saveAppData(); renderChecklistsAndExpenses(); renderSummaryPage(); renderHomeViews();
+  _travelerRows = getMembers(getActiveTrip()).map(n => ({ orig: n, name: n }));
+  renderTravelerRows();
+  openModal('modal-travelers');
+}
+
+function renderTravelerRows() {
+  const box = document.getElementById('travelers-list');
+  if (!box) return;
+  box.innerHTML = '';
+  _travelerRows.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2';
+    row.innerHTML = `<span class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0" style="background: var(--muted-teal);">${i + 1}</span>
+      <input type="text" value="${escapeHtml(r.name)}" placeholder="Name" maxlength="24" style="font-size:16px" class="flex-1 min-w-0 bg-stone-50 border border-stone-200 rounded-2xl px-3 py-2.5 text-stone-800">
+      <button type="button" aria-label="Remove traveller" class="p-2 text-stone-300 hover:text-red-500 flex-shrink-0"><i class="fa-solid fa-trash text-xs"></i></button>`;
+    row.querySelector('input').oninput = e => { r.name = e.target.value; };
+    row.querySelector('button').onclick = () => { if (_travelerRows.length > 1) { _travelerRows.splice(i, 1); renderTravelerRows(); } };
+    box.appendChild(row);
+  });
+}
+
+function addTravelerRow() {
+  _travelerRows.push({ orig: null, name: '' });
+  renderTravelerRows();
+  const inputs = document.querySelectorAll('#travelers-list input');
+  inputs[inputs.length - 1]?.focus();
+}
+
+function saveTravelers() {
+  const trip = getActiveTrip();
+  const rows = _travelerRows.map(r => ({ orig: r.orig, name: r.name.trim() })).filter(r => r.name);
+  if (!rows.length) return alert("Add at least one traveller.");
+  const names = rows.map(r => r.name);
+  if (new Set(names.map(n => n.toLowerCase())).size !== names.length) return alert("Each traveller needs a different name.");
+  const map = {};                                  // old name -> new name, so past expenses follow renames
+  rows.forEach(r => { if (r.orig) map[r.orig] = r.name; });
+  (trip.expenses || []).forEach(e => {
+    if (e.paidBy) e.paidBy = map[e.paidBy] || null;          // removed person: payer becomes unassigned
+    if (e.split) e.split = e.split.map(s => map[s]).filter(Boolean);
+  });
+  trip.members = names;
+  trip.people = names.length + ' Pax';
+  saveAppData();
+  closeModal('modal-travelers');
+  renderChecklistsAndExpenses(); renderSummaryPage(); renderHomeViews();
 }
 
 function fillExpenseWho(paidBy, split) {
@@ -1482,6 +1584,56 @@ function renderExpenseSplitChips(members) {
   });
 }
 
+function expFormSetup(exp) {
+  const trip = getActiveTrip(), tc = tripCur(trip);
+  const sel = document.getElementById('exp-form-currency');
+  sel.innerHTML = Object.keys(CURRENCIES).map(c => `<option value="${c}">${c} (${CURRENCIES[c]})</option>`).join('');
+  _expSetup = true;
+  sel.value = (exp && exp.currency) || tc;
+  sel.dispatchEvent(new Event('change', { bubbles: true }));    // refresh the dropdown label
+  _expSetup = false;
+  const keep = exp && exp.currency && exp.currency !== tc && exp.rateCur === tc && exp.rate > 0;
+  document.getElementById('exp-form-rate').value = keep ? exp.rate : '';
+  updateRateUI(true);
+}
+
+function updateRateUI(autofetch) {
+  const tc = tripCur(getActiveTrip()), cur = document.getElementById('exp-form-currency').value;
+  const diff = cur !== tc;
+  document.getElementById('exp-rate-box').classList.toggle('hidden', !diff);
+  if (!diff) return;
+  document.getElementById('exp-rate-from').textContent = cur;
+  document.getElementById('exp-rate-to').textContent = tc;
+  if (autofetch && !document.getElementById('exp-form-rate').value) fetchRate(cur, tc);
+  updateRatePreview();
+}
+
+async function fetchRate(from, to) {
+  const note = document.getElementById('exp-rate-note');
+  note.textContent = 'Getting today’s rate…';
+  try {
+    const r = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);
+    const j = await r.json(), v = j.rates && j.rates[to];
+    if (!v) throw new Error('no rate');
+    const inp = document.getElementById('exp-form-rate');
+    if (document.getElementById('exp-form-currency').value === from && !inp.value) inp.value = String(+v.toPrecision(6));
+    note.textContent = 'Today’s rate filled in. Change it if you used a different one (e.g. a money changer).';
+  } catch (e) { note.textContent = 'Couldn’t get a rate (offline?). Type the rate you used.'; }
+  updateRatePreview();
+}
+
+function updateRatePreview() {
+  const trip = getActiveTrip(), tc = tripCur(trip);
+  const amt = parseFloat(document.getElementById('exp-form-amount').value), rate = parseFloat(document.getElementById('exp-form-rate').value);
+  document.getElementById('exp-rate-preview').textContent = (amt > 0 && rate > 0) ? '≈ ' + fmtMoney(amt * rate, tc) : '';
+}
+
+function onExpCurrencyChange() {
+  if (_expSetup) return;
+  document.getElementById('exp-form-rate').value = '';
+  updateRateUI(true);
+}
+
 function openExpenseModal() {
   editingExpenseIndex = null;
   document.getElementById('exp-form-idx').value = "-1";
@@ -1489,6 +1641,7 @@ function openExpenseModal() {
   document.getElementById('exp-form-amount').value = "";
   document.getElementById('exp-form-category').value = "Hotel & Stay";
   fillExpenseWho('', null);
+  expFormSetup(null);
   document.getElementById('modal-expense-title').innerText = "Add Expense";
   openModal('modal-expense');
 }
@@ -1502,6 +1655,7 @@ function openEditExpenseModal(idx) {
   document.getElementById('exp-form-amount').value = exp.amount || "";
   document.getElementById('exp-form-category').value = exp.category || "Hotel & Stay";
   fillExpenseWho(exp.paidBy || '', exp.split);
+  expFormSetup(exp);
   document.getElementById('modal-expense-title').innerText = "Edit Expense";
   openModal('modal-expense');
 }
@@ -1511,12 +1665,18 @@ function saveExpenseForm() {
   const amount = document.getElementById('exp-form-amount').value.trim();
   const category = document.getElementById('exp-form-category').value;
   const paidBy = document.getElementById('exp-form-paidby').value || null;
+  const currency = document.getElementById('exp-form-currency').value;
   if (!title || !amount) return alert("Enter title and amount!");
-  const trip = getActiveTrip();
+  const trip = getActiveTrip(), tc = tripCur(trip);
+  let rate = 1;
+  if (currency !== tc) {
+    rate = parseFloat(document.getElementById('exp-form-rate').value);
+    if (!(rate > 0)) return alert(`Enter the exchange rate (1 ${currency} = how many ${tc}?).`);
+  }
   const split = getMembers(trip).filter(m => expSplitSel.has(m));
   if (paidBy && !split.length) return alert("Pick at least one person to split between.");
   if (!trip.expenses) trip.expenses = [];
-  const exp = { title, amount, category, paidBy, split };
+  const exp = { title, amount, category, paidBy, split, currency, rate, rateCur: tc };
   if (editingExpenseIndex !== null && trip.expenses[editingExpenseIndex]) trip.expenses[editingExpenseIndex] = exp;
   else trip.expenses.push(exp);
   saveAppData();
@@ -1629,6 +1789,13 @@ function saveHotelForm() {
 }
 
 // --- TRIPS MANAGEMENT MODALS ---
+function setTripCurrencyField(code) {
+  const s = document.getElementById('trip-form-currency');
+  s.innerHTML = Object.keys(CURRENCIES).map(c => `<option value="${c}">${c} (${CURRENCIES[c]})</option>`).join('');
+  s.value = code;
+  s.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
 function openTripModal(tripIdToEdit = null) {
   const targetId = tripIdToEdit || activeTripId;
   const trip = appData.trips.find(t => t.id === targetId);
@@ -1642,6 +1809,7 @@ function openTripModal(tripIdToEdit = null) {
     document.getElementById('trip-form-category').value = trip.category || 'Vacation';
     document.getElementById('trip-form-people').value = trip.people || '';
     document.getElementById('trip-form-budget').value = trip.budget || '';
+    setTripCurrencyField(tripCur(trip));
   } else {
     document.getElementById('modal-trip-title').innerText = "Add New Trip";
     document.getElementById('trip-form-id').value = '';
@@ -1650,6 +1818,7 @@ function openTripModal(tripIdToEdit = null) {
     document.getElementById('trip-form-end-date').value = '';
     document.getElementById('trip-form-people').value = '';
     document.getElementById('trip-form-budget').value = '';
+    setTripCurrencyField('MYR');
   }
   document.getElementById('trip-form-cover').value = '';
   openModal('modal-trip');
@@ -1675,6 +1844,9 @@ function saveTripFormCore() {
       trip.category = document.getElementById('trip-form-category').value;
       trip.people = document.getElementById('trip-form-people').value;
       trip.budget = document.getElementById('trip-form-budget').value;
+      const oldCur = tripCur(trip);   // pin older expenses to the currency they were entered in
+      (trip.expenses || []).forEach(e => { if (!e.currency) { e.currency = oldCur; e.rate = 1; e.rateCur = oldCur; } });
+      trip.currency = document.getElementById('trip-form-currency').value || 'MYR';
       if (pendingCover) trip.coverImage = pendingCover;
     }
   } else {
@@ -1687,6 +1859,7 @@ function saveTripFormCore() {
       category: document.getElementById('trip-form-category').value || "Vacation",
       people: document.getElementById('trip-form-people').value || "1 Pax",
       budget: document.getElementById('trip-form-budget').value || "RM 0",
+      currency: document.getElementById('trip-form-currency').value || 'MYR',
       activeHotel: "The Papandayan Hotel",
       hotelCity: "bandung",
       hotelStation: "Bandung Station (23 min walk)",
